@@ -89,6 +89,16 @@ function instrument() {
   };
 }
 
+// The voice is chosen in Settings, as she would: one picker for the whole app.
+const VOICE = 'select[aria-label="Voice"]';
+async function pickVoice(page, name) {
+  await LP.open(page, '/settings');
+  await page.waitForSelector(VOICE);
+  const v = await page.$eval(VOICE, (s, n) => [...s.options].find((o) => o.textContent.startsWith(n)).value, name);
+  await page.selectOption(VOICE, v);
+  await page.waitForTimeout(300);
+}
+
 (async () => {
   localModel = await serveLocalModel();
   const b = await chromium.launch(Object.assign({}, ENV.launchOpts, { args: ['--autoplay-policy=no-user-gesture-required'] }));
@@ -102,16 +112,15 @@ function instrument() {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errs.push(String(e)));
     await LP.reset(p);
-    await LP.open(p, '/module/M3?lesson=m3-the-module');
-    await p.waitForSelector('.raloud');
-
-    const groups = await p.$$eval('.raloud__voice optgroup', (g) => g.map((x) => x.label + ':' + x.querySelectorAll('option').length));
-    const chosen = await p.$eval('.raloud__voice', (s) => s.options[s.selectedIndex].textContent);
+    await LP.open(p, '/settings');
+    await p.waitForSelector(VOICE);
+    const groups = await p.$$eval(VOICE + ' optgroup', (g) => g.map((x) => x.label + ':' + x.querySelectorAll('option').length));
+    const chosen = await p.$eval(VOICE, (s) => s.options[s.selectedIndex].textContent);
     ok('the voice picker offers the natural voices first, and one is chosen by default', groups[0] === 'Natural voices:6' && /^Heart/.test(chosen), groups.join(', ') + ' · ' + chosen);
     // Only Heart is recorded: another voice is made on the device.
-    const bellaOnDevice = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await p.selectOption('.raloud__voice', bellaOnDevice);
-    await p.waitForTimeout(300);
+    await pickVoice(p, 'Bella');
+    await LP.open(p, '/module/M3?lesson=m3-the-module');
+    await p.waitForSelector('.raloud');
     ok('in a voice with no recording, it reads with the natural voice made on the device', (await p.$eval('.raloud', (e) => e.dataset.engine)) === 'natural');
 
     const t0 = Date.now();
@@ -182,10 +191,9 @@ function instrument() {
     {
       const r = await ctx.newPage();
       r.on('pageerror', (e) => errs.push(String(e)));
+      await pickVoice(r, 'Heart');
       await LP.open(r, '/module/M0?lesson=m0-the-module');
       await r.waitForSelector('.raloud');
-      const heart = await r.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Heart/.test(o.textContent)).value);
-      await r.selectOption('.raloud__voice', heart);
       await r.waitForFunction(() => document.querySelector('.raloud').dataset.engine === 'recorded', null, { timeout: 15000 }).catch(() => {});
       ok('a recorded lesson plays its recording', (await r.$eval('.raloud', (e) => e.dataset.engine)) === 'recorded');
       const workersBefore = r.workers().length;
@@ -249,11 +257,10 @@ function instrument() {
       Object.defineProperty(navigator, 'userAgent', { get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1' });
       Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5 });
     });
+    // Another voice, so nothing it says was made (and kept) by the reading above.
+    await pickVoice(q, 'Bella');
     await LP.open(q, '/module/M3?lesson=m3-the-module');
     await q.waitForSelector('.raloud');
-    // Another voice, so nothing it says was made (and kept) by the reading above.
-    const bella = await q.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await q.selectOption('.raloud__voice', bella);
     await q.click('.raloud__btn--go');
     await q.waitForFunction(() => window.__voice.played.length >= 1, null, { timeout: 300000 });
     const voiceWorkers = () => q.workers().filter((w) => /voice\.worker/.test(w.url()));
@@ -293,11 +300,9 @@ function instrument() {
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errs.push(String(e)));
     await LP.reset(p);
+    await pickVoice(p, 'Bella');
     await LP.open(p, '/module/M3?lesson=m3-the-module');
     await p.waitForSelector('.raloud');
-    const bellaMissing = await p.$eval('.raloud__voice', (s) => [...s.options].find((o) => /^Bella/.test(o.textContent)).value);
-    await p.selectOption('.raloud__voice', bellaMissing);
-    await p.waitForTimeout(300);
     await p.click('.raloud__btn--go');
     await p.waitForSelector('.raloud__notice', { timeout: 60000 });
     const notice = await p.$eval('.raloud__notice', (e) => e.textContent);

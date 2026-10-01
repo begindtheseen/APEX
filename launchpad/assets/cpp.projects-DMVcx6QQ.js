@@ -1,0 +1,15496 @@
+var e=`@track cpp
+@level projects
+@plainvoice true
+@title C++ · Projects
+@name C++ projects: build real programs, then prove it with capstones
+@blurb Three programs built step by step — a matrix library, a bank with polymorphic accounts and a text-statistics tool — then three capstones where you get only a specification and design everything yourself.
+
+=== cppp-01 | Matrix 1: storage and element access
+--- teach
+Last lesson, the final one of the Expert course, you built a recursive-descent calculator. A tokenizer cut a line of text into tokens, and a parser, one function for each grammar rule, turned those tokens into an answer. That was the top of the C++ ladder: from \`std::cout\` all the way up to templates, containers you wrote yourself, and parsers.
+
+This course is where you put all of it to work on bigger programs. It comes in two parts:
+
+1. **Three projects, built step by step.** A matrix library, a bank and a text-statistics tool. Each one grows over four lessons. Every step's starter already holds your code from the step before, so each lesson adds one new part to a program that keeps getting bigger.
+2. **Three capstones.** A [[capstone|capstone-word]] gives you only a specification: what the finished program must do. There is no starter design. You choose the classes, the functions and the data yourself.
+
+### What a matrix is
+
+Picture the seating chart of a small theater: rows of seats, and every row has the same number of seats. Or a spreadsheet: rows and columns of cells, each holding a number.
+
+A **matrix** is exactly that: a rectangle of numbers, arranged in rows and columns. Its size is written "rows × columns" and read "rows by columns". This one is a 2 × 3 matrix, "two by three": 2 rows, 3 columns.
+
+\`\`\`text
+| 10 20 30 |
+| 40 50 60 |
+\`\`\`
+
+Each number in it is an **element**. You name an element by its row and then its column, both counting from 0, as always in C++. So \`(1, 2)\` means row 1, column 2, which here is 60.
+
+Matrices sit [[underneath a lot of software|matrix-uses]]: graphics, physics, machine learning, spacecraft guidance. Your first project is a small **matrix library**: a \`Matrix\` type and the tools to work with it. Over four steps it learns storage, then arithmetic, then printing and the determinant, then fast powers. This first step is storage and reaching the elements.
+
+### Step 1: decide how to store it
+
+Every good type starts with a decision about **representation**: which members hold its data, and in what shape.
+
+The obvious choice is a vector of rows, where each row is a vector of its own: \`std::vector<std::vector<double>>\`. It works, but it has two problems. Each row is a separate allocation, scattered somewhere in memory. And nothing stops one row being longer than another. That gives [[ragged rows|ragged-rows]], and a ragged matrix is not a matrix at all.
+
+The better choice is the one from the data-layout lesson of the Expert course: one flat \`std::vector<double>\`, in **[[row-major|row-major-picture]]** order. Row 0 goes first, then all of row 1, and so on. The element in row \`r\`, column \`c\` sits at index \`r * cols + c\`: skip \`r\` whole rows of \`cols\` elements each, then step \`c\` more.
+
+\`\`\`text
+| 10 20 30 |
+| 40 50 60 |   ->   data = {10, 20, 30, 40, 50, 60}
+
+(1, 2) is data[1 * 3 + 2], which is data[5], which is 60
+\`\`\`
+
+The flat vector alone does not know where one row ends and the next begins. So the class also keeps the two sizes. That makes three members:
+
+- \`rows_\`, how many rows, a \`std::size_t\`;
+- \`cols_\`, how many columns, a \`std::size_t\`;
+- \`data_\`, the \`std::vector<double>\` holding every element, row by row.
+
+A vector can start out already full. Give its constructor a count and a value, in parentheses, and it holds that many copies of the value:
+
+\`\`\`cpp
+std::vector<char> seats(3 * 4, '.');   // 12 seats, every one '.'
+\`\`\`
+
+That is all the sized constructor, \`Matrix(rows, cols, fill)\`, needs: \`rows * cols\` elements, each one set to \`fill\`. Its \`fill\` parameter has a default argument, \`= 0.0\`, so \`Matrix(3, 1)\` is a 3 × 1 matrix of zeros.
+
+**Watch out:** the index formula multiplies by the number of **columns**, not rows. \`r * rows_ + c\` gives the right answer on a square matrix, so it passes a quick test on a 2 × 2. Then on a 2 × 3 matrix it quietly reads the wrong elements. Always test with a matrix that is not square.
+
+### Step 2: reach an element with two indexes
+
+Square brackets, \`v[5]\`, normally take only one index. A matrix needs two: a row and a column. So matrices [[use a different operator|why-not-brackets]]: the **function-call operator**, \`operator()\`, the one you met with function objects and comparators. It can take as many arguments as you like, so \`m(1, 2)\` reads "m at row 1, column 2".
+
+You need two versions of it, for two different jobs:
+
+- **Writing.** \`m(1, 2) = 7.0;\` must change the element inside the matrix. So this version returns \`double&\`, read "a reference to a double": not a copy of the number, but the element itself.
+- **Reading a \`const\` matrix.** A matrix passed as \`const Matrix&\` has promised not to change, and only \`const\` member functions may be called on it. So the second version has \`const\` written after its parameter list, and it returns a plain \`double\`: a copy, which is all a reader needs.
+
+Here is the same pair on a different class, a shelf of book titles reached by one index:
+
+\`\`\`cpp
+class Shelf {
+public:
+    std::string& at(std::size_t i) { return titles_[i]; }        // lets you write: s.at(0) = "Dune";
+    std::string at(std::size_t i) const { return titles_[i]; }   // for reading a const Shelf
+private:
+    std::vector<std::string> titles_;
+};
+\`\`\`
+
+The compiler [[picks the right version|const-overload]] for you: a \`const\` object gets the \`const\` one, and any other object gets the one that returns a reference. Your two \`operator()\` versions work the same way. Both have the same body: they give back the element at index \`r * cols_ + c\`. Only the return type and the word \`const\` differ.
+
+### Step 3: write a matrix as a literal
+
+It would be handy to write a matrix in the code the way it looks on paper:
+
+\`\`\`cpp
+Matrix m{{1.5, 0},
+         {2, -1},
+         {0, 4}};   // 3 rows, 2 columns
+\`\`\`
+
+A list in braces, like \`{7, 8, 9}\`, has a type in C++: **\`std::initializer_list<T>\`**, from \`<initializer_list>\`. It is a lightweight, read-only list of values of type \`T\`. A constructor or function that takes one can be handed a braced list. The list has a \`.size()\`, and a range-\`for\` visits its values in order.
+
+A matrix literal is a list of rows, and each row is a list of numbers. So the parameter is a list of lists: \`std::initializer_list<std::initializer_list<double>>\`, read "an initializer list of initializer lists of doubles". Here is an ordinary function, not a constructor, that takes a list of lists of \`int\`, to show the pieces:
+
+\`\`\`cpp
+void describe(std::initializer_list<std::initializer_list<int>> groups) {
+    std::cout << groups.size() << " groups\\n";                  // how many inner lists
+    std::cout << groups.begin()->size() << " in the first\\n";   // size of the first one
+    for (const auto& g : groups)                                 // each inner list in turn
+        for (int x : g) std::cout << x << ' ';                   // each value inside it
+}
+
+describe({{7, 8, 9}, {1, 2, 3}});   // 2 groups, 3 in the first, then 7 8 9 1 2 3
+\`\`\`
+
+\`groups.begin()\` points at the first inner list, and \`->size()\`, read "arrow size", asks that inner list for its size. For a matrix, the outer list's size is the number of rows, and the first inner list's size is the number of columns. (The task promises that every row has the same length.) Notice that the two nested loops visit the values row by row: exactly row-major order.
+
+Two more pieces finish the constructor:
+
+- An empty list, \`{}\`, has no first row, so \`begin()->size()\` would read something that is not there. Guard it with the conditional operator, \`cond ? a : b\`, read "if cond then a, otherwise b". A size of 0 counts as false, so \`list.size() ? (the first row's size) : 0\` is safe.
+- A vector's \`.reserve(n)\` makes room for \`n\` elements without adding any. After that, each \`push_back\` drops the next value into a slot that is already there, so the vector never has to grow and move.
+
+**Parentheses for sizes, braces for values.** With braces, C++ tries an initializer-list constructor first, and only falls back to the others if that cannot work. Vectors follow the same rule, and it catches people out:
+
+\`\`\`cpp
+std::vector<int> a(3, 5);   // three elements: 5 5 5
+std::vector<int> b{3, 5};   // two elements: 3 5
+\`\`\`
+
+So write \`Matrix(2, 3)\` for a 2 × 3 matrix of zeros, and \`Matrix{{2, 3}}\` for a one-row matrix holding 2 and 3. [[Keep that habit|braces-habit]] and you will never be surprised.
+
+### Step 4: a named constructor
+
+One matrix is special: the **identity matrix**. It is square, n × n, with 1 on the **diagonal**, the elements whose row number equals their column number, and 0 everywhere else:
+
+\`\`\`text
+| 1 0 0 |
+| 0 1 0 |
+| 0 0 1 |
+\`\`\`
+
+It plays the part of [[the number 1|identity-role]] for matrix multiplication, which you build next lesson.
+
+How should code ask for one? \`Matrix(3, 3, true)\`, with a flag meaning "make it the identity", is hard to read: true what? Better is a **static member function** that builds an object and returns it. Remember that a static member function belongs to the class, not to any one object, and is called with \`::\`, read "from". Used this way, it is called a [[named constructor|named-constructor]]:
+
+\`\`\`cpp
+class Temperature {
+public:
+    static Temperature from_fahrenheit(double f) {
+        return Temperature((f - 32) * 5 / 9);   // build one, hand it back
+    }
+    double celsius() const { return celsius_; }
+private:
+    explicit Temperature(double c) : celsius_(c) {}
+    double celsius_;
+};
+
+Temperature boil = Temperature::from_fahrenheit(212);   // 100 degrees Celsius
+\`\`\`
+
+\`Matrix::identity(3)\`, "identity from Matrix", says exactly what you get. Inside it you can use everything the class already has: the sized constructor to make a zero matrix, and your own \`operator()\` to change elements.
+
+::: context capstone-word The stone on top
+A capstone is the flat stone laid along the top of a wall to finish it. Schools and universities borrowed the word for the final project that pulls a whole course together, and most engineering degrees end with one. The capstones here work the same way: a specification, like one a customer or a flight-software team lead would hand you, and a blank file. Deciding which classes to write, and what each one is responsible for, is most of the job in real software. The three projects before them show you how that design is done, one step at a time.
+:::
+
+::: context matrix-uses Where matrices show up
+A spacecraft's attitude, which way it is turned, is often stored as a 3 × 3 rotation matrix. Multiplying a direction by it converts that direction from the spacecraft's own frame to another one, such as a frame fixed to the stars. Video games move and project every corner of every shape on screen with 4 × 4 matrices, many millions of times a second. A neural network layer is a big matrix of weights multiplied by its inputs. Real C++ code often uses a library such as Eigen, which is widely used in robotics. Building a small one yourself shows you what those libraries do inside.
+:::
+
+::: context ragged-rows Rows of different lengths
+A ragged, or "jagged", array has rows of different lengths, like the lines of a poem. Sometimes that is what you want: a list of each day's readings, when some days have more readings than others. For a matrix it is always a bug, because every row must have exactly \`cols\` elements. With one flat vector plus \`rows_\` and \`cols_\`, a ragged matrix cannot even be stored: the rule "\`data_\` has \`rows_ * cols_\` elements" holds from the moment the constructor finishes. That is an invariant, like the ones your classes kept in the intermediate course, and the representation keeps it for free.
+:::
+
+::: context row-major-picture One grid, one line of memory
+Each color is one row. The grid on the left is how you think of the matrix; the strip on the right is how it really sits in memory.
+
+\`\`\`svg
+<svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="80" y="20" font-size="12" fill="#1f2a44" text-anchor="middle">2 rows, 3 columns</text>
+  <rect x="20" y="30" width="40" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="60" y="30" width="40" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="30" width="40" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="20" y="66" width="40" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="60" y="66" width="40" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="100" y="66" width="40" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="40" y="53" font-size="13" fill="#1f2a44" text-anchor="middle">10</text>
+  <text x="80" y="53" font-size="13" fill="#1f2a44" text-anchor="middle">20</text>
+  <text x="120" y="53" font-size="13" fill="#1f2a44" text-anchor="middle">30</text>
+  <text x="40" y="89" font-size="13" fill="#1f2a44" text-anchor="middle">40</text>
+  <text x="80" y="89" font-size="13" fill="#1f2a44" text-anchor="middle">50</text>
+  <text x="120" y="89" font-size="13" fill="#1f2a44" text-anchor="middle">60</text>
+  <text x="80" y="124" font-size="11" fill="#6c7a93" text-anchor="middle">(1, 2) is 60</text>
+  <text x="260" y="38" font-size="12" fill="#1f2a44" text-anchor="middle">one vector</text>
+  <rect x="170" y="48" width="30" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="200" y="48" width="30" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="230" y="48" width="30" height="36" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="260" y="48" width="30" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="290" y="48" width="30" height="36" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="320" y="48" width="30" height="36" fill="#f2b880" stroke="#b4232c" stroke-width="2.5"/>
+  <text x="185" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">10</text>
+  <text x="215" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">20</text>
+  <text x="245" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">30</text>
+  <text x="275" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">40</text>
+  <text x="305" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">50</text>
+  <text x="335" y="71" font-size="12" fill="#1f2a44" text-anchor="middle">60</text>
+  <text x="185" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">0</text>
+  <text x="215" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">1</text>
+  <text x="245" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">2</text>
+  <text x="275" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">3</text>
+  <text x="305" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">4</text>
+  <text x="335" y="100" font-size="11" fill="#6c7a93" text-anchor="middle">5</text>
+  <text x="215" y="120" font-size="11" fill="#1f2a44" text-anchor="middle">row 0</text>
+  <text x="305" y="120" font-size="11" fill="#1f2a44" text-anchor="middle">row 1</text>
+  <text x="260" y="148" font-size="12" fill="#b4232c" text-anchor="middle">index 1 * 3 + 2 = 5</text>
+</svg>
+\`\`\`
+
+C and C++ arrays are row-major. Fortran and MATLAB store matrices column-major instead, one whole column after another, and Eigen does too unless you ask otherwise. Both work; what matters is that the index formula and the loops agree with the layout.
+:::
+
+::: context why-not-brackets Why not m[1][2]?
+Until C++23, \`operator[]\` had to take exactly one argument. \`m[1][2]\` can still be made to work: \`m[1]\` returns a small "row" object, and that object has its own \`[]\`. But that is a second class to write, only to reach one number. So most matrix libraries, Eigen among them, use \`m(1, 2)\`. C++23 finally lets \`operator[]\` take several arguments, so \`m[1, 2]\` is possible there, and the new \`std::mdspan\` view uses it. The checker here is not on C++23, and \`m(1, 2)\` works everywhere.
+:::
+
+::: context const-overload Two functions, one name
+Two member functions may share a name and parameters if one is \`const\` and the other is not. Behind the scenes every member function has a hidden parameter, \`this\`, pointing at the object; in a \`const\` member it points at a \`const\` object. So the two really do take different parameters, and ordinary overloading picks between them. The standard library uses this pair everywhere: \`std::vector\`'s \`[]\` and \`.at()\` both come in a \`const\` and a non-\`const\` version. Its \`const\` versions hand back a \`const\` reference rather than a copy; for a single \`double\`, a copy costs no more.
+:::
+
+::: context braces-habit One pair of braces apart
+What does \`Matrix{2, 3}\`, with single braces, do? C++ first tries the initializer-list constructor. That needs each item to be a row, a list of its own, and a plain \`2\` cannot become a list. So it falls back to \`Matrix(2, 3)\`, the sized constructor: a 2 × 3 matrix of zeros. But \`Matrix{{2, 3}}\` is one row holding 2 and 3. One extra pair of braces gives a completely different matrix. Writing parentheses whenever you mean sizes keeps you from ever having to work out which one you got.
+:::
+
+::: context identity-role Why it is called the identity
+Multiplying a number by 1 leaves it unchanged: 1 × 7 = 7. The identity matrix, usually written I, does the same for matrices: I times A is A, and A times I is A. "Identity" means "staying the same". It comes back twice in this project. Next lesson, a check multiplies a matrix by the identity and expects it back unchanged. And in the fast-powers lesson, a matrix to the power 0 is the identity, exactly as any number to the power 0 is 1.
+:::
+
+::: context named-constructor Constructors with names
+A named constructor is a static member function that makes and returns an object, with a name that says what kind. It also solves a real problem: \`Temperature::from_celsius(double)\` and \`Temperature::from_fahrenheit(double)\` both take one \`double\`, so two ordinary constructors could never tell them apart. The standard library uses the pattern too: \`std::chrono::seconds::zero()\` gives a duration of zero seconds, and \`std::chrono::system_clock::now()\` gives the current time. Making the real constructor \`private\`, as \`Temperature\` does, forces everyone through the named ones.
+:::
+--- task
+Write \`class Matrix\`. It keeps its values in one \`std::vector<double>\`, in row-major order, together with its number of rows and columns. No \`main\`: the checker supplies it.
+
+- \`Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)\`: a \`rows × cols\` matrix in which every element is \`fill\`.
+- \`Matrix(std::initializer_list<std::initializer_list<double>> rows)\`: the values given row by row, so \`Matrix{{1, 2, 3}, {4, 5, 6}}\` has 2 rows and 3 columns. All rows are the same length.
+- \`static Matrix identity(std::size_t n)\`: an \`n × n\` matrix with 1 on the diagonal and 0 everywhere else.
+- \`std::size_t rows() const\` and \`std::size_t cols() const\`: the two sizes.
+- \`double& operator()(std::size_t r, std::size_t c)\`, which lets you write an element, and a \`const\` version that returns a \`double\`, for reading a \`const Matrix\`. Element \`(r, c)\` is at index \`r * cols + c\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+// Step 1 of the matrix project: storage and element access.
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0) {}
+
+    std::size_t rows() const { return 0; }
+    std::size_t cols() const { return 0; }
+
+private:
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+Start with the three members from Step 1: \`rows_\`, \`cols_\` and \`std::vector<double> data_\`. The sized constructor can set all three in its member initializer list, building \`data_(rows * cols, fill)\` the way the \`seats\` vector was built.
+--- hint
+In the initializer-list constructor, \`rows.size()\` is the row count, and \`rows.begin()->size()\` is the column count; guard that one with \`rows.size() ? ... : 0\` for an empty list. In the body, \`reserve\` room, then two nested range-\`for\` loops \`push_back\` every value in order.
+--- hint
+Both \`operator()\` versions have the body \`return data_[r * cols_ + c];\`. For \`identity\`, make \`Matrix m(n, n);\` (all zeros), set \`m(i, i) = 1.0;\` for every \`i\` from 0 to \`n - 1\`, and \`return m;\`.
+--- check test | A sized matrix is filled
+[] { Matrix m(2, 3, 1.5); return m.rows() == 2 && m.cols() == 3 && m(0, 0) == 1.5 && m(1, 2) == 1.5; }()
+--- check test | The default fill is zero
+[] { Matrix m(3, 1); return m.rows() == 3 && m.cols() == 1 && m(2, 0) == 0.0; }()
+--- check test | A literal matrix is row-major
+[] { Matrix m{{1, 2, 3}, {4, 5, 6}}; return m.rows() == 2 && m.cols() == 3 && m(0, 2) == 3 && m(1, 0) == 4 && m(1, 2) == 6; }()
+--- check test | Elements can be written
+[] { Matrix m(2, 2); m(1, 0) = 7.5; const Matrix& c = m; return c(1, 0) == 7.5 && c(0, 1) == 0.0; }()
+--- check test | identity(3)
+[] { Matrix i = Matrix::identity(3); bool ok = i.rows() == 3 && i.cols() == 3; for (std::size_t r = 0; r < 3; ++r) for (std::size_t c = 0; c < 3; ++c) ok = ok && i(r, c) == (r == c ? 1.0 : 0.0); return ok; }()
+
++++ practice | A seat map for a small theater
+--- task
+Write \`class SeatMap\`. It keeps one \`char\` per seat in a single \`std::vector<char>\`, row by row, together with its number of rows and its number of seats in each row. No \`main\`: the checker supplies it.
+
+- \`SeatMap(std::size_t rows, std::size_t seats)\`: \`rows\` rows of \`seats\` seats each, and every seat holds \`'.'\`, which means "free".
+- \`std::size_t rows() const\` and \`std::size_t seats() const\`: the two sizes.
+- \`char& operator()(std::size_t row, std::size_t seat)\`, which lets you write a seat, and a \`const\` version that returns a plain \`char\`, for reading a \`const SeatMap\`. Seat \`(row, seat)\` is at index \`row * seats + seat\`.
+- \`int count(char c) const\`: how many seats hold \`c\`.
+
+In a 3 × 5 map, after \`m(2, 4) = 'X';\` and \`m(1, 0) = 'X';\`, \`count('X')\` is 2 and \`count('.')\` is 13. A map with 0 rows has no seats, so every count is 0.
+--- starter
+#include <cstddef>
+#include <vector>
+
+class SeatMap {
+public:
+    SeatMap(std::size_t rows, std::size_t seats) {}
+
+    std::size_t rows() const { return 0; }
+    std::size_t seats() const { return 0; }
+
+    int count(char c) const { return 0; }
+
+private:
+    std::vector<char> seats_;
+};
+--- solution
+#include <cstddef>
+#include <vector>
+
+class SeatMap {
+public:
+    SeatMap(std::size_t rows, std::size_t seats)
+        : rows_(rows), seats_(seats), cells_(rows * seats, '.') {}
+
+    std::size_t rows() const { return rows_; }
+    std::size_t seats() const { return seats_; }
+
+    char& operator()(std::size_t row, std::size_t seat) { return cells_[row * seats_ + seat]; }
+    char operator()(std::size_t row, std::size_t seat) const { return cells_[row * seats_ + seat]; }
+
+    int count(char c) const {
+        int n = 0;
+        for (char x : cells_)
+            if (x == c) ++n;
+        return n;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t seats_;
+    std::vector<char> cells_;
+};
+--- hint
+Three members, as in the lesson: the two sizes and the vector. The vector can start full: a count and a value in parentheses, here \`rows * seats\` copies of \`'.'\`.
+--- hint
+Both \`operator()\` versions return \`cells_[row * seats_ + seat]\`; only the return type (\`char&\` or \`char\`) and the \`const\` differ. \`count\` is a range-\`for\` over the whole vector.
+--- check test | A new map is all free
+[] { SeatMap m(3, 5); return m.rows() == 3 && m.seats() == 5 && m.count('.') == 15 && m(2, 4) == '.'; }()
+--- check test | Writing a seat on a map that is not square
+[] { SeatMap m(3, 5); m(2, 4) = 'X'; m(1, 0) = 'X'; const SeatMap& c = m; return c(2, 4) == 'X' && c(1, 0) == 'X' && c(0, 3) == '.' && c(0, 4) == '.' && c(1, 1) == '.'; }()
+--- check test | Counting what is in the seats
+[] { SeatMap m(3, 5); m(2, 4) = 'X'; m(1, 0) = 'X'; return m.count('X') == 2 && m.count('.') == 13 && m.count('#') == 0; }()
+--- check test | A map with no rows has no seats
+[] { SeatMap m(0, 4); return m.rows() == 0 && m.seats() == 4 && m.count('.') == 0; }()
+
++++ practice | Stored column by column
+--- task
+Some libraries, such as Eigen and MATLAB, store a matrix **column by column** instead of row by row: all of column 0 first, then all of column 1, and so on. Write \`class ColMatrix\`, which keeps its values that way in one \`std::vector<double>\`. Element \`(r, c)\` sits at index \`c * rows + r\`. No \`main\`.
+
+- \`ColMatrix(std::initializer_list<std::initializer_list<double>> rows)\`: the values are given row by row, as for your \`Matrix\`, so \`ColMatrix{{1, 2, 3}, {4, 5, 6}}\` has 2 rows and 3 columns. All rows are the same length, and \`ColMatrix{}\` has 0 rows and 0 columns.
+- \`std::size_t rows() const\` and \`std::size_t cols() const\`.
+- \`double& operator()(std::size_t r, std::size_t c)\`, and a \`const\` version that returns a \`double\`.
+- \`const std::vector<double>& raw() const\`: the stored values, in storage order. For the example above it is \`{1, 4, 2, 5, 3, 6}\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class ColMatrix {
+public:
+    ColMatrix(std::initializer_list<std::initializer_list<double>> rows) {}
+
+    std::size_t rows() const { return 0; }
+    std::size_t cols() const { return 0; }
+
+    const std::vector<double>& raw() const { return data_; }
+
+private:
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class ColMatrix {
+public:
+    ColMatrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0), data_(rows_ * cols_) {
+        std::size_t r = 0;
+        for (const auto& row : rows) {
+            std::size_t c = 0;
+            for (double x : row) {
+                data_[c * rows_ + r] = x;
+                ++c;
+            }
+            ++r;
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[c * rows_ + r]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[c * rows_ + r]; }
+
+    const std::vector<double>& raw() const { return data_; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+The values arrive row by row, but they must land column by column, so \`push_back\` will not put them in the right places. Make \`data_\` full size first (\`rows * cols\` zeros), then write each value straight into its slot.
+--- hint
+Keep a row counter and a column counter while you walk the nested lists. The value at row \`r\`, column \`c\` goes to \`data_[c * rows_ + r]\`. The two \`operator()\` versions use the same formula.
+--- check test | The storage order is column by column
+ColMatrix{{1, 2, 3}, {4, 5, 6}}.raw() == std::vector<double>{1, 4, 2, 5, 3, 6}
+--- check test | Elements are where they belong
+[] { ColMatrix m{{1, 2, 3}, {4, 5, 6}}; const ColMatrix& c = m; return m.rows() == 2 && m.cols() == 3 && c(1, 0) == 4 && c(0, 2) == 3 && c(1, 2) == 6; }()
+--- check test | Writing an element changes the right slot
+[] { ColMatrix m{{1, 2, 3}, {4, 5, 6}}; m(1, 1) = 9; m(0, 2) = -1; return m.raw() == std::vector<double>{1, 4, 2, 9, -1, 6}; }()
+--- check test | One row, one column, and nothing at all
+ColMatrix{{7, 8}}.raw() == std::vector<double>{7, 8} && ColMatrix{{7}, {8}}.cols() == 1 && ColMatrix{{7}, {8}}.raw() == std::vector<double>{7, 8} && ColMatrix{}.rows() == 0 && ColMatrix{}.raw().empty()
+
++++ practice | Named constructors that can say no
+--- task
+The starter holds your \`Matrix\` from the lesson. Add two static member functions, two more named constructors. No \`main\`.
+
+- \`static Matrix diagonal(const std::vector<double>& d)\`: a square matrix, \`d.size()\` × \`d.size()\`, with the values of \`d\` down the diagonal and 0 everywhere else. \`Matrix::diagonal({2, 5})\` is \`| 2 0 |\` over \`| 0 5 |\`.
+- \`static std::optional<Matrix> from_rows(const std::vector<std::vector<double>>& rows)\`: the matrix whose rows are \`rows\`. If the rows are not all the same length, there is no such matrix: return \`std::nullopt\`. An empty list gives a 0 × 0 matrix, and \`{{}, {}}\` gives a 2 × 0 matrix.
+
+Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    static Matrix diagonal(const std::vector<double>& d) {
+        Matrix m(d.size(), d.size());
+        for (std::size_t i = 0; i < d.size(); ++i) m(i, i) = d[i];
+        return m;
+    }
+
+    static std::optional<Matrix> from_rows(const std::vector<std::vector<double>>& rows) {
+        std::size_t cols = rows.empty() ? 0 : rows[0].size();
+        for (const auto& row : rows) {
+            if (row.size() != cols) return std::nullopt;   // ragged: not a matrix
+        }
+        Matrix m(rows.size(), cols);
+        for (std::size_t r = 0; r < rows.size(); ++r)
+            for (std::size_t c = 0; c < cols; ++c) m(r, c) = rows[r][c];
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+\`diagonal\` works like \`identity\`: build a zero matrix of the right size with the sized constructor, then set \`m(i, i)\` for every \`i\`, this time to \`d[i]\`.
+--- hint
+In \`from_rows\`, check every row's length against the first row's before building anything, and return \`std::nullopt\` at the first mismatch. Careful: an empty list has no first row, so its column count is 0.
+--- hint
+Once the rows are known to be even, make \`Matrix m(rows.size(), cols);\`, copy \`rows[r][c]\` into \`m(r, c)\` with two nested loops, and \`return m;\`: it becomes a full optional by itself.
+--- check test | diagonal puts the values down the diagonal
+[] { Matrix m = Matrix::diagonal({2, 5, -1}); return m.rows() == 3 && m.cols() == 3 && m(0, 0) == 2 && m(1, 1) == 5 && m(2, 2) == -1 && m(0, 1) == 0 && m(2, 0) == 0; }()
+--- check test | An empty diagonal is a 0 x 0 matrix
+[] { Matrix m = Matrix::diagonal({}); return m.rows() == 0 && m.cols() == 0; }()
+--- check test | from_rows builds a matrix that is not square
+[] { auto m = Matrix::from_rows({{1, 2, 3}, {4, 5, 6}}); return m && m->rows() == 2 && m->cols() == 3 && (*m)(0, 2) == 3 && (*m)(1, 0) == 4; }()
+--- check test | Ragged rows are refused, wherever the short row is
+!Matrix::from_rows({{1, 2}, {3}}) && !Matrix::from_rows({{1, 2}, {3, 4}, {5}}) && !Matrix::from_rows({{1}, {2, 3}})
+--- check test | No rows, and rows that are empty
+[] { auto a = Matrix::from_rows({}); auto b = Matrix::from_rows({{}, {}}); return a && a->rows() == 0 && a->cols() == 0 && b && b->rows() == 2 && b->cols() == 0; }()
+
++++ practice | Where is the largest value?
+--- task
+The starter holds your \`Matrix\`. Add a \`const\` member function \`std::optional<std::pair<std::size_t, std::size_t>> find_max() const\`. It returns the position, as \`{row, column}\`, of the largest element. No \`main\`.
+
+- On a tie, return the **first** one in row-major order: the smallest row, and within it the smallest column.
+- The elements may all be negative.
+- A matrix with no elements (0 rows or 0 columns) has no largest element: return \`std::nullopt\`.
+
+For \`Matrix{{1, 9, 3}, {4, 5, 6}}\` the answer is \`{0, 1}\`. Include \`<optional>\` and \`<utility>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    std::optional<std::pair<std::size_t, std::size_t>> find_max() const {
+        if (data_.empty()) return std::nullopt;
+        std::size_t best = 0;   // index of the first largest element so far
+        for (std::size_t i = 1; i < data_.size(); ++i)
+            if (data_[i] > data_[best]) best = i;
+        return std::pair<std::size_t, std::size_t>{best / cols_, best % cols_};
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+Start the best-so-far at the first element, not at 0: a matrix of negative numbers has nothing bigger than 0. And replace it only when a value is strictly bigger, so the first of a tie stays.
+--- hint
+Row-major order is the order of \`data_\` itself, so one loop over the flat vector visits the elements in exactly the tie-breaking order. An empty \`data_\` means no answer.
+--- hint
+To turn a flat index \`i\` back into a position, undo \`r * cols + c\`: the row is \`i / cols_\` and the column is \`i % cols_\`.
+--- check test | The largest in a matrix that is not square
+Matrix{{1, 9, 3}, {4, 5, 6}}.find_max() == std::pair<std::size_t, std::size_t>{0, 1} && Matrix{{0, 0, 0}, {0, 0, 8}}.find_max() == std::pair<std::size_t, std::size_t>{1, 2}
+--- check test | Every value negative
+Matrix{{-5, -2}, {-3, -9}}.find_max() == std::pair<std::size_t, std::size_t>{0, 1} && Matrix{{-7}}.find_max() == std::pair<std::size_t, std::size_t>{0, 0}
+--- check test | A tie goes to the first in row-major order
+Matrix{{1, 7}, {7, 2}}.find_max() == std::pair<std::size_t, std::size_t>{0, 1} && Matrix{{4}, {4}, {4}}.find_max() == std::pair<std::size_t, std::size_t>{0, 0} && Matrix{{0, 3, 1}, {3, 3, 0}}.find_max() == std::pair<std::size_t, std::size_t>{0, 1}
+--- check test | No elements, no answer
+!Matrix(0, 3).find_max() && !Matrix(2, 0).find_max() && !Matrix{}.find_max()
+
++++ practice | Debug: the terrain map that reads the wrong cell
+--- task
+**Bug report:** "On a square map everything looks right. On a map 4 cells wide and 2 tall, \`row(1)\` does not show the heights I wrote with \`at(x, 1)\`. And for a map that is all below sea level, \`highest()\` says 0."
+
+The starter's \`Heightmap\` stores a terrain map \`width\` cells wide (the \`x\` direction, the columns) and \`height\` cells tall (the \`y\` direction, the rows), in one vector, **row by row**. So the cell at \`(x, y)\` belongs at index \`y * width + x\`. \`row(y)\` returns row \`y\` from left to right, and \`highest()\` returns the largest height, or 0 for a map with no cells. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cstddef>
+#include <vector>
+
+// A terrain map: width cells across (x), height cells down (y), stored row by row.
+class Heightmap {
+public:
+    Heightmap(std::size_t width, std::size_t height)
+        : width_(width), height_(height), data_(width * height, 0) {}
+
+    std::size_t width() const { return width_; }
+    std::size_t height() const { return height_; }
+
+    int& at(std::size_t x, std::size_t y) { return data_[x * height_ + y]; }
+    int at(std::size_t x, std::size_t y) const { return data_[x * height_ + y]; }
+
+    std::vector<int> row(std::size_t y) const {
+        return std::vector<int>(data_.begin() + y * width_, data_.begin() + (y + 1) * width_);
+    }
+
+    int highest() const {
+        int best = 0;
+        for (int h : data_)
+            if (h > best) best = h;
+        return best;
+    }
+
+private:
+    std::size_t width_;
+    std::size_t height_;
+    std::vector<int> data_;
+};
+--- solution
+#include <cstddef>
+#include <vector>
+
+// A terrain map: width cells across (x), height cells down (y), stored row by row.
+class Heightmap {
+public:
+    Heightmap(std::size_t width, std::size_t height)
+        : width_(width), height_(height), data_(width * height, 0) {}
+
+    std::size_t width() const { return width_; }
+    std::size_t height() const { return height_; }
+
+    int& at(std::size_t x, std::size_t y) { return data_[y * width_ + x]; }
+    int at(std::size_t x, std::size_t y) const { return data_[y * width_ + x]; }
+
+    std::vector<int> row(std::size_t y) const {
+        return std::vector<int>(data_.begin() + y * width_, data_.begin() + (y + 1) * width_);
+    }
+
+    int highest() const {
+        if (data_.empty()) return 0;
+        int best = data_[0];
+        for (int h : data_)
+            if (h > best) best = h;
+        return best;
+    }
+
+private:
+    std::size_t width_;
+    std::size_t height_;
+    std::vector<int> data_;
+};
+--- hint
+Row by row means: skip \`y\` whole rows, each \`width\` cells long, then step \`x\` more. Compare that with what \`at\` computes. Why does the mistake stay hidden when the map is square?
+--- hint
+\`highest\` starts its best-so-far at 0. On a map where every cell is negative, nothing ever beats it. Start from a real cell instead, and handle the map with no cells first.
+--- check test | at and row agree on a map that is not square
+[] { Heightmap h(4, 2); h.at(3, 1) = 7; h.at(0, 1) = 2; h.at(1, 0) = 5; return h.row(1) == std::vector<int>{2, 0, 0, 7} && h.row(0) == std::vector<int>{0, 5, 0, 0}; }()
+--- check test | Reading a const map
+[] { Heightmap h(3, 2); h.at(2, 0) = 4; h.at(0, 1) = 9; const Heightmap& c = h; return c.at(2, 0) == 4 && c.at(0, 1) == 9 && c.row(0) == std::vector<int>{0, 0, 4} && c.row(1) == std::vector<int>{9, 0, 0}; }()
+--- check test | A map below sea level
+[] { Heightmap h(3, 1); h.at(0, 0) = -40; h.at(1, 0) = -12; h.at(2, 0) = -30; return h.highest() == -12; }()
+--- check test | Ordinary heights, and a map with no cells
+[] { Heightmap h(2, 2); h.at(1, 1) = 8; h.at(0, 1) = 3; return h.highest() == 8 && Heightmap(0, 5).highest() == 0; }()
+
++++ practice | Stretch: the Game of Life on a board that wraps
+--- task
+In Conway's Game of Life, a board of cells is either alive (\`'#'\`) or dead (\`'.'\`). Every generation, all cells change **at the same time**, by these rules:
+
+- A live cell with 2 or 3 live neighbors stays alive. Any other live cell dies.
+- A dead cell with exactly 3 live neighbors comes alive. Any other dead cell stays dead.
+
+A cell's neighbors are the 8 cells around it. This board **wraps around**: the row above row 0 is the last row, the row below the last row is row 0, and the same for columns, like the edges of a screen in an old arcade game.
+
+Write \`class Life\`, which keeps its cells in one \`std::vector<char>\`, row by row. No \`main\`.
+
+- \`Life(std::initializer_list<std::string> rows)\`: the board from strings, one per row, all the same length (at least 3 rows and 3 columns).
+- \`int neighbors(std::size_t r, std::size_t c) const\`: how many of the 8 neighbors of \`(r, c)\` are alive.
+- \`Life step() const\`: a **new** board, one generation later. The board it was called on does not change.
+- \`std::vector<std::string> rows() const\`: the board as strings, one per row.
+
+On the 4 × 4 board \`"#..#"\`, \`"...."\`, \`"...."\`, \`"#..#"\`, the four corners touch each other across the edges, so \`neighbors(0, 0)\` is 3.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+class Life {
+public:
+    Life(std::initializer_list<std::string> rows) {}
+
+    int neighbors(std::size_t r, std::size_t c) const { return 0; }
+
+    Life step() const { return *this; }
+
+    std::vector<std::string> rows() const { return {}; }
+
+private:
+    std::vector<char> cells_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+class Life {
+public:
+    Life(std::initializer_list<std::string> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        cells_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (char ch : row) cells_.push_back(ch);
+        }
+    }
+
+    int neighbors(std::size_t r, std::size_t c) const {
+        int n = 0;
+        for (std::size_t dr = 0; dr < 3; ++dr) {
+            for (std::size_t dc = 0; dc < 3; ++dc) {
+                if (dr == 1 && dc == 1) continue;   // the cell itself
+                // + rows_ first, so r - 1 never goes below zero
+                std::size_t rr = (r + rows_ + dr - 1) % rows_;
+                std::size_t cc = (c + cols_ + dc - 1) % cols_;
+                if (cells_[rr * cols_ + cc] == '#') ++n;
+            }
+        }
+        return n;
+    }
+
+    Life step() const {
+        Life next = *this;
+        for (std::size_t r = 0; r < rows_; ++r) {
+            for (std::size_t c = 0; c < cols_; ++c) {
+                int n = neighbors(r, c);
+                bool alive = cells_[r * cols_ + c] == '#';
+                next.cells_[r * cols_ + c] = (n == 3 || (alive && n == 2)) ? '#' : '.';
+            }
+        }
+        return next;
+    }
+
+    std::vector<std::string> rows() const {
+        std::vector<std::string> out;
+        for (std::size_t r = 0; r < rows_; ++r) {
+            std::string line;
+            for (std::size_t c = 0; c < cols_; ++c) line.push_back(cells_[r * cols_ + c]);
+            out.push_back(line);
+        }
+        return out;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<char> cells_;
+};
+--- hint
+Store it exactly like your \`Matrix\`: two sizes and one flat vector, filled row by row from the strings. Cell \`(r, c)\` is at \`r * cols + c\`.
+--- hint
+For wrapping, \`(r - 1) % rows\` goes wrong, because with \`std::size_t\` the value \`0 - 1\` is a gigantic number. Add the size first: \`(r + rows - 1) % rows\` is the row above, and \`(r + 1) % rows\` the row below. Columns work the same way.
+--- hint
+"At the same time" means \`step\` must read only the old board. Make the new board as a copy of \`*this\`, then write each new cell into the copy, while counting neighbors on the unchanged original.
+--- check test | A blinker turns on its side and back
+[] { Life b{".....", "..#..", "..#..", "..#..", "....."}; Life s = b.step(); return s.rows() == std::vector<std::string>{".....", ".....", ".###.", ".....", "....."} && s.step().rows() == b.rows(); }()
+--- check test | Neighbors count across the edges
+[] { Life b{"#..#", "....", "....", "#..#"}; return b.neighbors(0, 0) == 3 && b.neighbors(3, 3) == 3 && b.neighbors(1, 1) == 1 && b.neighbors(0, 1) == 2 && b.step().rows() == b.rows(); }()
+--- check test | step leaves the old board alone
+[] { Life b{".....", "..#..", "..#..", "..#..", "....."}; Life s = b.step(); return b.rows() == std::vector<std::string>{".....", "..#..", "..#..", "..#..", "....."} && s.rows() != b.rows(); }()
+--- check test | Wrapping on a board that is not square
+[] { Life b{".....", ".###.", "....."}; Life s = b.step(); return s.rows() == std::vector<std::string>{"..#..", "..#..", "..#.."} && s.step().rows() == std::vector<std::string>{".###.", ".###.", ".###."}; }()
+--- check test | A glider flies off one edge and comes back on the other
+[] { Life g{".#....", "..#...", "###...", "......", "......", "......"}; Life b = g; for (int i = 0; i < 12; ++i) b = b.step(); bool half = b.rows() == std::vector<std::string>{"......", "......", "......", "....#.", ".....#", "...###"}; for (int i = 0; i < 12; ++i) b = b.step(); return half && b.rows() == g.rows(); }()
+
+=== cppp-02 | Matrix 2: arithmetic, and operations that can fail
+--- teach
+Last lesson your \`Matrix\` learned to hold numbers: one flat vector in row-major order, two sizes, and \`operator()\` to reach each element. Your code from that step is already in the starter. Now the matrix learns arithmetic: turning it on its side, comparing, adding, scaling and multiplying.
+
+On the way, the project meets a real design question: **what should happen when an operation makes no sense?** You cannot add a 2 × 3 matrix to a 3 × 2 one. There is no answer to give. This lesson shows one good way to deal with that.
+
+### Step 1: transpose
+
+Picture a mark sheet with one row per student and one column per test. Now turn it on its side, so each test gets a row and each student gets a column. Same numbers, new arrangement.
+
+That is the **[[transpose|transpose-uses]]**: rows become columns. The element at \`(r, c)\` moves to \`(c, r)\`, so an n × m matrix becomes m × n.
+
+\`\`\`text
+|  7  0 |
+| -1  2 |    ->    | 7 -1  5 |
+|  5  9 |          | 0  2  9 |
+
+  3 × 2              2 × 3
+\`\`\`
+
+Row 0 of the result, \`7 -1 5\`, is column 0 of the original. The first matrix does not change: \`transpose()\` is a \`const\` member function that builds a **new** matrix of the flipped size and returns it.
+
+Inside a member function, how do you use your own \`operator()\` on the matrix you belong to? With **[[this|this-pointer]]**, a pointer every member function has, pointing at the object it was called on. \`*this\`, read "star this", is that object itself. So \`(*this)(r, c)\` means "my own element at row \`r\`, column \`c\`":
+
+\`\`\`cpp
+class Board {   // a grid of chars, built like your Matrix
+public:
+    char& operator()(std::size_t r, std::size_t c);
+    char operator()(std::size_t r, std::size_t c) const;
+
+    char corner() const { return (*this)(0, 0); }   // my own top-left cell
+};
+\`\`\`
+
+The brackets around \`*this\` matter. Without them, \`*this(0, 0)\` would try to call \`this\` first, and a pointer cannot be called.
+
+### Step 2: when an operation makes no sense
+
+**Adding** two matrices means adding them element by element, like adding up two scoreboards cell by cell. That only works if they have the same shape. A 2 × 3 plus a 3 × 2 has no answer.
+
+In this checker, as in many real C++ codebases, exceptions are switched off; you saw that in the lesson on errors without exceptions. So a function has three choices when asked for something impossible:
+
+1. Crash on purpose, with an [[assert|assert-word]].
+2. Return a garbage value, such as an empty matrix, and hope the caller notices.
+3. Make the failure visible in the return type.
+
+This library chooses by asking one question: **can this operation fail?**
+
+- Operations that **always** work get operators or plain members: \`m * 2.0\`, \`2.0 * m\`, \`a == b\`, and \`m.transpose()\`.
+- Operations that **can** fail are named functions that return \`std::optional<Matrix>\`: \`add(a, b)\` and \`multiply(a, b)\`. The caller has to look inside the box, so a size mismatch can never be silently ignored.
+
+Why not an \`operator+\` that returns an optional? Because an operator should mean what its symbol means. Someone reading \`a + b\` expects a matrix, not a box that might be empty. A plain name like \`add\` tells the reader to check what it returns.
+
+Here is the optional style on a different job, the average of some readings, which has no answer for an empty list:
+
+\`\`\`cpp
+std::optional<double> average(const std::vector<double>& v) {
+    if (v.empty()) return std::nullopt;   // no answer: the empty box
+    double sum = 0;
+    for (double x : v) sum += x;
+    return sum / v.size();                // a double: it becomes a full box by itself
+}
+
+auto a = average({});
+if (!a) std::cout << "no readings\\n";     // the caller has to look
+\`\`\`
+
+Check first and return \`std::nullopt\` on a problem. Otherwise build the answer as an ordinary value and \`return\` it: it turns into a full optional on its own. That works for a \`Matrix\` exactly as it does for a \`double\`.
+
+### Step 3: scaling, from either side
+
+**Scaling** multiplies every element by the same number, like doubling every amount in a recipe. You want to be able to write it both ways round: \`m * 2.0\` and \`2.0 * m\`.
+
+In the Fraction lesson you wrote two-sided operators as **non-member** functions, outside the class. Here there is an extra reason. In \`2.0 * m\`, the left side is a \`double\`. A member operator would need a \`Matrix\` on the left, and a \`double\` does not turn into a \`Matrix\` the way \`1\` turned into \`Fraction(1)\`. So you write **two** non-member functions: one taking (matrix, number) and one taking (number, matrix).
+
+Here is the first kind for a small \`Vec2\` type, an x part and a y part:
+
+\`\`\`cpp
+struct Vec2 { double x, y; };
+
+Vec2 operator*(const Vec2& v, double k) {   // v * k
+    return {v.x * k, v.y * k};
+}
+\`\`\`
+
+That covers \`v * 3.0\`. For \`3.0 * v\` you need a second function whose parameters come the other way round, \`(double k, const Vec2& v)\`. It does not have to repeat the work: its body can call the first one.
+
+A non-member function cannot see \`private\` members like \`data_\`. It works only through the public \`rows()\`, \`cols()\` and \`operator()\`. That is a good thing: if you ever change how a matrix is stored, these functions keep working unchanged.
+
+### Step 4: comparing with ==
+
+Two matrices are equal when they have the **same shape** and **every element** is equal. Check the shapes first. Different shapes are never equal, and there is no point looking further; a loop over the elements could even run off the end of the smaller one.
+
+Then compare element by element, and give up at the first difference. That early-\`return\` pattern looks like this on a vector:
+
+\`\`\`cpp
+bool all_positive(const std::vector<int>& v) {
+    for (int x : v)
+        if (x <= 0) return false;   // one bad one is enough
+    return true;                    // got through them all
+}
+\`\`\`
+
+\`==\` on two \`double\`s asks whether they are [[exactly equal|equal-doubles]], to the last bit. That is fine for the small whole numbers in these tests.
+
+### Step 5: multiplying two matrices
+
+Matrix multiplication is not element by element. Picture two friends buying fruit. Table A says how many of each fruit each friend buys: a row per friend, a column per fruit (apples, pears, plums). Table B gives each fruit's price at two shops: a row per fruit, a column per shop.
+
+\`\`\`text
+A: friend × fruit (2 × 3)      B: fruit × shop (3 × 2)
+| 2 1 0 |                      | 3 4 |
+| 1 3 2 |                      | 1 2 |
+                               | 5 1 |
+\`\`\`
+
+What does friend \`i\` pay at shop \`j\`? Walk **along row \`i\` of A** and **down column \`j\` of B** at the same time, multiply each pair, and add them up:
+
+\`\`\`text
+C(0, 0) = 2·3 + 1·1 + 0·5 =  7
+C(0, 1) = 2·4 + 1·2 + 0·1 = 10
+C(1, 0) = 1·3 + 3·1 + 2·5 = 16
+C(1, 1) = 1·4 + 3·2 + 2·1 = 12
+\`\`\`
+
+So the answer is the 2 × 2 matrix \`| 7 10 |\` over \`| 16 12 |\`: one row per friend, one column per shop.
+
+That is the **[[matrix product|product-picture]]**. For \`A\` of size n × m and \`B\` of size m × p, the result \`C\` is n × p, and
+
+\`\`\`text
+C(i, j) = sum over k of A(i, k) * B(k, j)
+\`\`\`
+
+"Sum over k" means: add up that product for every \`k\` from 0 to m − 1. Here \`k\` is the fruit, the thing the two tables share.
+
+Two size rules come out of the picture:
+
+- The **inner** sizes must match: A's columns and B's rows are the same fruits. If \`a.cols()\` is not \`b.rows()\`, there is no product, so \`multiply\` returns \`std::nullopt\`.
+- The **outer** sizes give the answer's shape: A's rows by B's columns.
+
+To compute it, start from a result full of zeros; \`Matrix(n, p)\` already is, thanks to the default fill. Then add each product into its place with \`+=\`. That takes three nested loops: \`i\` over the rows of A, \`j\` over the columns of B, and \`k\` over the shared middle.
+
+**The loop order matters for speed.** The textbook order puts the loops as \`i\`, then \`j\`, then \`k\`. Its innermost loop, \`k\`, walks **down a column** of B: \`B(0, j)\`, \`B(1, j)\`, \`B(2, j)\`. In row-major storage, each of those steps jumps a whole row ahead in memory. Put the loops in the order \`i\`, then \`k\`, then \`j\` instead, and the innermost loop walks **along a row** of both B and C, elements that sit side by side in memory, as in the data-layout lesson. It is the [[same result|loop-order]], and much friendlier to the cache.
+
+An optional that holds a matrix lets you reach inside with \`->\`, read "arrow": \`multiply(a, b)->cols()\` is the product's column count. Only do that when you know the box is full.
+
+**Watch out:** write \`+=\`, not \`=\`, when you put a product into \`out(i, j)\`. With \`=\`, each new \`k\` overwrites the one before, and only the last product survives. The 1 × 1 case still passes, which makes the mistake easy to miss.
+
+::: context transpose-uses A cheap way to turn back
+The transpose is written with a small T: the transpose of A is Aᵀ, read "A transpose". It has a special job in spacecraft software. A rotation matrix, the kind that turns directions from a spacecraft's frame into the stars' frame, has a lovely property: its transpose is also its inverse, the matrix that turns directions back again. Working out an inverse in general takes real effort, but a transpose is only copying numbers into new places. Guidance and attitude code relies on this all the time.
+:::
+
+::: context this-pointer The pointer to yourself
+Every non-static member function has a hidden parameter named \`this\`, a pointer to the object it was called on. When you write \`m.transpose()\`, inside \`transpose\` the pointer \`this\` holds the address of \`m\`. Usually you never write it: plain \`rows_\` already means \`this->rows_\`. You need it when you want the whole object, as in \`(*this)(r, c)\` or \`return *this;\`. In a \`const\` member function, \`this\` points at a \`const\` object, so \`(*this)(r, c)\` picks your \`const\` version of \`operator()\`.
+:::
+
+::: context assert-word Stop loudly
+\`assert\`, from \`<cassert>\`, checks a condition while the program runs: \`assert(a.cols() == b.rows());\`. If the condition is false, the program stops at once and prints the file, the line and the condition that failed. That is right for mistakes that should never happen in a correct program. But a release build usually defines \`NDEBUG\`, and then every \`assert\` disappears, so it cannot guard against bad input. A shape mismatch that a user's data could cause belongs in the return type instead.
+:::
+
+::: context equal-doubles Exactly equal is strict
+A \`double\` stores most decimals slightly off, because it counts in binary. So \`0.1 + 0.2 == 0.3\` is false in C++: the left side comes out as 0.30000000000000004. Whole numbers up to about 9 × 10¹⁵ are stored exactly, and so are sums and products of small whole numbers, which is why \`==\` is safe for this lesson's matrices. Code that compares the results of long calculations uses a tolerance instead: "close enough", such as \`std::abs(x - y) < 1e-9\`. The determinant checks next lesson do exactly that.
+:::
+
+::: context product-picture Row meets column
+Each answer element comes from one row of A and one column of B. Here friend 1's row meets shop 0's column:
+
+\`\`\`svg
+<svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="49" y="42" font-size="12" fill="#1f2a44" text-anchor="middle">A (2 × 3)</text>
+  <rect x="10" y="50" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="36" y="50" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="62" y="50" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="10" y="76" width="26" height="26" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="36" y="76" width="26" height="26" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="62" y="76" width="26" height="26" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="23" y="68" font-size="12" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="49" y="68" font-size="12" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="75" y="68" font-size="12" fill="#1f2a44" text-anchor="middle">0</text>
+  <text x="23" y="94" font-size="12" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="49" y="94" font-size="12" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="75" y="94" font-size="12" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="110" y="82" font-size="16" fill="#1f2a44" text-anchor="middle">×</text>
+  <text x="156" y="28" font-size="12" fill="#1f2a44" text-anchor="middle">B (3 × 2)</text>
+  <rect x="130" y="37" width="26" height="26" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="156" y="37" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="130" y="63" width="26" height="26" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="156" y="63" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="130" y="89" width="26" height="26" fill="#f2b880" stroke="#1f2a44"/>
+  <rect x="156" y="89" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <text x="143" y="55" font-size="12" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="169" y="55" font-size="12" fill="#1f2a44" text-anchor="middle">4</text>
+  <text x="143" y="81" font-size="12" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="169" y="81" font-size="12" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="143" y="107" font-size="12" fill="#1f2a44" text-anchor="middle">5</text>
+  <text x="169" y="107" font-size="12" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="208" y="82" font-size="16" fill="#1f2a44" text-anchor="middle">=</text>
+  <text x="256" y="42" font-size="12" fill="#1f2a44" text-anchor="middle">C (2 × 2)</text>
+  <rect x="230" y="50" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="256" y="50" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <rect x="230" y="76" width="26" height="26" fill="white" stroke="#b4232c" stroke-width="2.5"/>
+  <rect x="256" y="76" width="26" height="26" fill="white" stroke="#1f2a44"/>
+  <text x="243" y="68" font-size="12" fill="#1f2a44" text-anchor="middle">7</text>
+  <text x="269" y="68" font-size="12" fill="#1f2a44" text-anchor="middle">10</text>
+  <text x="243" y="94" font-size="12" fill="#b4232c" text-anchor="middle">16</text>
+  <text x="269" y="94" font-size="12" fill="#1f2a44" text-anchor="middle">12</text>
+  <text x="180" y="145" font-size="12" fill="#1f2a44" text-anchor="middle">C(1, 0) = 1·3 + 3·1 + 2·5 = 16</text>
+</svg>
+\`\`\`
+
+Order matters: A times B is usually not B times A, and often only one of them even exists. Multiplying matrices means "do one step, then the other", and doing things in a different order gives a different result, like turning a book left and then flipping it over versus the other way round.
+:::
+
+::: context loop-order Same sums, different walk
+Both loop orders add exactly the same products into each \`C(i, j)\`, and even in the same order of \`k\`, so the answers match to the last bit. Only the path through memory changes.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="90" y="18" font-size="11" fill="#1f2a44" text-anchor="middle">i, j, k: down a column of B</text>
+  <text x="270" y="18" font-size="11" fill="#1f2a44" text-anchor="middle">i, k, j: along a row of B</text>
+  <rect x="54" y="28" width="72" height="72" fill="white" stroke="#1f2a44"/>
+  <rect x="72" y="28" width="18" height="72" fill="#8fb8f0" stroke="#1f2a44"/>
+  <line x1="54" y1="46" x2="126" y2="46" stroke="#1f2a44"/>
+  <line x1="54" y1="64" x2="126" y2="64" stroke="#1f2a44"/>
+  <line x1="54" y1="82" x2="126" y2="82" stroke="#1f2a44"/>
+  <line x1="108" y1="28" x2="108" y2="100" stroke="#1f2a44"/>
+  <text x="81" y="41" font-size="11" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="81" y="59" font-size="11" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="81" y="77" font-size="11" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="81" y="95" font-size="11" fill="#1f2a44" text-anchor="middle">4</text>
+  <rect x="234" y="28" width="72" height="72" fill="white" stroke="#1f2a44"/>
+  <rect x="234" y="46" width="72" height="18" fill="#f2b880" stroke="#1f2a44"/>
+  <line x1="252" y1="28" x2="252" y2="100" stroke="#1f2a44"/>
+  <line x1="270" y1="28" x2="270" y2="100" stroke="#1f2a44"/>
+  <line x1="288" y1="28" x2="288" y2="100" stroke="#1f2a44"/>
+  <line x1="234" y1="82" x2="306" y2="82" stroke="#1f2a44"/>
+  <text x="243" y="59" font-size="11" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="261" y="59" font-size="11" fill="#1f2a44" text-anchor="middle">2</text>
+  <text x="279" y="59" font-size="11" fill="#1f2a44" text-anchor="middle">3</text>
+  <text x="297" y="59" font-size="11" fill="#1f2a44" text-anchor="middle">4</text>
+  <rect x="10" y="118" width="160" height="16" fill="white" stroke="#1f2a44"/>
+  <rect x="20" y="118" width="10" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="60" y="118" width="10" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="100" y="118" width="10" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="140" y="118" width="10" height="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="190" y="118" width="160" height="16" fill="white" stroke="#1f2a44"/>
+  <rect x="230" y="118" width="40" height="16" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="90" y="156" font-size="11" fill="#b4232c" text-anchor="middle">far apart in memory</text>
+  <text x="270" y="156" font-size="11" fill="#1d6fd1" text-anchor="middle">side by side in memory</text>
+</svg>
+\`\`\`
+
+The strips are B's 16 elements in row-major order. On a big matrix, the left walk can need a fresh cache line for every single step.
+:::
+--- task
+Add arithmetic to your \`Matrix\`. The starter holds your code from last lesson. No \`main\`: the checker supplies it.
+
+- \`Matrix transpose() const\`, a member function: a new matrix in which rows become columns, so element \`(r, c)\` moves to \`(c, r)\`.
+- \`bool operator==(const Matrix&, const Matrix&)\`, a non-member: \`true\` when both have the same shape and every element is equal.
+- \`std::optional<Matrix> add(const Matrix& a, const Matrix& b)\`: the element-by-element sum, or \`std::nullopt\` if the shapes differ.
+- \`Matrix operator*(const Matrix&, double)\` and \`Matrix operator*(double, const Matrix&)\`, both non-members: every element multiplied by the number, so \`m * 2.0\` and \`2.0 * m\` both work.
+- \`std::optional<Matrix> multiply(const Matrix& a, const Matrix& b)\`: the matrix product, or \`std::nullopt\` unless \`a.cols() == b.rows()\`.
+
+Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- hint
+\`transpose\` builds a \`Matrix(cols_, rows_)\`, with the sizes swapped, and copies each \`(*this)(r, c)\` into position \`(c, r)\` of it. The non-member functions use only \`rows()\`, \`cols()\` and \`operator()\`.
+--- hint
+For \`add\` and \`multiply\`, check the shapes first and \`return std::nullopt;\` on a mismatch. Otherwise build the answer as an ordinary \`Matrix\` and return it; it turns into a full optional by itself. The \`double\`-first \`operator*\` can \`return m * k;\`.
+--- hint
+\`multiply\`: start from a zero \`Matrix out(a.rows(), b.cols());\`, then loop \`i\` over \`a.rows()\`, \`k\` over \`a.cols()\` and \`j\` over \`b.cols()\`, in that order, doing \`out(i, j) += a(i, k) * b(k, j);\`. Return \`out\`.
+--- check test | transpose
+Matrix{{1, 2, 3}, {4, 5, 6}}.transpose() == Matrix{{1, 4}, {2, 5}, {3, 6}}
+--- check test | == compares shape and values
+Matrix{{1, 2}} == Matrix{{1, 2}} && !(Matrix{{1, 2}} == Matrix{{1, 3}}) && !(Matrix{{1, 2}} == Matrix{{1}, {2}})
+--- check test | add, and add with mismatched shapes
+[] { auto s = add(Matrix{{1, 2}, {3, 4}}, Matrix{{10, 20}, {30, 40}}); return s && *s == Matrix{{11, 22}, {33, 44}} && !add(Matrix(2, 2), Matrix(2, 3)); }()
+--- check test | Scaling from either side
+Matrix{{1, -2}} * 3.0 == Matrix{{3, -6}} && 0.5 * Matrix{{4}, {8}} == Matrix{{2}, {4}}
+--- check test | multiply a 2x3 by a 3x2
+[] { auto p = multiply(Matrix{{1, 2, 3}, {4, 5, 6}}, Matrix{{7, 8}, {9, 10}, {11, 12}}); return p && *p == Matrix{{58, 64}, {139, 154}}; }()
+--- check test | multiply by the identity changes nothing
+[] { Matrix m{{2, 7}, {1, 8}}; auto p = multiply(m, Matrix::identity(2)); return p && *p == m; }()
+--- check test | multiply with mismatched sizes fails
+!multiply(Matrix(2, 3), Matrix(2, 3)) && multiply(Matrix(2, 3), Matrix(3, 5))->cols() == 5
+
++++ practice | Subtract, and flip every sign
+--- task
+The starter holds a \`Matrix\` and its \`operator==\`. Add two non-member functions. No \`main\`.
+
+- \`std::optional<Matrix> subtract(const Matrix& a, const Matrix& b)\`: \`a\` minus \`b\`, element by element, or \`std::nullopt\` if the two shapes differ.
+- \`Matrix operator-(const Matrix& m)\`: the **unary minus**, an operator with only one operand, so \`-m\` is \`m\` with every sign flipped. It always works, so it returns a plain \`Matrix\`.
+
+A 2 × 3 matrix and a 3 × 2 matrix both have 6 elements, but they are different shapes, so they cannot be subtracted. Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> subtract(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) - b(r, c);
+    return out;
+}
+
+Matrix operator-(const Matrix& m) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = -m(r, c);
+    return out;
+}
+--- hint
+\`subtract\` is shaped exactly like \`add\` from the lesson: compare both sizes first and return \`std::nullopt\` on a mismatch, then build a zero \`Matrix\` of the same shape and fill it.
+--- hint
+The unary minus is a non-member \`operator-\` with a single \`const Matrix&\` parameter. It builds a new matrix of the same shape and sets each element to \`-m(r, c)\`.
+--- check test | Subtracting two matrices
+[] { auto d = subtract(Matrix{{5, 7, 9}, {1, 1, 1}}, Matrix{{1, 2, 3}, {4, 5, 6}}); return d && *d == Matrix{{4, 5, 6}, {-3, -4, -5}}; }()
+--- check test | Same number of elements, different shape
+!subtract(Matrix(2, 3), Matrix(3, 2)) && !subtract(Matrix(1, 4), Matrix(1, 3)) && !subtract(Matrix(2, 2), Matrix(3, 2))
+--- check test | Unary minus flips every sign
+-Matrix{{1, -2}, {0, 3.5}} == Matrix{{-1, 2}, {0, -3.5}} && -(-Matrix{{4, 5}}) == Matrix{{4, 5}}
+--- check test | A matrix minus itself is all zeros
+[] { Matrix m{{2, 8}, {-1, 6}, {3, 3}}; auto d = subtract(m, m); return d && *d == Matrix(3, 2); }()
+
++++ practice | A matrix times a list of numbers
+--- task
+The starter holds a \`Matrix\`. Write the non-member function \`std::optional<std::vector<double>> apply(const Matrix& m, const std::vector<double>& v)\`. It multiplies \`m\` by the list \`v\`, treated as a single column. No \`main\`.
+
+- The answer has \`m.rows()\` numbers. Number \`i\` is the sum over \`k\` of \`m(i, k) * v[k]\`: walk along row \`i\` of \`m\` and down \`v\` at the same time.
+- If \`v.size()\` is not \`m.cols()\`, return \`std::nullopt\`.
+- A matrix with 0 columns times an empty list gives a list of \`m.rows()\` zeros.
+
+For example, \`apply(Matrix{{0, -1}, {1, 0}}, {1, 0})\` is \`{0, 1}\`: that matrix turns an arrow pointing right into one pointing up, a quarter turn. Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+std::optional<std::vector<double>> apply(const Matrix& m, const std::vector<double>& v) {
+    if (v.size() != m.cols()) return std::nullopt;
+    std::vector<double> out(m.rows(), 0.0);
+    for (std::size_t i = 0; i < m.rows(); ++i)
+        for (std::size_t k = 0; k < m.cols(); ++k) out[i] += m(i, k) * v[k];
+    return out;
+}
+--- hint
+This is the matrix product from the lesson with a second matrix that has one column: the inner sizes are \`m.cols()\` and \`v.size()\`, and they must match.
+--- hint
+Start the answer as \`m.rows()\` zeros, then add each \`m(i, k) * v[k]\` into \`out[i]\` with \`+=\`, looping \`i\` over the rows and \`k\` over the columns.
+--- check test | A quarter turn
+apply(Matrix{{0, -1}, {1, 0}}, {1, 0}) == std::vector<double>{0, 1} && apply(Matrix{{0, -1}, {1, 0}}, {0, 1}) == std::vector<double>{-1, 0}
+--- check test | A 2 x 3 matrix takes three numbers and gives two
+apply(Matrix{{1, 2, 3}, {4, 5, 6}}, {1, 0, -1}) == std::vector<double>{-2, -2} && apply(Matrix{{1, 2, 3}, {4, 5, 6}}, {2, 2, 2}) == std::vector<double>{12, 30}
+--- check test | The list must match the columns, not the rows
+!apply(Matrix{{1, 2, 3}, {4, 5, 6}}, {1, 1}) && !apply(Matrix(2, 2), {}) && !apply(Matrix(1, 1), {1, 2})
+--- check test | No columns: a list of zeros
+apply(Matrix(3, 0), {}) == std::vector<double>{0, 0, 0}
+
++++ practice | Multiply a whole chain
+--- task
+The starter holds your matrix library from the lesson: \`Matrix\`, \`operator==\`, \`transpose\` and \`multiply\`. Add two non-member functions. No \`main\`.
+
+- \`std::optional<Matrix> multiply_all(const std::vector<Matrix>& chain)\`: the product \`chain[0] × chain[1] × chain[2] × …\`, multiplied in that order. Return \`std::nullopt\` if the list is empty, or if any step of the chain cannot be multiplied. A list of one matrix gives that matrix.
+- \`bool is_symmetric(const Matrix& m)\`: \`true\` when \`m\` is equal to its own transpose. (So a matrix that is not square is never symmetric. A 0 × 0 matrix is.)
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::optional<Matrix> multiply_all(const std::vector<Matrix>& chain) {
+    if (chain.empty()) return std::nullopt;
+    std::optional<Matrix> result = chain[0];
+    for (std::size_t i = 1; i < chain.size(); ++i) {
+        result = multiply(*result, chain[i]);
+        if (!result) return std::nullopt;   // this step had no product
+    }
+    return result;
+}
+
+bool is_symmetric(const Matrix& m) {
+    return m == m.transpose();
+}
+--- hint
+Keep a running product in a \`std::optional<Matrix>\`, starting as \`chain[0]\` (after checking that the list is not empty). Then multiply it by each next matrix in turn.
+--- hint
+After each step, check whether the box is still full. If \`multiply\` said no, stop and return \`std::nullopt\` straight away, before anything reaches inside the empty box with \`*\`.
+--- hint
+\`is_symmetric\` needs no loop of its own: \`transpose\` and \`==\` already do the work, and \`==\` already says no when the shapes differ.
+--- check test | A chain of three
+[] { auto p = multiply_all({Matrix{{1, 2}}, Matrix{{0, 1}, {1, 0}}, Matrix{{3}, {4}}}); return p && *p == Matrix{{10}}; }()
+--- check test | One matrix is its own product
+[] { Matrix m{{1, 2, 3}}; auto p = multiply_all({m}); return p && *p == m; }()
+--- check test | A broken link, or no chain at all
+!multiply_all({Matrix(2, 3), Matrix(3, 2), Matrix(3, 1)}) && !multiply_all({Matrix(1, 2), Matrix(1, 2)}) && !multiply_all({})
+--- check test | Symmetric or not
+is_symmetric(Matrix{{1, 2}, {2, 5}}) && !is_symmetric(Matrix{{1, 2}, {3, 1}}) && !is_symmetric(Matrix(2, 3)) && is_symmetric(Matrix(0, 0)) && is_symmetric(Matrix{{7}})
+
++++ practice | Side by side, or one on top
+--- task
+The starter holds a \`Matrix\` and its \`operator==\`. Add two non-member functions that glue two matrices together. No \`main\`.
+
+- \`std::optional<Matrix> hstack(const Matrix& a, const Matrix& b)\`: \`a\` on the left and \`b\` on the right. They must have the same number of rows; the result has \`a.cols() + b.cols()\` columns.
+- \`std::optional<Matrix> vstack(const Matrix& a, const Matrix& b)\`: \`a\` on top and \`b\` underneath. They must have the same number of columns; the result has \`a.rows() + b.rows()\` rows.
+- Return \`std::nullopt\` when the sizes do not fit, with one exception: a matrix with **no elements** (0 rows or 0 columns) counts as nothing at all. Stacking it with \`m\`, on either side and whatever its shape, gives \`m\`. Stacking two empty matrices gives \`Matrix(0, 0)\`.
+
+So \`hstack(Matrix{{1, 2}, {3, 4}}, Matrix{{5}, {6}})\` is \`Matrix{{1, 2, 5}, {3, 4, 6}}\`, and \`hstack(Matrix(0, 0), m)\` is \`m\`. Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+bool no_elements(const Matrix& m) { return m.rows() == 0 || m.cols() == 0; }
+
+std::optional<Matrix> hstack(const Matrix& a, const Matrix& b) {
+    if (no_elements(a) && no_elements(b)) return Matrix(0, 0);
+    if (no_elements(a)) return b;
+    if (no_elements(b)) return a;
+    if (a.rows() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), a.cols() + b.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r) {
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c);
+        for (std::size_t c = 0; c < b.cols(); ++c) out(r, a.cols() + c) = b(r, c);
+    }
+    return out;
+}
+
+std::optional<Matrix> vstack(const Matrix& a, const Matrix& b) {
+    if (no_elements(a) && no_elements(b)) return Matrix(0, 0);
+    if (no_elements(a)) return b;
+    if (no_elements(b)) return a;
+    if (a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows() + b.rows(), a.cols());
+    for (std::size_t c = 0; c < a.cols(); ++c) {
+        for (std::size_t r = 0; r < a.rows(); ++r) out(r, c) = a(r, c);
+        for (std::size_t r = 0; r < b.rows(); ++r) out(a.rows() + r, c) = b(r, c);
+    }
+    return out;
+}
+--- hint
+Deal with the empty cases first, before any size check: an empty matrix must never cause a \`std::nullopt\`. A small helper, "has no elements", keeps the four tests readable.
+--- hint
+For \`hstack\`, the elements of \`b\` land in the same row but shifted right by \`a.cols()\` columns: \`out(r, a.cols() + c) = b(r, c)\`. For \`vstack\`, they land in the same column, shifted down by \`a.rows()\` rows.
+--- check test | Side by side
+hstack(Matrix{{1, 2}, {3, 4}}, Matrix{{5}, {6}}) == Matrix{{1, 2, 5}, {3, 4, 6}}
+--- check test | One on top of the other
+vstack(Matrix{{1, 2}}, Matrix{{3, 4}, {5, 6}}) == Matrix{{1, 2}, {3, 4}, {5, 6}}
+--- check test | Sizes that do not fit
+!hstack(Matrix(2, 2), Matrix(3, 1)) && !vstack(Matrix(1, 2), Matrix(1, 3)) && !hstack(Matrix{{1, 2}}, Matrix{{1}, {2}})
+--- check test | An empty matrix counts as nothing
+[] { Matrix m{{1, 2}, {3, 4}}; return hstack(Matrix(0, 0), m) == m && hstack(m, Matrix(5, 0)) == m && vstack(Matrix(0, 7), m) == m && vstack(m, Matrix(3, 0)) == m; }()
+--- check test | Two empty matrices give an empty one
+hstack(Matrix(0, 3), Matrix(2, 0)) == Matrix(0, 0) && vstack(Matrix(0, 0), Matrix(0, 0)) == Matrix(0, 0)
+
++++ practice | Debug: two bugs in a small library
+--- task
+**Bug report:** "\`multiply(A, B)\` refuses a 2 × 3 matrix times a 3 × 4 one, which should work. It accepts a 2 × 3 times a 2 × 2, which should not, and hands back rubbish. And \`Matrix{{1, 2}} == Matrix{{1, 2, 3}}\` says \`true\`."
+
+The starter's \`multiply\` should give the product exactly when \`a.cols() == b.rows()\`, and \`operator==\` should be \`true\` only for the same shape and the same elements. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- hint
+Which two sizes must match for a product? Picture the friends and the fruit: A's columns and B's rows are the same fruits. Now read the check at the top of \`multiply\`.
+--- hint
+\`operator==\` compares the rows, then loops over \`a\`'s columns. Two matrices with the same number of rows but different widths get through that check. Compare both sizes before the loop.
+--- check test | A 2 x 3 times a 3 x 4 works
+[] { auto p = multiply(Matrix{{1, 2, 3}, {4, 5, 6}}, Matrix{{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 1}}); return p && p->rows() == 2 && p->cols() == 4 && (*p)(0, 3) == 6 && (*p)(1, 3) == 15 && (*p)(1, 0) == 4; }()
+--- check test | A 2 x 3 times a 2 x 2 is refused
+!multiply(Matrix(2, 3), Matrix(2, 2)) && !multiply(Matrix(3, 1), Matrix(3, 1))
+--- check test | Equal means the same shape too
+!(Matrix{{1, 2}} == Matrix{{1, 2, 3}}) && !(Matrix{{1}, {2}} == Matrix{{1, 5}, {2, 6}}) && Matrix{{1, 2}} == Matrix{{1, 2}}
+--- check test | Square products still work
+[] { auto p = multiply(Matrix{{1, 2}, {3, 4}}, Matrix{{0, 1}, {1, 0}}); return p && *p == Matrix{{2, 1}, {4, 3}}; }()
+
++++ practice | Stretch: a weather forecast from a matrix
+--- task
+A simple weather model has \`n\` kinds of weather (say, sunny and rainy). The matrix \`P\` holds the chances of change: \`P(i, j)\` is the chance that weather \`i\` today is followed by weather \`j\` tomorrow. So every row of \`P\` adds up to 1.
+
+A forecast is a list of \`n\` chances, \`today\`. The chances for the next day are \`tomorrow[j] = sum over i of today[i] * P(i, j)\`: the list, as a single row, times the matrix.
+
+The starter holds a \`Matrix\`. Write \`std::optional<std::vector<double>> forecast(const Matrix& P, const std::vector<double>& today, int days)\`, which returns the chances after \`days\` days. No \`main\`.
+
+- \`days\` of 0 gives \`today\` unchanged.
+- Return \`std::nullopt\` if \`P\` is not square, if \`today.size()\` is not \`P.rows()\`, if \`days\` is negative, or if any row of \`P\` does not add up to 1. Allow for rounding: a row is fine when its sum is within \`1e-9\` of 1 (\`std::abs(sum - 1.0) <= 1e-9\`).
+
+With \`P = {{0.9, 0.1}, {0.5, 0.5}}\` and a sunny day, \`{1, 0}\`, the forecast for tomorrow is \`{0.9, 0.1}\`, and for the day after \`{0.86, 0.14}\`. Include \`<cmath>\` and \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+std::optional<std::vector<double>> forecast(const Matrix& P, const std::vector<double>& today, int days) {
+    const std::size_t n = P.rows();
+    if (P.cols() != n || today.size() != n || days < 0) return std::nullopt;
+    for (std::size_t i = 0; i < n; ++i) {
+        double sum = 0.0;
+        for (std::size_t j = 0; j < n; ++j) sum += P(i, j);
+        if (std::abs(sum - 1.0) > 1e-9) return std::nullopt;
+    }
+    std::vector<double> chances = today;
+    for (int d = 0; d < days; ++d) {
+        std::vector<double> next(n, 0.0);
+        for (std::size_t i = 0; i < n; ++i)
+            for (std::size_t j = 0; j < n; ++j) next[j] += chances[i] * P(i, j);
+        chances = next;
+    }
+    return chances;
+}
+--- hint
+Do every check first: the shape, the list's size, the sign of \`days\`, and each row's sum against 1 with the tolerance. Only then start forecasting.
+--- hint
+One day is one row-times-matrix step: a fresh list of \`n\` zeros, then \`next[j] += chances[i] * P(i, j)\` for every \`i\` and \`j\`. Repeat it \`days\` times, replacing the old list with the new one each time.
+--- check test | One day and two days of sunny weather
+[] { Matrix P{{0.9, 0.1}, {0.5, 0.5}}; auto a = forecast(P, {1, 0}, 1); auto b = forecast(P, {1, 0}, 2); auto near = [](double x, double y) { return std::abs(x - y) < 1e-9; }; return a && near((*a)[0], 0.9) && near((*a)[1], 0.1) && b && near((*b)[0], 0.86) && near((*b)[1], 0.14); }()
+--- check test | Zero days changes nothing; negative days is refused
+[] { Matrix P{{0.9, 0.1}, {0.5, 0.5}}; auto z = forecast(P, {0.3, 0.7}, 0); return z && *z == std::vector<double>{0.3, 0.7} && !forecast(P, {1, 0}, -1); }()
+--- check test | Three kinds of weather, three days on
+[] { Matrix P{{0.5, 0.3, 0.2}, {0.2, 0.6, 0.2}, {0.1, 0.2, 0.7}}; auto f = forecast(P, {0.2, 0.3, 0.5}, 3); auto near = [](double x, double y) { return std::abs(x - y) < 1e-9; }; return f && f->size() == 3 && near((*f)[0], 0.2229) && near((*f)[1], 0.3646) && near((*f)[2], 0.4125); }()
+--- check test | A model that does not make sense is refused
+!forecast(Matrix{{0.9, 0.2}, {0.5, 0.5}}, {1, 0}, 1) && !forecast(Matrix(2, 3), {1, 0}, 1) && !forecast(Matrix{{0.9, 0.1}, {0.5, 0.5}}, {1, 0, 0}, 1)
+--- check test | After a thousand days it settles down
+[] { auto f = forecast(Matrix{{0.9, 0.1}, {0.5, 0.5}}, {0, 1}, 1000); return f && std::abs((*f)[0] - 5.0 / 6.0) < 1e-9 && std::abs((*f)[1] - 1.0 / 6.0) < 1e-9; }()
+
+=== cppp-03 | Matrix 3: printing and the determinant
+--- teach
+Last lesson your matrix learned arithmetic, and the operations that can fail, \`add\` and \`multiply\`, started returning \`std::optional<Matrix>\`. All of that is in the starter now. This lesson adds two features that make the library usable: a way to **see** a matrix, and a real algorithm on it, the **determinant**.
+
+### Step 1: printing, one row per line
+
+You wrote an \`operator<<\` for \`Fraction\` in the Advanced course: a non-member function that takes the stream by reference (\`std::ostream&\`) and the object by \`const\` reference, writes to the stream, and returns it. The matrix gets one too. Its format:
+
+- one row per line, and every line ends in \`\\n\`, the last one included;
+- the values in a row separated by one space, with no space at the end;
+- every value with exactly two decimal places: \`1.00 -2.50\`.
+
+The separator needs care. The trick is to put the space **before** every value except the first, so nothing dangles at the end:
+
+\`\`\`cpp
+std::vector<int> ids{4, 8, 15};
+for (std::size_t i = 0; i < ids.size(); ++i) {
+    if (i > 0) std::cout << ',';   // a comma before all but the first
+    std::cout << ids[i];
+}
+// prints 4,8,15
+\`\`\`
+
+### Step 2: two decimals, without leaving a mess
+
+Two decimal places come from \`std::fixed << std::setprecision(2)\`, the manipulators from \`<iomanip>\` that you met with string streams. But those settings **stick** to the stream afterwards. If your \`operator<<\` set them on the caller's stream, then after \`std::cout << m << 2.5;\` the \`2.5\` would come out as \`2.50\`, and every number printed later in the program would too. That would [[surprise whoever prints next|leave-it-tidy]].
+
+A tidy trick: write into a **local** \`std::ostringstream\`, your own private notepad, and put the settings on that. When the text is finished, hand it to the real stream with \`.str()\`. The notepad, and its settings, vanish when the function ends. Here is the trick on a small \`Speed\` type:
+
+\`\`\`cpp
+struct Speed { double metres_per_second; };
+
+std::ostream& operator<<(std::ostream& out, const Speed& s) {
+    std::ostringstream text;                      // a private notepad
+    text << std::fixed << std::setprecision(1);   // its settings, not out's
+    text << s.metres_per_second << " m/s";
+    return out << text.str();                     // hand over the finished text
+}
+
+std::cout << Speed{7.26} << ' ' << 2.5;   // 7.3 m/s 2.5
+\`\`\`
+
+The \`2.5\` after it prints as \`2.5\`: the caller's stream was never touched.
+
+### Step 3: what a determinant is
+
+Every **square** matrix has one special number called its **determinant**. Here is a picture for a 2 × 2 matrix. Think of the matrix as a machine that moves every point of a flat sheet. Feed it a 1 × 1 square, and it comes out as a parallelogram (a slanted box). The determinant is [[that parallelogram's area|area-picture]], with a minus sign if the sheet got flipped over like a pancake.
+
+For example, \`| 2 0 |\` over \`| 0 3 |\` stretches everything 2 times wider and 3 times taller. The 1 × 1 square becomes a 2 × 3 rectangle, so the determinant is 6. For a 2 × 2 matrix \`| a b |\` over \`| c d |\`, the formula is \`ad − bc\`, read "a times d, minus b times c": here 2·3 − 0·0 = 6.
+
+What does a determinant of **0** mean? The square got squashed completely flat, onto a line or a point. Once that happens, you cannot tell where the points started, so the matrix cannot be undone. A matrix that can be undone is **invertible**, and its [[inverse|inverse-word]] is the matrix that undoes it, the way dividing by 4 undoes multiplying by 4. The rule is short: a square matrix is invertible exactly when its determinant is not 0. A matrix whose determinant is 0 is called **singular**.
+
+### Step 4: why not a formula?
+
+The formula \`ad − bc\` works for 2 × 2. There is a bigger formula for any size, called **expanding by cofactors**: it writes an n × n determinant in terms of n smaller determinants, each of those in terms of smaller ones again, and so on. The work grows like n!, read "n [[factorial|factorial-growth]]": n × (n − 1) × … × 2 × 1. In big-O terms that is O(n!). For a 20 × 20 matrix, 20! is about 2.4 × 10¹⁸ steps: far too many.
+
+A method called **[[Gaussian elimination|gauss-history]]** does the same job in O(n³). For a 20 × 20 matrix, 20³ is 8,000: nothing at all for a computer. The next three steps build it up.
+
+### Step 5: triangles are easy
+
+A matrix is **upper-triangular** when every element **below** the diagonal is 0. The numbers form a triangle in the top-right corner:
+
+\`\`\`text
+| 2 7 1 |
+| 0 3 5 |
+| 0 0 4 |
+\`\`\`
+
+The determinant of a triangular matrix is the product of its diagonal. Here it is 2 · 3 · 4 = 24. So the plan is: turn any square matrix into an upper-triangular one, while keeping track of what that does to the determinant.
+
+### Step 6: clearing a column, row by row
+
+Two facts about rows make this possible:
+
+- Subtracting a multiple of one row from another row does **not** change the determinant.
+- **Swapping** two rows flips its sign: 6 becomes −6.
+
+(A [[short picture|row-ops-why]] shows why.)
+
+Now go column by column, from the left. In column \`col\`, the element on the diagonal, at \`(col, col)\`, is the **pivot**. For each row \`r\` below it, work out a factor \`f = a(r, col) / a(col, col)\` and subtract \`f\` times the pivot row from row \`r\`. That turns \`a(r, col)\` into 0. Here it is on a 3 × 3 matrix:
+
+\`\`\`text
+start:            column 0, pivot 1:           column 1, pivot 1:
+| 1 2 1 |         row 1 minus 2 × row 0        row 2 minus 1 × row 1
+| 2 5 3 |         row 2 minus 1 × row 0
+| 1 3 4 |         | 1 2 1 |                    | 1 2 1 |
+                  | 0 1 1 |                    | 0 1 1 |
+                  | 0 1 3 |                    | 0 0 2 |
+\`\`\`
+
+The result is triangular, so the determinant is 1 · 1 · 2 = 2. (Checking with cofactors: 1·(5·4 − 3·3) − 2·(2·4 − 3·1) + 1·(2·3 − 5·1) = 11 − 10 + 1 = 2. It matches.)
+
+Two shortcuts make the code simpler:
+
+- By the time you work on column \`col\`, every element to its left in the rows below is already 0. So when subtracting, you only need to update the elements from column \`col\` to the end.
+- You do not have to wait until the end to multiply the diagonal. Keep a **running** determinant that starts at 1, and multiply it by each pivot as you use it.
+
+### Step 7: choosing the pivot
+
+What if the pivot is 0? Take \`| 0 3 |\` over \`| 2 1 |\`. The factor would divide by 0. The fix is to swap a lower row up into the pivot's place. Swapping gives \`| 2 1 |\` over \`| 0 3 |\`, which is already triangular: 2 · 3 = 6. One swap flips the sign, so the determinant is −6. The formula agrees: 0·1 − 3·2 = −6.
+
+In fact, always choose the best row, not only when the pivot is 0. For each column, look down that column from the current row to the bottom, and pick the row whose value there has the **largest absolute value**, the biggest size ignoring the minus sign. Swap it up, and flip the sign of your running determinant if you really moved a row. This is called **partial pivoting**. It avoids dividing by 0, and it [[keeps rounding errors small|rounding-pivot]].
+
+Two tools help: \`std::abs(x)\`, from \`<cmath>\`, gives the absolute value of a \`double\`, and \`std::swap(p, q)\`, from \`<utility>\`, swaps two values. Swapping two rows means swapping them element by element, one column at a time.
+
+If even the best pivot is 0, or so close to 0 that it is below \`1e-12\` (0.000000000001, a tolerance for rounding), then the whole column from here down is zero. The matrix is singular, and the determinant is 0.
+
+### Step 8: work on a copy
+
+\`determinant()\` is a \`const\` member function: it promises not to change the matrix. But elimination rewrites rows. So copy the numbers first, into a local \`std::vector<double>\`, and eliminate on the copy. Since the matrix is square, with \`n\` rows and \`n\` columns, element \`(r, c)\` of the copy is at \`r * n + c\`.
+
+Not every matrix has a determinant: a 2 × 3 matrix is not square. So \`determinant()\` returns \`std::optional<double>\`: \`std::nullopt\` for a matrix that is not square, and the number otherwise.
+
+**Watch out:** forgetting to flip the sign on a swap. Matrices that never need a swap still come out right, so a quick test passes. Then \`| 0 1 |\` over \`| 1 0 |\` gives +1 instead of −1. Test a matrix with a 0 in the top-left corner.
+
+::: context leave-it-tidy Leave the stream as you found it
+\`std::cout\` is shared by the whole program. \`std::fixed\` and \`std::setprecision\` change the stream itself, and they stay until someone changes them back (\`std::setw\` is the exception: it applies only to the next item). A print function that leaves its settings behind changes how unrelated code prints, and that kind of bug is hard to trace back. Another way to stay tidy is to save the settings first, with \`out.flags()\` and \`out.precision()\`, and put them back at the end. The private-notepad trick is shorter, and it cannot forget to restore anything.
+:::
+
+::: context area-picture Area in, area out
+The matrix with rows \`2 0\` and \`0 3\` stretches the sheet 2 times wider and 3 times taller:
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="30" y1="140" x2="120" y2="140" stroke="#6c7a93"/>
+  <line x1="40" y1="150" x2="40" y2="40" stroke="#6c7a93"/>
+  <rect x="40" y="110" width="30" height="30" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="55" y="160" font-size="11" fill="#1f2a44" text-anchor="middle">1 × 1</text>
+  <text x="95" y="120" font-size="12" fill="#1f2a44" text-anchor="middle">area 1</text>
+  <line x1="125" y1="95" x2="165" y2="95" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="165,95 157,90 157,100" fill="#1f2a44"/>
+  <text x="145" y="80" font-size="11" fill="#1f2a44" text-anchor="middle">2 0</text>
+  <text x="145" y="115" font-size="11" fill="#1f2a44" text-anchor="middle">0 3</text>
+  <line x1="180" y1="140" x2="300" y2="140" stroke="#6c7a93"/>
+  <line x1="190" y1="150" x2="190" y2="30" stroke="#6c7a93"/>
+  <rect x="190" y="50" width="60" height="90" fill="#f2b880" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="220" y="160" font-size="11" fill="#1f2a44" text-anchor="middle">2 × 3</text>
+  <text x="305" y="95" font-size="12" fill="#1f2a44" text-anchor="middle">area 6</text>
+  <text x="305" y="112" font-size="11" fill="#b4232c" text-anchor="middle">2·3 − 0·0</text>
+</svg>
+\`\`\`
+
+Every shape on the sheet gets its area multiplied by the determinant, not only the square. In three dimensions it is the same story with volume: a 3 × 3 matrix turns a 1 × 1 × 1 cube into a slanted box, and the determinant is that box's volume.
+:::
+
+::: context inverse-word Undoing a matrix
+The inverse of A is written A⁻¹, read "A inverse", and A⁻¹ times A is the identity. Engineers rarely compute it directly; they solve equations instead. Navigation and guidance software is full of problems shaped like "which unknowns x make A times x equal to b?", for example working out a position from several distance measurements. If A's determinant is 0, those equations have no single answer: the measurements do not pin the position down. So a determinant near 0 is a warning sign that a calculation is about to become unreliable.
+:::
+
+::: context factorial-growth Faster than anything
+n factorial, written n!, is n × (n − 1) × … × 2 × 1. It grows frighteningly fast: 5! = 120, 10! = 3,628,800, and 20! = 2,432,902,008,176,640,000, about 2.4 × 10¹⁸. At a billion steps a second, 20! steps would take about 77 years. By comparison, O(n³) for n = 20 is 8,000, and for n = 1,000 it is a billion, about a second. When an algorithm's cost has a factorial in it, the answer is almost never "a faster computer"; it is a better algorithm.
+:::
+
+::: context gauss-history An old method with a famous name
+The method is named after Carl Friedrich Gauss, who used it in the early 1800s to work out the orbits of asteroids from telescope measurements. But it is much older. A Chinese book, *The Nine Chapters on the Mathematical Art*, compiled roughly 2,000 years ago, solves systems of equations with the same row-by-row steps, arranging the numbers on a counting board. Today it sits inside almost every numerical library, usually in a form called LU decomposition, which keeps the row operations so it can reuse them.
+:::
+
+::: context row-ops-why Why the two row facts are true
+For a 2 × 2 matrix, think of its two rows as the two edges of a parallelogram. Adding a multiple of one row to the other slides that edge along the first one, like pushing a stack of cards sideways. The base stays the same and so does the height, so the area stays the same:
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="30" y1="140" x2="130" y2="140" stroke="#6c7a93"/>
+  <polygon points="40,140 100,140 100,50 40,50" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="70" y="160" font-size="11" fill="#1f2a44" text-anchor="middle">rows 2 0 and 0 3</text>
+  <text x="70" y="100" font-size="12" fill="#1f2a44" text-anchor="middle">area 6</text>
+  <line x1="180" y1="140" x2="300" y2="140" stroke="#6c7a93"/>
+  <polygon points="190,140 250,140 280,50 220,50" fill="#f2b880" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="240" y="160" font-size="11" fill="#1f2a44" text-anchor="middle">rows 2 0 and 1 3</text>
+  <text x="235" y="100" font-size="12" fill="#1f2a44" text-anchor="middle">area 6</text>
+  <line x1="290" y1="50" x2="290" y2="140" stroke="#b4232c" stroke-dasharray="4 3"/>
+  <text x="323" y="99" font-size="11" fill="#b4232c" text-anchor="middle">height 3</text>
+</svg>
+\`\`\`
+
+The second shape's top row is the first one's plus half of row 0. Swapping the two rows is different: it is like looking at the shape in a mirror. The size stays, but the flip turns the sign around.
+:::
+
+::: context rounding-pivot Why the biggest pivot wins
+Every \`double\` calculation rounds a tiny bit. Dividing by a very small pivot, say 0.0001, makes the factor huge, and a huge factor multiplies those tiny rounding errors into big ones that swamp the real answer. Choosing the pivot with the largest size keeps every factor between −1 and 1, so errors stay small. The tolerance \`1e-12\` exists because rounding rarely produces an exact 0: a column that "should" be zero may hold something like 0.0000000000000002. Treating anything that small as zero is how the code recognizes a singular matrix.
+:::
+--- task
+Add printing and the determinant to your \`Matrix\`. The starter holds your code from the last two lessons. No \`main\`: the checker supplies it.
+
+- \`std::ostream& operator<<(std::ostream& out, const Matrix& m)\`, a non-member: each row on its own line ending in \`\\n\`, the values separated by one space, each printed with two decimal places, like \`1.00 -2.50\`. It returns \`out\`, and leaves the stream's formatting settings as they were (use a local \`std::ostringstream\`).
+- \`std::optional<double> determinant() const\`, a member: \`std::nullopt\` if the matrix is not square. Otherwise the determinant, worked out by Gaussian elimination with partial pivoting on a copy of the data. A singular matrix (best pivot below \`1e-12\`) gives 0.
+
+Include \`<cmath>\`, \`<iomanip>\`, \`<ostream>\`, \`<sstream>\` and \`<utility>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+--- hint
+Printing: make a local \`std::ostringstream text;\`, set it up with \`text << std::fixed << std::setprecision(2);\`, then loop over rows and columns, writing \`' '\` before every value except the first in a row and \`'\\n'\` after each row. Finish with \`return out << text.str();\`.
+--- hint
+Determinant: return \`std::nullopt\` if \`rows_ != cols_\`. Copy \`data_\` into a local vector \`a\`, set \`double det = 1.0;\`, and go column by column. For each \`col\`, find the row from \`col\` down with the largest \`std::abs(a[r * n + col])\`; if that is below \`1e-12\`, return 0.0. If it is not row \`col\`, swap the two rows element by element and do \`det = -det;\`.
+--- hint
+Still inside each column: multiply \`det\` by the pivot \`a[col * n + col]\`. Then for every row \`r\` below, work out \`f = a[r * n + col] / a[col * n + col]\` and do \`a[r * n + c] -= f * a[col * n + c]\` for every \`c\` from \`col\` to \`n - 1\`. After the last column, return \`det\`.
+--- check case | Printing a matrix
+[] { std::ostringstream o; o << Matrix{{1, -2.5}, {0, 10}}; return o.str(); }()
+=> "1.00 -2.50\\n0.00 10.00\\n"
+--- check test | Printing leaves the stream settings alone
+[] { std::ostringstream o; o << Matrix{{1}} << 2.5; return o.str() == "1.00\\n2.5"; }()
+--- check test | Determinant of a 2x2
+[] { auto d = Matrix{{1, 2}, {3, 4}}.determinant(); return d && std::abs(*d - (-2.0)) < 1e-9; }()
+--- check test | Determinant of a 3x3
+[] { auto d = Matrix{{2, -3, 1}, {2, 0, -1}, {1, 4, 5}}.determinant(); return d && std::abs(*d - 49.0) < 1e-9; }()
+--- check test | A zero in the corner needs a row swap
+[] { auto d = Matrix{{0, 1}, {1, 0}}.determinant(); auto e = Matrix{{0, 2, 1}, {1, 0, 0}, {0, 0, 3}}.determinant(); return d && std::abs(*d + 1.0) < 1e-9 && e && std::abs(*e + 6.0) < 1e-9; }()
+--- check test | A singular matrix has determinant 0
+[] { auto d = Matrix{{1, 2}, {2, 4}}.determinant(); return d && std::abs(*d) < 1e-9; }()
+--- check test | Non-square has no determinant; identity has 1
+[] { auto d = Matrix::identity(5).determinant(); return !Matrix(2, 3).determinant() && d && std::abs(*d - 1.0) < 1e-12; }()
+
++++ practice | Print a sensor reading
+--- task
+The starter declares \`struct Reading { std::string sensor; double value; std::string unit; };\`. Write \`std::ostream& operator<<(std::ostream& out, const Reading& r)\`, a non-member function. No \`main\`.
+
+- It prints the sensor's name, \`=\`, the value with exactly two decimal places, a space, and the unit: \`Reading{"temp", 21.5, "C"}\` prints \`temp=21.50 C\`. Nothing else: no line break.
+- It returns \`out\`, so prints can be chained.
+- It leaves the stream's formatting settings exactly as they were: after \`std::cout << reading << ' ' << 2.5;\` the \`2.5\` still prints as \`2.5\`.
+
+Include \`<iomanip>\`, \`<ostream>\` and \`<sstream>\`.
+--- starter
+#include <string>
+
+struct Reading {
+    std::string sensor;
+    double value;
+    std::string unit;
+};
+--- solution
+#include <iomanip>
+#include <ostream>
+#include <sstream>
+#include <string>
+
+struct Reading {
+    std::string sensor;
+    double value;
+    std::string unit;
+};
+
+std::ostream& operator<<(std::ostream& out, const Reading& r) {
+    std::ostringstream text;   // the settings go on this, not on out
+    text << std::fixed << std::setprecision(2) << r.value;
+    return out << r.sensor << '=' << text.str() << ' ' << r.unit;
+}
+--- hint
+The parameter list is \`(std::ostream& out, const Reading& r)\`, and the last line returns the stream, so \`a << b << c\` keeps working.
+--- hint
+Put \`std::fixed << std::setprecision(2)\` on a local \`std::ostringstream\`, not on \`out\`. Write the value into it, then send \`text.str()\` to \`out\` together with the name, the \`=\`, the space and the unit.
+--- check case | A temperature
+[] { std::ostringstream o; o << Reading{"temp", 21.5, "C"}; return o.str(); }()
+=> "temp=21.50 C"
+--- check case | The stream's own settings are untouched
+[] { std::ostringstream o; o << Reading{"p", 1013.25, "hPa"} << ' ' << 2.5; return o.str(); }()
+=> "p=1013.25 hPa 2.5"
+--- check case | Negative values are rounded to two places
+[] { std::ostringstream o; o << Reading{"depth", -3.14159, "m"}; return o.str(); }()
+=> "depth=-3.14 m"
+--- check case | Two readings in one chain
+[] { std::ostringstream o; o << Reading{"a", 0, "V"} << ", " << Reading{"b", 12, "A"}; return o.str(); }()
+=> "a=0.00 V, b=12.00 A"
+
++++ practice | Read a matrix back from text
+--- task
+Printing turns a matrix into text. Now go the other way. The starter holds a \`Matrix\` and its \`operator==\`. Write \`std::optional<Matrix> parse_matrix(const std::string& text)\`. No \`main\`.
+
+- Each line of \`text\` is one row. The numbers on a line are separated by spaces (any number of them), and may have spaces before or after.
+- Blank lines, and lines of only spaces, are skipped.
+- Return \`std::nullopt\` if there are no numbers at all, if the rows are not all the same length, or if anything on a line is not a number (\`"3 x"\`, \`"2x"\`).
+
+So \`parse_matrix("1 2 3\\n4 5 6")\` is \`Matrix{{1, 2, 3}, {4, 5, 6}}\`, and \`parse_matrix("\\n 1.5  -2 \\n\\n3 4\\n")\` is \`Matrix{{1.5, -2}, {3, 4}}\`. Include \`<optional>\`, \`<sstream>\` and \`<cstdlib>\`.
+
+Read each line word by word as strings and convert each word with \`std::strtod\`, checking that it used the whole word. Reading straight into a \`double\` with \`>>\` and then asking \`eof()\` looks shorter, but standard libraries disagree on \`"2x"\`: GNU's stops before the \`x\`, while the one LAUNCHPAD's browser C++ uses swallows \`2x\` as a failed number and reports the end of the line, so the mistake slips through.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+--- solution
+#include <cstddef>
+#include <cstdlib>
+#include <initializer_list>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> parse_matrix(const std::string& text) {
+    std::vector<std::vector<double>> rows;
+    std::istringstream lines(text);
+    std::string line;
+    while (std::getline(lines, line)) {
+        std::istringstream in(line);
+        std::vector<double> row;
+        std::string word;
+        while (in >> word) {
+            // A number only if strtod used every character of the word: "2x" stops at the x.
+            char* end = nullptr;
+            double x = std::strtod(word.c_str(), &end);
+            if (end != word.c_str() + word.size()) return std::nullopt;
+            row.push_back(x);
+        }
+        if (row.empty()) continue;            // a blank line
+        if (!rows.empty() && row.size() != rows[0].size()) return std::nullopt;
+        rows.push_back(row);
+    }
+    if (rows.empty()) return std::nullopt;
+    Matrix m(rows.size(), rows[0].size());
+    for (std::size_t r = 0; r < rows.size(); ++r)
+        for (std::size_t c = 0; c < rows[r].size(); ++c) m(r, c) = rows[r][c];
+    return m;
+}
+--- hint
+Two string streams, one inside the other: an \`std::istringstream\` over the whole text for \`std::getline\`, and a fresh one over each line for \`>>\` into a \`double\`.
+--- hint
+\`while (in >> word)\` gives the words of a line one at a time. \`std::strtod(word.c_str(), &end)\` converts one and sets \`end\` to the first character it did not use: the word is a number only if \`end\` is at \`word.c_str() + word.size()\`.
+--- hint
+Collect the rows in a \`std::vector<std::vector<double>>\`, comparing each new row's length with the first. At the end, build \`Matrix m(rows.size(), rows[0].size())\` and copy the numbers in.
+--- check test | Two rows of three
+parse_matrix("1 2 3\\n4 5 6") == Matrix{{1, 2, 3}, {4, 5, 6}}
+--- check test | Extra spaces, blank lines and a final line break
+parse_matrix("\\n 1.5  -2 \\n\\n3 4\\n") == Matrix{{1.5, -2}, {3, 4}} && parse_matrix("7") == Matrix{{7}}
+--- check test | Rows of different lengths
+!parse_matrix("1 2\\n3") && !parse_matrix("1\\n2 3") && !parse_matrix("1 2 3\\n4 5 6\\n7 8")
+--- check test | Something that is not a number
+!parse_matrix("1 2\\n3 x") && !parse_matrix("1 2x") && !parse_matrix("abc")
+--- check test | No numbers at all
+!parse_matrix("") && !parse_matrix("\\n   \\n")
+
++++ practice | Solve equations with determinants
+--- task
+The starter holds a \`Matrix\` with the lesson's \`determinant()\`. Use it to solve a system of equations, written as \`a × x = b\`: \`a\` is a square matrix, \`b\` a list of numbers, and the answer \`x\` a list of unknowns.
+
+**Cramer's rule** gives each unknown as a ratio of two determinants: \`x[i] = det(a_i) / det(a)\`, where \`a_i\` is a copy of \`a\` with **column \`i\` replaced by \`b\`**.
+
+Write \`std::optional<std::vector<double>> solve(const Matrix& a, const std::vector<double>& b)\`. No \`main\`.
+
+- Return \`std::nullopt\` if \`a\` is not square, if \`b.size()\` is not \`a.rows()\`, or if the absolute value of \`det(a)\` is below \`1e-12\` (then there is no single answer).
+- The equations \`2x + y = 5\` and \`x - y = 1\` are \`a = {{2, 1}, {1, -1}}\` and \`b = {5, 1}\`, and the answer is \`{2, 1}\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+std::optional<std::vector<double>> solve(const Matrix& a, const std::vector<double>& b) {
+    auto d = a.determinant();
+    if (!d || b.size() != a.rows() || std::abs(*d) < 1e-12) return std::nullopt;
+    std::vector<double> x(a.cols());
+    for (std::size_t i = 0; i < a.cols(); ++i) {
+        Matrix ai = a;   // a copy, with column i swapped for b
+        for (std::size_t r = 0; r < a.rows(); ++r) ai(r, i) = b[r];
+        // Safe: ai is square, because a is, so it has a determinant.
+        x[i] = *ai.determinant() / *d;
+    }
+    return x;
+}
+--- hint
+\`determinant()\` already says \`std::nullopt\` for a matrix that is not square, so asking it first covers that check. Then check \`b\`'s size and the size of the determinant.
+--- hint
+For each \`i\`, copy \`a\` into a local \`Matrix\` (a \`Matrix\` copies like an \`int\`), overwrite its column \`i\` with the values of \`b\`, and divide its determinant by \`a\`'s.
+--- check test | Two equations, two unknowns
+[] { auto x = solve(Matrix{{2, 1}, {1, -1}}, {5, 1}); return x && x->size() == 2 && std::abs((*x)[0] - 2) < 1e-9 && std::abs((*x)[1] - 1) < 1e-9; }()
+--- check test | Three equations, three unknowns
+[] { auto x = solve(Matrix{{2, 1, -1}, {-3, -1, 2}, {-2, 1, 2}}, {8, -11, -3}); return x && std::abs((*x)[0] - 2) < 1e-9 && std::abs((*x)[1] - 3) < 1e-9 && std::abs((*x)[2] + 1) < 1e-9; }()
+--- check test | A zero where the first pivot would be
+[] { auto x = solve(Matrix{{0, 1}, {1, 0}}, {3, 4}); return x && std::abs((*x)[0] - 4) < 1e-9 && std::abs((*x)[1] - 3) < 1e-9; }()
+--- check test | No single answer
+!solve(Matrix{{1, 2}, {2, 4}}, {3, 6}) && !solve(Matrix{{1, 2}, {2, 4}}, {1, 0})
+--- check test | Wrong shapes are refused
+!solve(Matrix(2, 3), {1, 2}) && !solve(Matrix{{2, 1}, {1, -1}}, {5, 1, 0}) && !solve(Matrix{{2, 1}, {1, -1}}, {5})
+
++++ practice | Pretty columns
+--- task
+The starter holds a \`Matrix\`. Write \`std::string pretty(const Matrix& m)\`, which lays a matrix out as a neat table. No \`main\`.
+
+- One row per line, and every line ends with \`\\n\`.
+- Every value has exactly two decimal places.
+- Each column is **right-aligned** to the width of the widest value in that column: shorter values get spaces on their left.
+- Columns are separated by two spaces.
+- A value that would print as \`-0.00\`, such as \`-0.001\`, prints as \`0.00\`: a minus sign on a zero is noise.
+- A matrix with no elements (0 rows or 0 columns) gives \`"(empty)\\n"\`.
+
+\`pretty(Matrix{{1, -2.5}, {100, 0}})\` is \`"  1.00  -2.50\\n100.00   0.00\\n"\`: column 0 is 6 characters wide, because of \`100.00\`, and column 1 is 5 wide, because of \`-2.50\`. Include \`<iomanip>\` and \`<sstream>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <string>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+std::string pretty(const Matrix& m) {
+    return "";
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+std::string two_places(double x) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2) << x;
+    std::string s = text.str();
+    return s == "-0.00" ? "0.00" : s;
+}
+
+std::string pretty(const Matrix& m) {
+    if (m.rows() == 0 || m.cols() == 0) return "(empty)\\n";
+    // First every value as text, then the width of each column.
+    std::vector<std::string> cells;
+    std::vector<std::size_t> width(m.cols(), 0);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            cells.push_back(two_places(m(r, c)));
+            if (cells.back().size() > width[c]) width[c] = cells.back().size();
+        }
+    }
+    std::string out;
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) out += "  ";
+            std::string cell = cells[r * m.cols() + c];
+            while (cell.size() < width[c]) cell = " " + cell;
+            out += cell;
+        }
+        out += '\\n';
+    }
+    return out;
+}
+--- hint
+You cannot pad a value until you know how wide its column gets, and that depends on every row. So make two passes: first turn every value into its text and record each column's widest, then build the lines.
+--- hint
+A small helper that turns one \`double\` into two-decimal text with a local \`std::ostringstream\` keeps \`pretty\` short. It is also the right place to swap \`"-0.00"\` for \`"0.00"\`.
+--- hint
+To right-align, put spaces in front of a value until it reaches its column's width, for example \`while (cell.size() < w) cell = " " + cell;\`. Write the two-space separator before every column except the first.
+--- check case | Columns of different widths
+pretty(Matrix{{1, -2.5}, {100, 0}})
+=> "  1.00  -2.50\\n100.00   0.00\\n"
+--- check case | Every value the same width
+pretty(Matrix{{1, 2, 3}})
+=> "1.00  2.00  3.00\\n"
+--- check case | No minus sign on a zero
+pretty(Matrix{{-0.0, -0.001}, {-1, 2}})
+=> " 0.00  0.00\\n-1.00  2.00\\n"
+--- check case | A matrix with no elements
+pretty(Matrix(0, 3)) + pretty(Matrix(2, 0))
+=> "(empty)\\n(empty)\\n"
+--- check case | One tall column
+pretty(Matrix{{5}, {-12.345}, {0.5}})
+=> "  5.00\\n-12.35\\n  0.50\\n"
+
++++ practice | Debug: a determinant that fails on negative pivots
+--- task
+**Bug report:** "\`Matrix{{-2, 1}, {1, 3}}.determinant()\` gives 0, but the answer is -7. And \`Matrix{{2, 9, 0}, {1, 1, 0}, {0, 0, 1}}\` gives -18 instead of -7. Matrices with only positive pivots are fine."
+
+The starter's \`determinant()\` is meant to be the lesson's Gaussian elimination with partial pivoting: for each column, choose the pivot from the **current row down**, by largest absolute value, and call the matrix singular only when that pivot's **absolute value** is below \`1e-12\`. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = 0; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (a[pivot * n + col] < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- hint
+Look at the singular test. A pivot of -2 is a perfectly good pivot, but \`-2 < 1e-12\` is true. The test is about the pivot's size, whatever its sign.
+--- hint
+Look at where the pivot search starts. The rows above \`col\` are finished: they already hold earlier pivots. Swapping one of them back down undoes the work. The search should only look at row \`col\` and the rows below it.
+--- check test | A negative pivot is not a zero
+[] { auto d = Matrix{{-2, 1}, {1, 3}}.determinant(); auto e = Matrix{{-4}}.determinant(); return d && std::abs(*d + 7.0) < 1e-9 && e && std::abs(*e + 4.0) < 1e-9; }()
+--- check test | The search must not look at finished rows
+[] { auto d = Matrix{{2, 9, 0}, {1, 1, 0}, {0, 0, 1}}.determinant(); return d && std::abs(*d + 7.0) < 1e-9; }()
+--- check test | Ordinary matrices still work
+[] { auto d = Matrix{{2, -3, 1}, {2, 0, -1}, {1, 4, 5}}.determinant(); auto e = Matrix{{0, 1}, {1, 0}}.determinant(); return d && std::abs(*d - 49.0) < 1e-9 && e && std::abs(*e + 1.0) < 1e-9; }()
+--- check test | Singular and not square
+[] { auto d = Matrix{{1, 2}, {-2, -4}}.determinant(); return d && std::abs(*d) < 1e-9 && !Matrix(2, 3).determinant(); }()
+
++++ practice | Stretch: the inverse of a matrix
+--- task
+The **inverse** of a square matrix \`A\` is the matrix that undoes it: \`A\` times its inverse is the identity. Only a matrix whose determinant is not 0 has one.
+
+The starter holds a \`Matrix\` with \`identity\`, \`operator==\` and \`multiply\`. Write \`std::optional<Matrix> inverse(const Matrix& a)\` using **Gauss-Jordan elimination**. No \`main\`.
+
+1. Work on two matrices side by side: a copy of \`a\`, and an identity matrix of the same size.
+2. For each column \`col\`, choose the pivot row from \`col\` down with the largest absolute value, exactly as in the lesson. If that value is below \`1e-12\`, the matrix is singular: return \`std::nullopt\`. Otherwise swap that row into place, **in both matrices**.
+3. Divide the whole pivot row by the pivot, in both matrices, so the pivot becomes 1.
+4. For **every other row**, above and below, subtract the right multiple of the pivot row, in both matrices, so that row's value in column \`col\` becomes 0.
+
+When every column is done, the copy has become the identity, and the second matrix is the inverse. Return \`std::nullopt\` for a matrix that is not square. The inverse of \`{{4, 7}, {2, 6}}\` is \`{{0.6, -0.7}, {-0.2, 0.4}}\`. Include \`<cmath>\` and \`<utility>\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::optional<Matrix> inverse(const Matrix& a) {
+    if (a.rows() != a.cols()) return std::nullopt;
+    const std::size_t n = a.rows();
+    Matrix left = a;                       // becomes the identity
+    Matrix right = Matrix::identity(n);    // becomes the inverse
+    for (std::size_t col = 0; col < n; ++col) {
+        std::size_t pivot = col;
+        for (std::size_t r = col + 1; r < n; ++r)
+            if (std::abs(left(r, col)) > std::abs(left(pivot, col))) pivot = r;
+        if (std::abs(left(pivot, col)) < 1e-12) return std::nullopt;
+        if (pivot != col) {
+            for (std::size_t c = 0; c < n; ++c) {
+                std::swap(left(pivot, c), left(col, c));
+                std::swap(right(pivot, c), right(col, c));
+            }
+        }
+        double p = left(col, col);
+        for (std::size_t c = 0; c < n; ++c) {
+            left(col, c) /= p;
+            right(col, c) /= p;
+        }
+        for (std::size_t r = 0; r < n; ++r) {
+            if (r == col) continue;
+            double f = left(r, col);
+            for (std::size_t c = 0; c < n; ++c) {
+                left(r, c) -= f * left(col, c);
+                right(r, c) -= f * right(col, c);
+            }
+        }
+    }
+    return right;
+}
+--- hint
+Every row operation you do to the copy of \`a\`, do to the identity too: the same swap, the same division, the same subtraction. That is the whole trick.
+--- hint
+After dividing the pivot row by its pivot, the pivot is 1. So for any other row \`r\`, the multiple to subtract is simply \`f = left(r, col)\`: \`left(r, c) -= f * left(col, c)\` for every column \`c\`, and the same on the right.
+--- hint
+Unlike the determinant, clear the column in the rows **above** the pivot as well as below: loop over every row except \`col\` itself. After the last column, \`return\` the right-hand matrix.
+--- check test | A 2 x 2 inverse
+[] { auto inv = inverse(Matrix{{4, 7}, {2, 6}}); if (!inv) return false; Matrix want{{0.6, -0.7}, {-0.2, 0.4}}; bool ok = true; for (std::size_t r = 0; r < 2; ++r) for (std::size_t c = 0; c < 2; ++c) ok = ok && std::abs((*inv)(r, c) - want(r, c)) < 1e-9; return ok; }()
+--- check test | A times its inverse is the identity
+[] { Matrix a{{2, -3, 1}, {2, 0, -1}, {1, 4, 5}}; auto inv = inverse(a); if (!inv) return false; auto p = multiply(a, *inv); bool ok = true; for (std::size_t r = 0; r < 3; ++r) for (std::size_t c = 0; c < 3; ++c) ok = ok && std::abs((*p)(r, c) - (r == c ? 1.0 : 0.0)) < 1e-9; return ok; }()
+--- check test | A zero in the corner needs a swap
+[] { auto inv = inverse(Matrix{{0, 1}, {1, 0}}); auto j = inverse(Matrix{{0, 2, 0}, {0, 0, 4}, {1, 0, 0}}); return inv && *inv == Matrix{{0, 1}, {1, 0}} && j && std::abs((*j)(0, 2) - 1.0) < 1e-12 && std::abs((*j)(1, 0) - 0.5) < 1e-12 && std::abs((*j)(2, 1) - 0.25) < 1e-12; }()
+--- check test | Singular or not square: no inverse
+!inverse(Matrix{{1, 2}, {2, 4}}) && !inverse(Matrix{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}) && !inverse(Matrix(2, 3)) && !inverse(Matrix{{0}})
+--- check test | The inverse of the inverse is the original
+[] { Matrix a{{1, 2, 0}, {-1, 1, 3}, {2, 0, 1}}; auto i = inverse(a); if (!i) return false; auto back = inverse(*i); if (!back) return false; bool ok = true; for (std::size_t r = 0; r < 3; ++r) for (std::size_t c = 0; c < 3; ++c) ok = ok && std::abs((*back)(r, c) - a(r, c)) < 1e-9; return ok; }()
+
+=== cppp-04 | Matrix 4: fast powers
+--- teach
+Last lesson your matrix learned to print itself and to find its determinant by Gaussian elimination. This is the last step of the matrix project. It adds one feature that shows why a matrix type is worth having: **raising a matrix to a power**. It solves problems that look nothing like matrices, and done the clever way, it takes a billion steps in about thirty.
+
+### Step 1: what a matrix power is
+
+For numbers, 5³, "five to the power three", is 5 × 5 × 5. For a matrix, **M to the power k**, written Mᵏ, is M multiplied by itself k times, using the \`multiply\` you wrote in part 2.
+
+Only **square** matrices have powers. M × M needs M's columns to match M's rows, and that is only true when the matrix is square.
+
+And M⁰, the power zero, is the identity matrix. For numbers, any x⁰ is 1: multiplying no numbers together at all leaves you with 1, the number that changes nothing. It is called the **empty product**. For matrices the identity plays the part of 1, so M⁰ is the identity.
+
+### Step 2: why anyone wants one
+
+The **[[Fibonacci numbers|fibonacci-word]]** start 0, 1, and then each one is the sum of the two before it:
+
+\`\`\`text
+F(0) F(1) F(2) F(3) F(4) F(5) F(6) F(7) F(8)
+  0    1    1    2    3    5    8   13   21
+\`\`\`
+
+Now watch what the matrix \`| 1 1 |\` over \`| 1 0 |\` does to a pair of neighbors, written as a 2 × 1 matrix. Take F(5) = 5 and F(4) = 3:
+
+\`\`\`text
+| 1 1 |   | 5 |   | 1·5 + 1·3 |   | 8 |
+| 1 0 | × | 3 | = | 1·5 + 0·3 | = | 5 |
+\`\`\`
+
+The top row adds the pair, which makes the next Fibonacci number, 8. The bottom row copies the bigger one down. So one multiplication steps the pair forward by one place. Multiply by the matrix k times, and you step k places. That is why its powers are full of Fibonacci numbers:
+
+\`\`\`text
+| 1 1 | k     | F(k+1)  F(k)   |
+| 1 0 |    =  | F(k)    F(k-1) |
+\`\`\`
+
+You can check it for k = 3. M² is \`| 2 1 |\` over \`| 1 1 |\`, and M³ = M² × M is \`| 3 2 |\` over \`| 2 1 |\`, which is F(4), F(3), F(2) and F(1) in their places. So F(70) is one element of M⁷⁰. The same trick [[counts paths and steps other sequences forward|recurrence-uses]].
+
+### Step 3: the slow way, and the fast way
+
+The slow way is to multiply k times: M × M × M × … That costs k matrix products. For k = 1,000,000,000 that is a billion products, far too slow.
+
+The fast way is called **exponentiation by squaring**. Squaring means multiplying something by itself. Start with M, and square it over and over:
+
+\`\`\`text
+M × M   = M²
+M² × M² = M⁴
+M⁴ × M⁴ = M⁸
+\`\`\`
+
+Each squaring **doubles** the power, for the price of one product. Now any power can be built from these. Write k in [[binary|binary-picture]]: 13 is 8 + 4 + 1, which is 1101 in binary. So
+
+\`\`\`text
+M¹³ = M⁸ × M⁴ × M¹
+\`\`\`
+
+You need M¹, M⁴ and M⁸, and repeated squaring makes them. The algorithm walks the binary digits of k from the lowest one up, squaring as it goes, and multiplies the current square into the answer whenever the digit is 1:
+
+\`\`\`text
+result = identity
+base   = M
+while k > 0:
+    if k is odd:  result = result × base
+    base = base × base
+    k = k / 2          (rounding down)
+\`\`\`
+
+"k is odd" asks whether the lowest binary digit is 1, and halving k drops that digit so the next one becomes the lowest. Here it is by hand for k = 13:
+
+| k at the start | odd? | result becomes | base becomes |
+|---|---|---|---|
+| 13 | yes | M | M² |
+| 6 | no | M (unchanged) | M⁴ |
+| 3 | yes | M × M⁴ = M⁵ | M⁸ |
+| 1 | yes | M⁵ × M⁸ = M¹³ | M¹⁶ |
+
+Then k is 0 and the loop stops, with M¹³ in \`result\`. The very last squaring, M¹⁶, is never used, so you may skip squaring once k has reached 0.
+
+Each time round the loop, k is halved, so the loop runs about [[log₂ k|log-word]] times, with at most two products each: about 2 log₂ k in all. A billion needs about 30 squarings instead of a billion multiplications.
+
+### Step 4: the bit operators
+
+You met the **bit operators** in the compile-time computation lesson of the Expert course. They say "odd" and "halve" in the language of binary digits:
+
+- \`k & 1\`, read "k and one", keeps only the lowest bit. It is 1 when \`k\` is odd, and 0 when it is even, so \`if (k & 1)\` means "if k is odd".
+- \`k >> 1\`, read "k shifted right by one", drops the lowest bit, which halves \`k\`, rounding down. \`k >>= 1\` does that and stores the answer back in \`k\`, the way \`k += 1\` adds and stores.
+
+\`k\` has the type \`unsigned long long\`: a whole number that is never negative and has at least 64 bits, so it goes up to about 1.8 × 10¹⁹.
+
+### Step 5: two design decisions
+
+**It can fail, so it returns an optional.** Only square matrices have powers. So \`power\` returns \`std::optional<Matrix>\`, and \`std::nullopt\` for a matrix that is not square, exactly like \`add\` and \`multiply\` in part 2.
+
+**Inside, \`*\` on an optional is safe, and you say why.** Once \`power\` has checked that the matrix is square, every \`multiply\` it makes is between two square matrices of the same size, so every one succeeds. That means you may take the matrix straight out of the box with \`*\`, read "star", as you did with optionals in the intermediate course. It is good practice to leave a comment saying why that is safe, because \`*\` on an [[empty optional|optional-deref]] is a serious bug. The same idea on different data:
+
+\`\`\`cpp
+std::optional<int> digit_value(char ch);   // 0 to 9, or nothing if ch is not a digit
+
+char ch = '7';
+if (ch >= '0' && ch <= '9') {
+    // Safe: the line above checked that ch is a digit, so digit_value always has a value here.
+    int d = *digit_value(ch);
+}
+\`\`\`
+
+Your \`Matrix\` can be copied and assigned like an \`int\`, because its members are two sizes and a vector. So you can start a local \`Matrix\` as a copy of \`m\`, and replace a local matrix's value with a new product using \`=\`.
+
+The numbers stay exact, too. A \`double\` holds every whole number [[exactly up to 2⁵³|exact-doubles]], about 9 × 10¹⁵. F(70) = 190,392,490,709,135 is about 1.9 × 10¹⁴, well below that, so it comes out exact.
+
+**Watch out:** \`result\` must start as the **identity**, not as \`m\`. Starting from \`m\` quietly gives M to the power k + 1, and \`power(m, 0)\` returns \`m\` instead of the identity. The identity is the "1" you multiply into, the same way a running product of numbers starts at 1.
+
+::: context fibonacci-word Rabbits, 1202
+The sequence is named after Leonardo of Pisa, later nicknamed Fibonacci, whose book *Liber Abaci* (1202) used it in a puzzle about how fast a pair of rabbits multiplies. Indian mathematicians had described the same numbers centuries earlier, counting rhythms in poetry. The sequence grows by a factor of about 1.618 each step, a number called the golden ratio, so F(70) already has 15 digits. Computing it with a simple loop is easy; the matrix method is how you reach F(a billion) in about thirty squarings, if you only keep the answer modulo some number so it fits.
+:::
+
+::: context recurrence-uses Walks in a network
+Draw some cities as dots and the direct flights between them as lines. Make a matrix A with a 1 in row i, column j when there is a flight from city i to city j. Then element (i, j) of A² counts the ways to get from i to j in exactly two flights, and Aᵏ counts the ways in exactly k flights. The same trick steps any **linear recurrence** forward, meaning a sequence where each new value is a fixed mix of the few before it, like Fibonacci. Simulations use it too: one matrix describes one time step, and a power of it jumps many steps ahead.
+:::
+
+::: context binary-picture 13 in binary
+Each binary digit is worth twice the one to its right. The 1s in 13 pick which squares go into the answer:
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="180" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">13 = 8 + 4 + 1</text>
+  <rect x="60" y="30" width="60" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="120" y="30" width="60" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <rect x="180" y="30" width="60" height="40" fill="white" stroke="#1f2a44"/>
+  <rect x="240" y="30" width="60" height="40" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="90" y="56" font-size="16" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="150" y="56" font-size="16" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="210" y="56" font-size="16" fill="#1f2a44" text-anchor="middle">0</text>
+  <text x="270" y="56" font-size="16" fill="#1f2a44" text-anchor="middle">1</text>
+  <text x="90" y="88" font-size="11" fill="#6c7a93" text-anchor="middle">worth 8</text>
+  <text x="150" y="88" font-size="11" fill="#6c7a93" text-anchor="middle">worth 4</text>
+  <text x="210" y="88" font-size="11" fill="#6c7a93" text-anchor="middle">worth 2</text>
+  <text x="270" y="88" font-size="11" fill="#6c7a93" text-anchor="middle">worth 1</text>
+  <text x="90" y="116" font-size="13" fill="#1d6fd1" text-anchor="middle">M⁸</text>
+  <text x="150" y="116" font-size="13" fill="#1d6fd1" text-anchor="middle">M⁴</text>
+  <text x="210" y="116" font-size="13" fill="#6c7a93" text-anchor="middle">M²</text>
+  <text x="270" y="116" font-size="13" fill="#1d6fd1" text-anchor="middle">M¹</text>
+  <text x="210" y="132" font-size="11" fill="#6c7a93" text-anchor="middle">not used</text>
+  <text x="180" y="158" font-size="13" fill="#b4232c" text-anchor="middle">M¹³ = M⁸ × M⁴ × M¹</text>
+</svg>
+\`\`\`
+
+The loop reads these digits from the right: \`k & 1\` looks at the rightmost one, and \`k >>= 1\` moves the next one into its place.
+:::
+
+::: context log-word How many halvings?
+log₂ k, read "log base 2 of k", answers the question: how many times can you halve k before you reach 1? For 8 it is 3 (8, 4, 2, 1). For 1,000 it is about 10, and for a billion about 30, because 2³⁰ is 1,073,741,824. It is also the number of binary digits k has, less one. You met the same growth with binary search in the Advanced course, where a million items took about 20 steps. Algorithms that halve their problem every round are among the fastest there are.
+:::
+
+::: context optional-deref What star does on an empty box
+\`*opt\` does not check anything: it assumes the box is full. On an empty optional it is undefined behavior, the same kind of bug as reading past the end of an array, which may crash, or may quietly hand back garbage. The member function \`.value()\` does check, but when the box is empty it reports that by throwing an exception, and exceptions are off here. So the safe patterns are: test first with \`if (opt)\`, or prove it cannot be empty, as \`power\` does after its shape check, and write that proof down as a comment for the next reader.
+:::
+
+::: context exact-doubles Where exact whole numbers end
+A \`double\` has 53 binary digits for the number itself, plus an exponent that says where the point goes. So every whole number up to 2⁵³ = 9,007,199,254,740,992 fits exactly. Past that, the gaps between neighboring doubles are bigger than 1: 2⁵³ + 1 cannot be stored, and rounds. The Fibonacci numbers pass 2⁵³ at F(79), so a little beyond F(70) the matrix answers start to round. Real code that needs exact huge values uses integer types, or keeps only the answer modulo some number.
+:::
+--- task
+Add one non-member function to your matrix library. The starter holds your code from the last three lessons. No \`main\`: the checker supplies it.
+
+- \`std::optional<Matrix> power(const Matrix& m, unsigned long long k)\`: \`m\` multiplied by itself \`k\` times, using exponentiation by squaring (so a \`k\` of a billion is fast).
+- \`power(m, 0)\` is the identity matrix of \`m\`'s size.
+- If \`m\` is not square, return \`std::nullopt\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <iomanip>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+    Matrix transpose() const {
+        Matrix t(cols_, rows_);
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c) t(c, r) = (*this)(r, c);
+        return t;
+    }
+
+    std::optional<double> determinant() const {
+        if (rows_ != cols_) return std::nullopt;
+        const std::size_t n = rows_;
+        std::vector<double> a = data_;
+        double det = 1.0;
+        for (std::size_t col = 0; col < n; ++col) {
+            std::size_t pivot = col;
+            for (std::size_t r = col + 1; r < n; ++r)
+                if (std::abs(a[r * n + col]) > std::abs(a[pivot * n + col])) pivot = r;
+            if (std::abs(a[pivot * n + col]) < 1e-12) return 0.0;
+            if (pivot != col) {
+                for (std::size_t c = 0; c < n; ++c) std::swap(a[pivot * n + c], a[col * n + c]);
+                det = -det;
+            }
+            det *= a[col * n + col];
+            for (std::size_t r = col + 1; r < n; ++r) {
+                double f = a[r * n + col] / a[col * n + col];
+                for (std::size_t c = col; c < n; ++c) a[r * n + c] -= f * a[col * n + c];
+            }
+        }
+        return det;
+    }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> add(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return std::nullopt;
+    Matrix out(a.rows(), a.cols());
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c) out(r, c) = a(r, c) + b(r, c);
+    return out;
+}
+
+Matrix operator*(const Matrix& m, double k) {
+    Matrix out(m.rows(), m.cols());
+    for (std::size_t r = 0; r < m.rows(); ++r)
+        for (std::size_t c = 0; c < m.cols(); ++c) out(r, c) = m(r, c) * k;
+    return out;
+}
+
+Matrix operator*(double k, const Matrix& m) { return m * k; }
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    std::ostringstream text;
+    text << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) {
+            if (c > 0) text << ' ';
+            text << m(r, c);
+        }
+        text << '\\n';
+    }
+    return out << text.str();
+}
+
+std::optional<Matrix> power(const Matrix& m, unsigned long long k) {
+    if (m.rows() != m.cols()) return std::nullopt;
+    Matrix result = Matrix::identity(m.rows());
+    Matrix base = m;
+    while (k > 0) {
+        if (k & 1) result = *multiply(result, base);
+        k >>= 1;
+        if (k > 0) base = *multiply(base, base);
+    }
+    return result;
+}
+--- hint
+Start by checking the shape: if \`m.rows() != m.cols()\`, return \`std::nullopt\`. Then make two local matrices from Step 3: \`result\`, starting as \`Matrix::identity(m.rows())\`, and \`base\`, starting as a copy of \`m\`.
+--- hint
+Loop \`while (k > 0)\`. Inside: if \`k & 1\`, replace \`result\` with the product of \`result\` and \`base\`; then \`k >>= 1\`; then, if \`k\` is still above 0, replace \`base\` with \`base\` times itself.
+--- hint
+\`multiply\` returns an optional, and after the shape check it always has a value, so \`result = *multiply(result, base);\` is safe here (say so in a comment). After the loop, \`return result;\`.
+--- check test | Small powers
+[] { Matrix m{{1, 1}, {1, 0}}; auto p = power(m, 5); return p && *p == Matrix{{8, 5}, {5, 3}}; }()
+--- check test | Power 0 is the identity, power 1 is the matrix
+[] { Matrix m{{2, 3}, {4, 5}}; auto a = power(m, 0); auto b = power(m, 1); return a && *a == Matrix::identity(2) && b && *b == m; }()
+--- check test | Fibonacci 70 from a matrix power
+[] { auto p = power(Matrix{{1, 1}, {1, 0}}, 70); return p && std::abs((*p)(0, 1) - 190392490709135.0) < 0.5; }()
+--- check test | A billion-th power in a blink
+[] { auto p = power(Matrix{{1, 1}, {0, 1}}, 1000000000ULL); return p && *p == Matrix{{1, 1000000000.0}, {0, 1}}; }()
+--- check test | Non-square matrices have no powers
+!power(Matrix(2, 3), 2) && !power(Matrix(1, 2), 0)
+
++++ practice | Fast powers of a number, modulo m
+--- task
+Exponentiation by squaring works for plain numbers too. Write \`long long pow_mod(long long base, unsigned long long exp, long long mod)\`: \`base\` to the power \`exp\`, **modulo** \`mod\`, meaning the remainder after dividing by \`mod\`. No \`main\`.
+
+- \`base\` is 0 or more, possibly huge (up to 10¹⁸). \`mod\` is between 1 and 2,000,000,000.
+- The answer is always between 0 and \`mod - 1\`. So \`pow_mod(5, 0, 1)\` is 0, not 1.
+- It must be fast for any \`exp\`, even 10¹⁸.
+- Keep every number small by taking \`% mod\` after every multiplication. Two numbers below 2,000,000,000 multiply to less than 4 × 10¹⁸, which fits in a \`long long\`.
+
+\`pow_mod(2, 10, 1000)\` is 24, because 2¹⁰ is 1024.
+--- starter
+long long pow_mod(long long base, unsigned long long exp, long long mod) {
+    long long result = 1;
+    for (unsigned long long i = 0; i < exp; ++i) result = result * base % mod;
+    return result;
+}
+--- solution
+long long pow_mod(long long base, unsigned long long exp, long long mod) {
+    long long result = 1 % mod;
+    base %= mod;   // now base * base cannot overflow
+    while (exp > 0) {
+        if (exp & 1) result = result * base % mod;
+        exp >>= 1;
+        if (exp > 0) base = base * base % mod;
+    }
+    return result;
+}
+--- hint
+It is the lesson's loop with numbers instead of matrices: \`result\` starts at the "one" and \`base\` at the number, and each round you look at the lowest bit of \`exp\` with \`exp & 1\`, then halve \`exp\` with \`exp >>= 1\`.
+--- hint
+Two edge cases hide at the start. A \`base\` of 10¹² times itself overflows, so reduce it with \`base %= mod\` before the loop. And the "one" must be \`1 % mod\`, so that a \`mod\` of 1 gives 0.
+--- check test | Small powers
+pow_mod(2, 10, 1000) == 24 && pow_mod(3, 4, 100) == 81 && pow_mod(7, 1, 5) == 2
+--- check test | Power zero, and a mod of one
+pow_mod(3, 0, 7) == 1 && pow_mod(0, 0, 5) == 1 && pow_mod(5, 0, 1) == 0 && pow_mod(12345, 67, 1) == 0
+--- check test | A base bigger than the mod
+pow_mod(1000000000000LL, 3, 1000000007) == 2401 && pow_mod(1000000000000000000LL, 2, 1000000007) == pow_mod(1000000000000000000LL % 1000000007, 2, 1000000007)
+--- check test | Huge exponents in a blink
+pow_mod(2, 1000000000000000000ULL, 1000000007) == 719476260 && pow_mod(123456789, 987654321, 1000000007) == 652541198
+
++++ practice | Fibonacci numbers far beyond a double
+--- task
+In the lesson, the matrix \`| 1 1 |\` over \`| 1 0 |\` raised to the power \`n\` held F(n), the n-th Fibonacci number, but a \`double\` is only exact up to about F(78). Keep only the remainder instead, and you can reach any F(n).
+
+Write \`long long fib_mod(unsigned long long n, long long mod)\`: F(n) modulo \`mod\`, where F(0) = 0, F(1) = 1, and each next one is the sum of the two before. No \`main\`.
+
+- \`mod\` is between 1 and 2,000,000,000. The answer is between 0 and \`mod - 1\`.
+- Use a 2 × 2 matrix of \`long long\`s, with \`% mod\` after every multiplication, raised to the power \`n\` by squaring. It must be fast even for \`n\` = 10¹⁸.
+
+\`fib_mod(10, 1000)\` is 55.
+--- starter
+long long fib_mod(unsigned long long n, long long mod) {
+    long long a = 0;
+    long long b = 1;
+    for (unsigned long long i = 0; i < n; ++i) {
+        long long next = (a + b) % mod;
+        a = b;
+        b = next;
+    }
+    return a;
+}
+--- solution
+// A 2 x 2 matrix of whole numbers, all kept below mod.
+struct Mat2 {
+    long long a, b, c, d;   // | a b | over | c d |
+};
+
+Mat2 times(const Mat2& x, const Mat2& y, long long mod) {
+    return {(x.a * y.a + x.b * y.c) % mod, (x.a * y.b + x.b * y.d) % mod,
+            (x.c * y.a + x.d * y.c) % mod, (x.c * y.b + x.d * y.d) % mod};
+}
+
+long long fib_mod(unsigned long long n, long long mod) {
+    Mat2 result{1 % mod, 0, 0, 1 % mod};   // the identity
+    Mat2 base{1 % mod, 1 % mod, 1 % mod, 0};
+    while (n > 0) {
+        if (n & 1) result = times(result, base, mod);
+        n >>= 1;
+        if (n > 0) base = times(base, base, mod);
+    }
+    return result.b;   // the top-right element is F(n)
+}
+--- hint
+A small struct of four \`long long\`s is enough for a 2 × 2 matrix. Write a helper that multiplies two of them, taking \`% mod\` of each of the four results.
+--- hint
+Then run the squaring loop from the lesson: \`result\` starts as the identity, \`base\` as \`| 1 1 |\` over \`| 1 0 |\`. After the loop, F(n) is the top-right element of \`result\`. For a \`mod\` of 1, make the identity's ones \`1 % mod\`.
+--- hint
+Is each product small enough? Every element is below 2,000,000,000, so each product is below 4 × 10¹⁸, and a sum of two of them could reach 8 × 10¹⁸, still below the \`long long\` limit of about 9.2 × 10¹⁸.
+--- check test | The first few
+fib_mod(0, 5) == 0 && fib_mod(1, 1000) == 1 && fib_mod(2, 1000) == 1 && fib_mod(10, 1000) == 55 && fib_mod(1, 1) == 0
+--- check test | F(100) and F(90), past what a double holds
+fib_mod(100, 1000000007) == 687995182 && fib_mod(90, 2000000000) == 370816120
+--- check test | F(10 to the 18) in a blink
+fib_mod(1000000000000000000ULL, 1000000007) == 209783453
+
++++ practice | How many ways to fly there?
+--- task
+Some cities are joined by one-way flights. A **route** of \`k\` flights is a sequence of exactly \`k\` flights, each leaving from the city where the one before landed. A route may visit a city more than once.
+
+As the lesson said, if \`A(i, j)\` counts the flights from city \`i\` to city \`j\`, then element \`(i, j)\` of \`A\` to the power \`k\` counts the routes of exactly \`k\` flights. Write:
+
+\`long long count_routes(const std::vector<std::pair<std::string, std::string>>& flights, const std::string& from, const std::string& to, unsigned long long k)\`
+
+No \`main\`.
+
+- Each pair \`{"A", "B"}\` is one flight from A to B. The same pair listed twice means two different flights.
+- Give each city a number, in a \`std::map<std::string, int>\`, then fill a square matrix of \`long long\` counts.
+- The answer is the number of routes **modulo 1,000,000,007**, so take \`% 1000000007\` after every multiplication. \`k\` can be as large as 10¹⁸.
+- A city that has no flights at all is unknown: any route to or from it counts 0. With \`k\` = 0, the answer is 1 if \`from\` and \`to\` are the same known city, and 0 otherwise.
+
+With the flights A→B, B→C, A→C and C→A, there is 1 route of one flight from A to C, and 2 routes of four flights (A→C→A→B→C and A→B→C→A→C).
+--- starter
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+long long count_routes(const std::vector<std::pair<std::string, std::string>>& flights,
+                       const std::string& from, const std::string& to, unsigned long long k) {
+    return 0;
+}
+--- solution
+#include <cstddef>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
+using Counts = std::vector<std::vector<long long>>;
+
+const long long kMod = 1000000007;
+
+Counts times(const Counts& x, const Counts& y) {
+    std::size_t n = x.size();
+    Counts out(n, std::vector<long long>(n, 0));
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t t = 0; t < n; ++t)
+            for (std::size_t j = 0; j < n; ++j) out[i][j] = (out[i][j] + x[i][t] * y[t][j]) % kMod;
+    return out;
+}
+
+long long count_routes(const std::vector<std::pair<std::string, std::string>>& flights,
+                       const std::string& from, const std::string& to, unsigned long long k) {
+    std::map<std::string, int> number;
+    for (const auto& [a, b] : flights) {
+        number.emplace(a, static_cast<int>(number.size()));
+        number.emplace(b, static_cast<int>(number.size()));
+    }
+    if (!number.contains(from) || !number.contains(to)) return 0;
+    std::size_t n = number.size();
+    Counts base(n, std::vector<long long>(n, 0));
+    for (const auto& [a, b] : flights) ++base[number[a]][number[b]];
+    Counts result(n, std::vector<long long>(n, 0));
+    for (std::size_t i = 0; i < n; ++i) result[i][i] = 1;
+    while (k > 0) {
+        if (k & 1) result = times(result, base);
+        k >>= 1;
+        if (k > 0) base = times(base, base);
+    }
+    return result[number[from]][number[to]];
+}
+--- hint
+First give every city that appears in a flight its own number, 0, 1, 2 and so on, in a \`std::map\`. Then make an n × n table of zeros and add 1 at \`(from, to)\` for each flight.
+--- hint
+A \`std::vector<std::vector<long long>>\` works as the matrix. Write a multiply helper that takes \`% 1000000007\` as it adds each product, then raise the table to the power \`k\` with the squaring loop, starting from the identity.
+--- hint
+Check for unknown cities before you look anything up: \`number[from]\` on a city that is not in the map would quietly add it.
+--- check test | One flight, and four
+[] { std::vector<std::pair<std::string, std::string>> f{{"A", "B"}, {"B", "C"}, {"A", "C"}, {"C", "A"}}; return count_routes(f, "A", "C", 1) == 1 && count_routes(f, "A", "C", 2) == 1 && count_routes(f, "A", "C", 4) == 2 && count_routes(f, "A", "C", 6) == 3 && count_routes(f, "A", "A", 5) == 2; }()
+--- check test | Zero flights
+[] { std::vector<std::pair<std::string, std::string>> f{{"A", "B"}, {"B", "A"}}; return count_routes(f, "A", "A", 0) == 1 && count_routes(f, "A", "B", 0) == 0; }()
+--- check test | Unknown cities
+[] { std::vector<std::pair<std::string, std::string>> f{{"A", "B"}, {"B", "A"}}; return count_routes(f, "A", "Z", 3) == 0 && count_routes(f, "Z", "Z", 0) == 0 && count_routes({}, "A", "A", 0) == 0; }()
+--- check test | The same flight twice is two flights
+[] { std::vector<std::pair<std::string, std::string>> f{{"A", "B"}, {"B", "C"}, {"A", "C"}, {"C", "A"}, {"A", "C"}}; return count_routes(f, "A", "C", 1) == 2 && count_routes(f, "A", "C", 3) == 4; }()
+--- check test | A billion billion flights, modulo 1,000,000,007
+[] { std::vector<std::pair<std::string, std::string>> f{{"A", "B"}, {"B", "C"}, {"A", "C"}, {"C", "A"}}; return count_routes(f, "A", "C", 1000000000000000000ULL) == 13581; }()
+
++++ practice | Any whole power, even the most negative one
+--- task
+Write \`std::optional<double> ipow(double x, long long k)\`: \`x\` to the power \`k\`, for any whole number \`k\`, by squaring. No \`main\`.
+
+- For \`k\` of 0 or more it is \`x\` multiplied by itself \`k\` times; \`x\` to the power 0 is 1, even for \`x\` = 0.
+- For a negative \`k\` it is \`1 / x^(-k)\`: \`ipow(2, -2)\` is 0.25. But 0 to a negative power would divide by zero, so return \`std::nullopt\` for it.
+- It must be fast for every \`k\`, including the most negative \`long long\`, \`std::numeric_limits<long long>::min()\`. Careful: \`-k\` does not fit in a \`long long\` for that one.
+
+\`ipow(-1, std::numeric_limits<long long>::min())\` is 1, because that power is even. Include \`<limits>\` and \`<optional>\`.
+--- starter
+#include <limits>
+#include <optional>
+
+std::optional<double> ipow(double x, long long k) {
+    if (k < 0) {
+        if (x == 0) return std::nullopt;
+        return 1.0 / *ipow(x, -k);
+    }
+    double result = 1.0;
+    while (k > 0) {
+        if (k & 1) result *= x;
+        x *= x;
+        k >>= 1;
+    }
+    return result;
+}
+--- solution
+#include <limits>
+#include <optional>
+
+std::optional<double> ipow(double x, long long k) {
+    if (k < 0 && x == 0) return std::nullopt;
+    // The size of k as an unsigned number: unsigned arithmetic wraps, so this
+    // works even for the most negative long long, whose size does not fit.
+    unsigned long long e = k < 0 ? 0ULL - static_cast<unsigned long long>(k) : static_cast<unsigned long long>(k);
+    double result = 1.0;
+    double base = x;
+    while (e > 0) {
+        if (e & 1) result *= base;
+        e >>= 1;
+        if (e > 0) base *= base;
+    }
+    return k < 0 ? 1.0 / result : result;
+}
+--- hint
+Work with the size of \`k\` as an \`unsigned long long\`, not as \`-k\`. Converting a negative \`long long\` to \`unsigned long long\` is defined: it wraps around. So \`0ULL - static_cast<unsigned long long>(k)\` is exactly the size of \`k\`, even for the most negative one.
+--- hint
+Run the squaring loop on that unsigned size. At the end, if \`k\` was negative, return \`1.0 / result\`. Check for 0 to a negative power before anything else.
+--- check test | Positive and zero powers
+ipow(2, 10) == 1024.0 && ipow(-2, 3) == -8.0 && ipow(0, 0) == 1.0 && ipow(0, 5) == 0.0 && ipow(7.5, 1) == 7.5
+--- check test | Negative powers
+ipow(2, -2) == 0.25 && ipow(0.5, -3) == 8.0 && ipow(-4, -1) == -0.25
+--- check test | Zero to a negative power has no answer
+!ipow(0, -1) && !ipow(0, std::numeric_limits<long long>::min())
+--- check test | The largest and the most negative powers
+ipow(-1, std::numeric_limits<long long>::min()) == 1.0 && ipow(-1, std::numeric_limits<long long>::max()) == -1.0 && ipow(1, std::numeric_limits<long long>::min()) == 1.0
+
++++ practice | Debug: a power that is always too big
+--- task
+**Bug report:** "\`power(m, 1)\` does not give back \`m\`, and \`power(fib, 5)\` gives the numbers for a much higher power. \`power(m, 0)\` is fine."
+
+The starter holds the matrix library with the lesson's \`power\`, but with one mistake in the squaring loop. Find it and fix it. \`power\` must still take about 2 log₂ k products, so a \`k\` of a billion stays fast. No \`main\`.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::optional<Matrix> power(const Matrix& m, unsigned long long k) {
+    if (m.rows() != m.cols()) return std::nullopt;
+    Matrix result = Matrix::identity(m.rows());
+    Matrix base = m;
+    while (k > 0) {
+        base = *multiply(base, base);
+        if (k & 1) result = *multiply(result, base);
+        k >>= 1;
+    }
+    return result;
+}
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+bool operator==(const Matrix& a, const Matrix& b) {
+    if (a.rows() != b.rows() || a.cols() != b.cols()) return false;
+    for (std::size_t r = 0; r < a.rows(); ++r)
+        for (std::size_t c = 0; c < a.cols(); ++c)
+            if (a(r, c) != b(r, c)) return false;
+    return true;
+}
+
+std::optional<Matrix> multiply(const Matrix& a, const Matrix& b) {
+    if (a.cols() != b.rows()) return std::nullopt;
+    Matrix out(a.rows(), b.cols());
+    for (std::size_t i = 0; i < a.rows(); ++i)
+        for (std::size_t k = 0; k < a.cols(); ++k)
+            for (std::size_t j = 0; j < b.cols(); ++j) out(i, j) += a(i, k) * b(k, j);
+    return out;
+}
+
+std::optional<Matrix> power(const Matrix& m, unsigned long long k) {
+    if (m.rows() != m.cols()) return std::nullopt;
+    Matrix result = Matrix::identity(m.rows());
+    Matrix base = m;
+    while (k > 0) {
+        // Safe: result and base are square and the same size, so every product exists.
+        if (k & 1) result = *multiply(result, base);
+        base = *multiply(base, base);
+        k >>= 1;
+    }
+    return result;
+}
+--- hint
+Run the loop by hand for \`k\` = 1. What is \`base\` at the moment \`result\` is multiplied by it?
+--- hint
+Each round, the lowest bit of \`k\` belongs to the current \`base\`, before it is squared. So use \`base\` first (if the bit is 1), and only then square it for the next round.
+--- check test | Power 1 is the matrix itself
+[] { Matrix m{{2, 3}, {4, 5}}; auto p = power(m, 1); return p && *p == m; }()
+--- check test | Fibonacci numbers from power 5 and power 13
+[] { Matrix f{{1, 1}, {1, 0}}; auto a = power(f, 5); auto b = power(f, 13); return a && *a == Matrix{{8, 5}, {5, 3}} && b && *b == Matrix{{377, 233}, {233, 144}}; }()
+--- check test | Power 0, and a matrix that is not square
+[] { auto p = power(Matrix{{2, 3}, {4, 5}}, 0); return p && *p == Matrix::identity(2) && !power(Matrix(2, 3), 3); }()
+--- check test | A billion is still fast
+[] { auto p = power(Matrix{{1, 2}, {0, 1}}, 1000000000ULL); return p && *p == Matrix{{1, 2000000000.0}, {0, 1}}; }()
+
++++ practice | Stretch: any sequence built from the ones before
+--- task
+Fibonacci is one example of a **linear recurrence**: a sequence where each new term is a fixed mix of the few terms before it. In general, with \`k\` coefficients \`c\`:
+
+\`a(n) = c[0] * a(n-1) + c[1] * a(n-2) + ... + c[k-1] * a(n-k)\`
+
+The first \`k\` terms, \`a(0)\` to \`a(k-1)\`, are given. Write \`long long nth_term(const std::vector<long long>& coeffs, const std::vector<long long>& first, unsigned long long n)\`, which returns \`a(n)\` **modulo 1,000,000,007**. No \`main\`.
+
+- \`coeffs\` and \`first\` have the same size \`k\`, at least 1, and every value in them is between 0 and 1,000,000,006.
+- If \`n\` is less than \`k\`, the answer is simply \`first[n]\`.
+- Otherwise, use a \`k × k\` **companion matrix** \`M\`. Its top row is the coefficients, \`c[0]\` to \`c[k-1]\`. Below that, each row \`i\` has a single 1, at column \`i - 1\`, and 0 elsewhere. It moves a column of the latest terms, newest on top, one step forward: \`M × (a(k-1), …, a(0))\` is \`(a(k), …, a(1))\`. So \`a(n)\` is the top element of \`M\` to the power \`n - k + 1\`, times the column \`(a(k-1), …, a(0))\`.
+- \`n\` can be as large as 10¹⁸. Take \`% 1000000007\` after every multiplication.
+
+Fibonacci is \`nth_term({1, 1}, {0, 1}, n)\`, so \`nth_term({1, 1}, {0, 1}, 10)\` is 55.
+--- starter
+#include <cstddef>
+#include <vector>
+
+long long nth_term(const std::vector<long long>& coeffs, const std::vector<long long>& first, unsigned long long n) {
+    if (n < first.size()) return first[n];
+    return 0;   // build the companion matrix and raise it to a power
+}
+--- solution
+#include <cstddef>
+#include <vector>
+
+using Grid = std::vector<std::vector<long long>>;
+
+const long long kMod = 1000000007;
+
+Grid times(const Grid& x, const Grid& y) {
+    std::size_t n = x.size();
+    Grid out(n, std::vector<long long>(n, 0));
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t t = 0; t < n; ++t)
+            for (std::size_t j = 0; j < n; ++j) out[i][j] = (out[i][j] + x[i][t] * y[t][j]) % kMod;
+    return out;
+}
+
+long long nth_term(const std::vector<long long>& coeffs, const std::vector<long long>& first, unsigned long long n) {
+    const std::size_t k = coeffs.size();
+    if (n < k) return first[n];
+    Grid base(k, std::vector<long long>(k, 0));   // the companion matrix
+    for (std::size_t j = 0; j < k; ++j) base[0][j] = coeffs[j];
+    for (std::size_t i = 1; i < k; ++i) base[i][i - 1] = 1;
+    Grid result(k, std::vector<long long>(k, 0));
+    for (std::size_t i = 0; i < k; ++i) result[i][i] = 1;
+    unsigned long long e = n - k + 1;
+    while (e > 0) {
+        if (e & 1) result = times(result, base);
+        e >>= 1;
+        if (e > 0) base = times(base, base);
+    }
+    // Top row of M^e times the column (a(k-1), ..., a(0)).
+    long long answer = 0;
+    for (std::size_t j = 0; j < k; ++j) answer = (answer + result[0][j] * first[k - 1 - j]) % kMod;
+    return answer;
+}
+--- hint
+Build the companion matrix as a \`std::vector<std::vector<long long>>\`: the coefficients across the top row, and a 1 just left of the diagonal in every row below. Check it by hand for Fibonacci: it should be \`| 1 1 |\` over \`| 1 0 |\`.
+--- hint
+Raise it to the power \`n - k + 1\` with the squaring loop and a multiply helper that takes \`% 1000000007\` after each product. Only the top row of the result is needed at the end.
+--- hint
+The column is newest on top: its element \`j\` is \`first[k - 1 - j]\`. So the answer is the sum of \`result[0][j] * first[k - 1 - j]\`, each product reduced modulo 1,000,000,007.
+--- check test | Fibonacci, and the first terms as given
+nth_term({1, 1}, {0, 1}, 10) == 55 && nth_term({1, 1}, {0, 1}, 0) == 0 && nth_term({1, 1}, {0, 1}, 1) == 1 && nth_term({3, 0, 2}, {1, 2, 3}, 2) == 3
+--- check test | Tribonacci and other mixes
+nth_term({1, 1, 1}, {0, 0, 1}, 30) == 15902591 && nth_term({3, 0, 2}, {1, 2, 3}, 50) == 55740390 && nth_term({0, 1}, {5, 7}, 9) == 7
+--- check test | One coefficient: doubling
+nth_term({2}, {3}, 20) == 3145728 && nth_term({2}, {3}, 0) == 3
+--- check test | Terms far out, in a blink
+nth_term({1, 1}, {0, 1}, 1000000000000000000ULL) == 209783453 && nth_term({1, 1, 1}, {0, 0, 1}, 1000000000000000000ULL) == 913728402 && nth_term({2}, {3}, 1000000000000000000ULL) == 158428766
+
+=== cppp-05 | Bank 1: an account that keeps its rules
+--- teach
+Last lesson you finished the matrix project: \`power\` used squaring to raise a matrix to the billionth power in about 30 steps. That project is done. This lesson starts a **new project**: a small **bank**.
+
+Over four lessons you will build it up piece by piece:
+
+1. One account that keeps its own rules (this lesson).
+2. Different kinds of account: checking and savings.
+3. A bank that owns all the accounts and moves money between them.
+4. A log of everything that happened, and printed statements.
+
+Each lesson's starter holds the code from the lesson before, so you always build on what you already have. Today is step 1: money, and one account.
+
+### Money is whole cents, never a double
+
+Think of a piggy bank. Inside there are only whole coins. Nobody has 0.3 of a cent. So the honest way to store money is to count the smallest coin.
+
+A \`double\` cannot do that. It stores numbers in [[binary pieces|floating-point-money]], and most decimal fractions, like 0.1, do not fit exactly. In C++, \`0.1 + 0.2 == 0.3\` is **false**:
+
+\`\`\`cpp
+double a = 0.1 + 0.2;
+std::cout << std::setprecision(17) << a;   // 0.30000000000000004
+\`\`\`
+
+One tiny error does not look like much. A bank does millions of sums a day, and the tiny errors add up into missing or extra money.
+
+So you store money as a whole number of **cents** (hundredths of a dollar) in an integer type. $12.34 is stored as \`1234\`. The type is \`long long\`, the big integer box from the basics course. It holds amounts up to about [[92 thousand trillion dollars|long-long-range]], plenty for any bank. You turn cents into text only at the very end, when a person needs to read it. Real banking systems do exactly this, with the [[smallest coin of each currency|minor-units]].
+
+### Turning cents into text
+
+People want \`$12.34\`, not \`1234\`. The task asks for a function \`format_cents\` that does this. Here are the pieces, each shown on its own with other numbers.
+
+**Dollars and cents.** Integer division \`/\` throws away the remainder, and \`%\` (read "remainder", or "mod") gives what was thrown away:
+
+\`\`\`cpp
+long long c = 754;
+c / 100;   // 7   whole dollars
+c % 100;   // 54  cents left over
+\`\`\`
+
+**Two digits after the point.** \`std::to_string(3)\` gives \`"3"\`, but three cents must print as \`.03\`. When the text has only one character, put a \`"0"\` in front:
+
+\`\`\`cpp
+std::string part = std::to_string(9);      // "9"
+if (part.size() < 2) part = "0" + part;    // "09"
+\`\`\`
+
+**The minus sign.** A negative amount prints with the minus *before* the dollar sign: minus five dollars and seven cents is \`-$5.07\`, never \`$-5.07\`. So work with the size of the number, without its sign, and add the sign yourself at the end. The conditional operator from the intermediate course, \`condition ? a : b\` (read "if condition, then a, otherwise b"), picks the size or the sign in one line:
+
+\`\`\`cpp
+long long t = -42;
+long long size = t < 0 ? -t : t;               // 42
+std::string sign = t < 0 ? "minus " : "";      // "minus "
+\`\`\`
+
+Why the size first? Because \`%\` keeps the sign of the number: \`-507 % 100\` is \`-7\`, not \`7\`. Working with the [[size instead of the signed number|remainder-sign]] avoids a stray minus in the middle of your text.
+
+A few answers to check against: \`123456\` is \`$1234.56\`, \`5\` is \`$0.05\`, \`0\` is \`$0.00\`, and \`-507\` is \`-$5.07\`.
+
+### The account's rules
+
+In the intermediate course, a class kept an **invariant**: a rule that is true of every object, always. The account has two:
+
+- Deposits and withdrawals must be **positive** amounts. Depositing \`0\` or \`-100\` cents makes no sense.
+- A basic account can **never go below zero**. You cannot take out more than is in it.
+
+The class keeps these rules by being the only way in. The balance is not public, so outside code cannot write \`a.balance_ = -1000000\`. The only doors are \`deposit\` and \`withdraw\`. Each one checks first, and if the request breaks a rule, it says no by returning \`false\` and changes nothing. That early check is called a **guard**: an \`if\` at the top that leaves the function before any harm is done.
+
+\`\`\`cpp
+// inside class Locker
+bool store(int items) {
+    if (items <= 0) return false;   // the guard: refuse, change nothing
+    count_ += items;
+    return true;
+}
+\`\`\`
+
+The starter's \`deposit\` and \`withdraw\` have no guards at all: they accept anything, even an amount that sends the balance far below zero.
+
+### Planning to be a base class
+
+Next lesson adds a checking account and a savings account. Both are kinds of account, so they will derive from \`Account\`, the way \`Circle\` derived from \`Shape\` in the advanced course. A little planning now saves rewriting later.
+
+- **\`withdraw\` is \`virtual\`.** A checking account may go a little below zero. A savings account limits how often you withdraw. Each will replace the rule for taking money out.
+- **\`end_month\` is a \`virtual\` hook.** A **[[hook|hook-word]]** is an empty place where a derived class can plug in its own action. For a basic account, the end of the month does nothing, so the body is empty: \`virtual void end_month() {}\`. Savings accounts will pay interest there.
+- **\`kind\` is \`virtual\`** and returns the type's name as text: \`"basic"\` here.
+- **The destructor is \`virtual\`.** Accounts will be owned through \`Account\` pointers, so deleting one must run the real type's destructor. As in the advanced course, \`virtual ~Account() = default;\` does that.
+
+\`deposit\` stays an ordinary function. Adding money works the same for every account.
+
+### protected: private, except for derived classes
+
+There is one more problem. A checking account's \`withdraw\` must change the balance. But if \`balance_\` is \`private\`, even a derived class cannot touch it.
+
+C++ has a third access level between \`public\` and \`private\`. A member under **\`protected:\`** can be used by the class itself **and** by classes that derive from it, but not by any other code.
+
+\`\`\`cpp
+class Locker {
+public:
+    int count() const { return count_; }
+protected:
+    int count_ = 0;     // Locker and its derived classes may change this
+private:
+    int code_ = 1234;   // only Locker itself may use this
+};
+
+class BigLocker : public Locker {
+public:
+    void empty() { count_ = 0; }     // fine: count_ is protected
+    // void reset() { code_ = 0; }   // does not compile: code_ is private
+};
+\`\`\`
+
+So \`balance_\` moves into a \`protected:\` section, while the id and the owner can stay \`private\`. Outside code still reads the balance only through \`balance()\`. Making data protected is a [[trade-off|protected-trade-off]], and a derived class now has to keep the rules too.
+
+**Watch out:** the guard must come *before* the change. If you subtract first and check afterwards, a refused withdrawal has already moved the money. Test the refusals: after \`withdraw(601)\` fails on a balance of 600, the balance must still be exactly 600.
+
+::: context floating-point-money Why 0.1 is not exact
+A \`double\` stores a number in binary, as a sum of halves, quarters, eighths, sixteenths and so on. Some fractions fit exactly: 0.5 is one half, 0.25 is one quarter. But 0.1, one tenth, is not a sum of any finite number of those pieces, the same way 1/3 never ends in decimal (0.3333…). So the computer stores the nearest value it can, a tiny bit off. Adding two slightly-off numbers can give an answer that is off in a way you can see: 0.30000000000000004. Whole numbers of cents have no such problem: 10 + 20 is exactly 30.
+:::
+
+::: context long-long-range How much fits in a long long
+The largest \`long long\` is 9,223,372,036,854,775,807, which is 2⁶³ − 1. Counted in cents, that is about 92,233,720,368,547,758 dollars: 92 thousand trillion. All the money in the world is far less than that, so a balance will not overflow. Sums of products can still grow large, though. Next lesson multiplies a balance by an interest rate, and it is good to know how big a box you have before you multiply.
+:::
+
+::: context minor-units The smallest coin, around the world
+Banks and payment companies store amounts as a whole number of the currency's smallest unit, which the ISO 4217 standard calls its **minor unit**. For US dollars and euros that is a cent, a hundredth. The Japanese yen has no minor unit in use, so amounts are whole yen. The Kuwaiti dinar has three decimal places, so its smallest unit is a thousandth. A system that handles many currencies stores the whole number plus the currency code, and uses the code to know where the decimal point goes when it prints.
+:::
+
+::: context remainder-sign What % does with a minus sign
+In C++, integer division rounds toward zero, so \`-507 / 100\` is \`-5\`, not \`-6\`. The remainder then has to make \`(a / b) * b + a % b\` equal \`a\` again, which forces \`-507 % 100\` to be \`-7\`. Python makes a different choice: its \`//\` rounds down and \`-507 % 100\` is \`93\`. Both are consistent, but they differ, and a digit-by-digit printer that forgets this puts minus signs in odd places. Taking the size first, with the sign added at the front, sidesteps the whole question.
+:::
+
+::: context hook-word Hooks: a slot for later
+A hook is a virtual function in a base class that does nothing, or something very simple, and exists so derived classes can add behavior at a known moment. The base class decides *when* it is called (here, once a month for every account) and each derived class decides *what* happens. Game engines use the same idea: every object in a game gets an \`update\` call each frame, and most objects' versions do nothing at all. In lesson 3 of this project the bank will call \`end_month\` on every account without knowing which kind each one is.
+:::
+
+::: context protected-trade-off Is protected a good idea?
+Some experienced programmers avoid \`protected\` data. Once derived classes can change \`balance_\` directly, the base class can no longer promise its invariant alone: any derived class could set a balance of minus a million. The alternative is private data plus a protected function, such as \`set_balance\`, that checks what it is given. In this project the derived classes are small and live next to \`Account\`, so a protected balance keeps them simple. The picture shows who may use a member at each level:
+
+\`\`\`svg
+<svg viewBox="0 0 360 150" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="130" y="22" font-size="12" fill="#1f2a44" text-anchor="middle">the class</text>
+  <text x="215" y="22" font-size="12" fill="#1f2a44" text-anchor="middle">derived</text>
+  <text x="305" y="22" font-size="12" fill="#1f2a44" text-anchor="middle">other code</text>
+  <text x="10" y="55" font-size="12" fill="#1f2a44">public</text>
+  <text x="10" y="92" font-size="12" fill="#1f2a44">protected</text>
+  <text x="10" y="129" font-size="12" fill="#1f2a44">private</text>
+  <rect x="100" y="38" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="130" y="56" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="185" y="38" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="215" y="56" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="275" y="38" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="305" y="56" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="100" y="75" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="130" y="93" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="185" y="75" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="215" y="93" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="275" y="75" width="60" height="26" rx="5" fill="#ffffff" stroke="#b4232c"/>
+  <text x="305" y="93" font-size="12" fill="#b4232c" text-anchor="middle">no</text>
+  <rect x="100" y="112" width="60" height="26" rx="5" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="130" y="130" font-size="12" fill="#1f2a44" text-anchor="middle">yes</text>
+  <rect x="185" y="112" width="60" height="26" rx="5" fill="#ffffff" stroke="#b4232c"/>
+  <text x="215" y="130" font-size="12" fill="#b4232c" text-anchor="middle">no</text>
+  <rect x="275" y="112" width="60" height="26" rx="5" fill="#ffffff" stroke="#b4232c"/>
+  <text x="305" y="130" font-size="12" fill="#b4232c" text-anchor="middle">no</text>
+</svg>
+\`\`\`
+:::
+--- task
+Fix the starter's \`Account\` so it keeps its rules and is ready to be a base class, and write \`format_cents\`. No \`main\`: the checker supplies it.
+
+- \`std::string format_cents(long long cents)\` turns cents into text: \`123456\` gives \`"$1234.56"\`, \`5\` gives \`"$0.05"\`, \`0\` gives \`"$0.00"\`, and \`-507\` gives \`"-$5.07"\`.
+- Keep \`Account(int id, std::string owner)\` and the getters \`id()\`, \`owner()\` and \`balance()\`. The balance is in cents and starts at 0.
+- \`bool deposit(long long cents)\` returns \`false\` and changes nothing unless \`cents > 0\`.
+- \`virtual bool withdraw(long long cents)\` returns \`false\` and changes nothing unless \`cents > 0\` and the balance covers it (the balance may reach exactly 0).
+- \`virtual void end_month()\` is a hook that does nothing for a basic account.
+- \`virtual std::string kind() const\` returns \`"basic"\`.
+- Give \`Account\` a virtual destructor, and move \`long long balance_\` into a **protected** section.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Step 1 of the bank project: one account that keeps its own rules.
+std::string format_cents(long long cents) {
+    return std::to_string(cents);
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        balance_ += cents;
+        return true;
+    }
+
+    bool withdraw(long long cents) {
+        balance_ -= cents;
+        return true;
+    }
+
+private:
+    int id_;
+    std::string owner_;
+    long long balance_ = 0;
+};
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- hint
+Start with \`format_cents\`. Take the size of the number without its sign, call it \`v\`. The dollars are \`v / 100\` and the cents are \`v % 100\`, padded with a \`"0"\` in front when they are one digit. Then put \`"-$"\` or \`"$"\` in front, depending on whether \`cents\` was negative.
+--- hint
+Both \`deposit\` and \`withdraw\` begin with a guard that returns \`false\` before touching \`balance_\`. For \`withdraw\`, refuse when \`cents <= 0\` or when \`cents > balance_\`.
+--- hint
+Add \`virtual ~Account() = default;\`, put \`virtual\` in front of \`withdraw\`, add \`virtual void end_month() {}\` and \`virtual std::string kind() const { return "basic"; }\`, and move \`long long balance_ = 0;\` out of \`private:\` into a new \`protected:\` section.
+--- check test | format_cents
+format_cents(123456) == "$1234.56" && format_cents(5) == "$0.05" && format_cents(0) == "$0.00" && format_cents(-507) == "-$5.07" && format_cents(100) == "$1.00"
+--- check test | A new account
+[] { Account a(7, "Ada"); return a.id() == 7 && a.owner() == "Ada" && a.balance() == 0 && a.kind() == "basic"; }()
+--- check test | Deposits must be positive
+[] { Account a(1, "A"); bool ok = a.deposit(2500); bool zero = a.deposit(0); bool neg = a.deposit(-100); return ok && !zero && !neg && a.balance() == 2500; }()
+--- check test | Withdrawals cannot overdraw
+[] { Account a(1, "A"); a.deposit(1000); bool ok = a.withdraw(400); bool too_much = a.withdraw(601); bool neg = a.withdraw(-1); bool exact = a.withdraw(600); return ok && !too_much && !neg && exact && a.balance() == 0; }()
+--- check test | Account is ready to be a base class
+std::has_virtual_destructor_v<Account> && std::is_polymorphic_v<Account>
+
++++ practice | A fuel tank that keeps its rules
+--- task
+Write \`class FuelTank\`, which measures fuel in whole milliliters, in \`long long\`s. No \`main\`.
+
+- \`explicit FuelTank(long long capacity)\`: an empty tank that holds at most \`capacity\` milliliters.
+- \`long long level() const\`, \`long long capacity() const\`, and \`long long room() const\`, which is how much more would fit.
+- \`bool fill(long long ml)\` adds fuel. It returns \`false\` and changes nothing unless \`ml > 0\` and the fuel fits: the tank may become exactly full, never more.
+- \`bool draw(long long ml)\` takes fuel out. It returns \`false\` and changes nothing unless \`ml > 0\` and there is at least that much in the tank.
+- A \`ReserveTank\` will derive from it later, so give \`FuelTank\` a virtual destructor, and keep \`level_\` in a **protected** section.
+
+A tank of 5000 ml takes \`fill(3000)\` and then \`fill(2000)\`, but refuses \`fill(1)\` after that.
+--- starter
+#include <type_traits>
+
+class FuelTank {
+public:
+    explicit FuelTank(long long capacity) : capacity_(capacity) {}
+
+    long long level() const { return level_; }
+    long long capacity() const { return capacity_; }
+
+    bool fill(long long ml) {
+        level_ += ml;
+        return true;
+    }
+
+    bool draw(long long ml) {
+        level_ -= ml;
+        return true;
+    }
+
+private:
+    long long capacity_;
+    long long level_ = 0;
+};
+--- solution
+#include <type_traits>
+
+class FuelTank {
+public:
+    explicit FuelTank(long long capacity) : capacity_(capacity) {}
+    virtual ~FuelTank() = default;
+
+    long long level() const { return level_; }
+    long long capacity() const { return capacity_; }
+    long long room() const { return capacity_ - level_; }
+
+    bool fill(long long ml) {
+        if (ml <= 0 || ml > room()) return false;
+        level_ += ml;
+        return true;
+    }
+
+    bool draw(long long ml) {
+        if (ml <= 0 || ml > level_) return false;
+        level_ -= ml;
+        return true;
+    }
+
+protected:
+    long long level_ = 0;
+
+private:
+    long long capacity_;
+};
+--- hint
+Each changing function starts with a guard: an \`if\` that returns \`false\` before anything is touched. Write the refusal conditions first, then the change.
+--- hint
+"The fuel fits" means \`ml\` is not more than \`room()\`, which is \`capacity_ - level_\`. Comparing against the room, rather than adding first, also means a huge \`ml\` can never overflow.
+--- hint
+Add \`virtual ~FuelTank() = default;\` and move \`long long level_ = 0;\` into a new \`protected:\` section.
+--- check test | Filling up to exactly full
+[] { FuelTank t(5000); bool a = t.fill(3000); bool b = t.fill(2000); bool c = t.fill(1); return a && b && !c && t.level() == 5000 && t.room() == 0; }()
+--- check test | Drawing cannot go below empty
+[] { FuelTank t(5000); t.fill(1200); bool a = t.draw(200); bool b = t.draw(1001); bool c = t.draw(1000); return a && !b && c && t.level() == 0 && t.room() == 5000; }()
+--- check test | Zero and negative amounts are refused
+[] { FuelTank t(100); t.fill(50); bool a = t.fill(0); bool b = t.fill(-10); bool c = t.draw(0); bool d = t.draw(-5); return !a && !b && !c && !d && t.level() == 50; }()
+--- check test | A huge fill is refused, not overflowed
+[] { FuelTank t(100); t.fill(60); bool a = t.fill(9000000000000000000LL); return !a && t.level() == 60 && t.capacity() == 100; }()
+--- check test | Ready to be a base class
+std::has_virtual_destructor_v<FuelTank>
+
++++ practice | Read an amount of money
+--- task
+\`format_cents\` turns cents into text. Now go the other way. Write \`std::optional<long long> parse_cents(const std::string& text)\`. No \`main\`.
+
+The text must be exactly this shape, with nothing before, after or in between:
+
+1. optionally a minus sign \`-\`;
+2. a dollar sign \`$\`;
+3. between 1 and 15 digits (the dollars);
+4. a point \`.\`;
+5. exactly two digits (the cents).
+
+Return the amount in cents, or \`std::nullopt\` for any text that is not that shape. So \`"$12.34"\` is 1234, \`"-$5.07"\` is -507 and \`"$0.05"\` is 5, while \`""\`, \`"12.34"\`, \`"$12.3"\`, \`"$12.345"\`, \`"$.50"\`, \`"$-1.00"\`, \`"$1,000.00"\` and \`"$ 1.00"\` are all \`std::nullopt\`. Include \`<optional>\`.
+--- starter
+#include <optional>
+#include <string>
+
+std::optional<long long> parse_cents(const std::string& text) {
+    return std::nullopt;
+}
+--- solution
+#include <cstddef>
+#include <optional>
+#include <string>
+
+bool is_digit(char c) { return c >= '0' && c <= '9'; }
+
+std::optional<long long> parse_cents(const std::string& text) {
+    std::size_t i = 0;
+    bool negative = false;
+    if (i < text.size() && text[i] == '-') {
+        negative = true;
+        ++i;
+    }
+    if (i >= text.size() || text[i] != '$') return std::nullopt;
+    ++i;
+    long long dollars = 0;
+    std::size_t digits = 0;
+    while (i < text.size() && is_digit(text[i])) {
+        dollars = dollars * 10 + (text[i] - '0');
+        ++digits;
+        ++i;
+    }
+    if (digits < 1 || digits > 15) return std::nullopt;
+    // Exactly ".", two digits, and then the end.
+    if (text.size() != i + 3 || text[i] != '.' || !is_digit(text[i + 1]) || !is_digit(text[i + 2])) return std::nullopt;
+    long long cents = dollars * 100 + (text[i + 1] - '0') * 10 + (text[i + 2] - '0');
+    return negative ? -cents : cents;
+}
+--- hint
+Walk through the text with one position, \`i\`, checking each part of the shape in order: an optional \`-\`, then a required \`$\`, then a run of digits you count as you go.
+--- hint
+After the dollars, exactly three characters must be left: a \`.\` and two digits. Checking \`text.size() == i + 3\` first means you never read past the end. A digit's value is \`c - '0'\`.
+--- hint
+The 15-digit limit keeps \`dollars * 100\` far inside a \`long long\`. Add the sign at the very end.
+--- check test | Ordinary amounts
+parse_cents("$12.34") == 1234 && parse_cents("$0.05") == 5 && parse_cents("$1234.56") == 123456 && parse_cents("$100.00") == 10000
+--- check test | Negative amounts, and zero
+parse_cents("-$5.07") == -507 && parse_cents("$0.00") == 0 && parse_cents("-$0.10") == -10
+--- check test | The wrong number of cents digits
+!parse_cents("$12.3") && !parse_cents("$12.345") && !parse_cents("$12.") && !parse_cents("$12")
+--- check test | Missing or misplaced pieces
+!parse_cents("") && !parse_cents("$") && !parse_cents("12.34") && !parse_cents("$.50") && !parse_cents("$-1.00") && !parse_cents("--$1.00") && !parse_cents("-")
+--- check test | Characters that do not belong
+!parse_cents("$1,000.00") && !parse_cents("$ 1.00") && !parse_cents("$1.00 ") && !parse_cents(" $1.00") && !parse_cents("$1a.00")
+--- check test | At most 15 dollar digits
+parse_cents("$999999999999999.99") == 99999999999999999LL && !parse_cents("$1000000000000000.00")
+
++++ practice | A budget that refuses to overspend
+--- task
+The starter holds \`format_cents\` from the lesson. Write \`class Budget\`, which keeps a spending limit and a running total for each category, in cents. No \`main\`.
+
+- \`bool add_category(const std::string& name, long long limit)\`: adds a category. It returns \`false\` and changes nothing if the name is already used or \`limit\` is not positive.
+- \`bool spend(const std::string& name, long long cents)\`: records spending. It returns \`false\` and changes nothing if the category is unknown, if \`cents\` is not positive, or if the spending would go over the limit. Reaching the limit exactly is fine.
+- \`std::optional<long long> left(const std::string& name) const\`: how much of the limit is left, or \`std::nullopt\` for an unknown category.
+- \`std::string report() const\`: one line per category, in alphabetical order, in the form \`food: $12.50 left of $50.00\`, each line ending with \`\\n\`. With no categories it is \`""\`.
+
+Include \`<map>\`, \`<optional>\` and \`<sstream>\`.
+--- starter
+#include <string>
+
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+--- solution
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Budget {
+public:
+    bool add_category(const std::string& name, long long limit) {
+        if (limit <= 0 || lines_.contains(name)) return false;
+        lines_[name] = Line{limit, 0};
+        return true;
+    }
+
+    bool spend(const std::string& name, long long cents) {
+        auto it = lines_.find(name);
+        if (it == lines_.end() || cents <= 0) return false;
+        Line& line = it->second;
+        if (cents > line.limit - line.spent) return false;
+        line.spent += cents;
+        return true;
+    }
+
+    std::optional<long long> left(const std::string& name) const {
+        auto it = lines_.find(name);
+        if (it == lines_.end()) return std::nullopt;
+        return it->second.limit - it->second.spent;
+    }
+
+    std::string report() const {
+        std::ostringstream out;
+        for (const auto& [name, line] : lines_) {
+            out << name << ": " << format_cents(line.limit - line.spent) << " left of " << format_cents(line.limit) << "\\n";
+        }
+        return out.str();
+    }
+
+private:
+    struct Line {
+        long long limit;
+        long long spent;   // never more than limit
+    };
+    std::map<std::string, Line> lines_;
+};
+--- hint
+One \`std::map\` from the category's name to a small struct holding its limit and what has been spent keeps everything together, and a map already visits its names in alphabetical order for the report.
+--- hint
+In \`spend\`, look the name up with \`find\`, not \`[]\`, so an unknown name is never added. Refuse when \`cents\` is more than what is left, \`limit - spent\`, before changing anything.
+--- hint
+\`report\` walks the map with \`for (const auto& [name, line] : lines_)\` and writes one line per category to an \`std::ostringstream\`, using \`format_cents\` for both amounts.
+--- check test | Spending up to the limit exactly
+[] { Budget b; b.add_category("food", 5000); bool a = b.spend("food", 3000); bool c = b.spend("food", 2000); bool d = b.spend("food", 1); return a && c && !d && b.left("food") == 0; }()
+--- check test | Refusals change nothing
+[] { Budget b; b.add_category("fuel", 1000); b.spend("fuel", 400); bool over = b.spend("fuel", 601); bool zero = b.spend("fuel", 0); bool neg = b.spend("fuel", -5); bool unknown = b.spend("rent", 10); return !over && !zero && !neg && !unknown && b.left("fuel") == 600 && !b.left("rent"); }()
+--- check test | Categories cannot be added twice or without a limit
+[] { Budget b; bool a = b.add_category("tools", 2500); bool again = b.add_category("tools", 9999); bool zero = b.add_category("toys", 0); return a && !again && !zero && b.left("tools") == 2500 && !b.left("toys"); }()
+--- check case | The report, in alphabetical order
+[] { Budget b; b.add_category("rent", 120000); b.add_category("food", 5000); b.spend("food", 3750); b.spend("rent", 120000); return b.report(); }()
+=> "food: $12.50 left of $50.00\\nrent: $0.00 left of $1200.00\\n"
+--- check case | No categories, no report
+Budget().report()
+=> ""
+
++++ practice | Amounts in any currency, even the most negative
+--- task
+Not every currency has 100 small coins to the big one. The yen has no smaller unit, and the Kuwaiti dinar has 1000 fils. Write \`std::string format_units(long long amount, int decimals)\`. \`amount\` counts the smallest unit, and \`decimals\`, from 0 to 4, is how many digits go after the point. No \`main\`.
+
+- Print exactly \`decimals\` digits after the point: \`format_units(5, 3)\` is \`"0.005"\`, and \`format_units(0, 3)\` is \`"0.000"\`.
+- With \`decimals\` of 0 there is no point at all: \`format_units(1234, 0)\` is \`"1234"\`.
+- A negative amount has a \`-\` in front: \`format_units(-5, 2)\` is \`"-0.05"\`. There is no currency sign.
+- It must work for **every** \`long long\`, including the most negative one: \`format_units(std::numeric_limits<long long>::min(), 2)\` is \`"-92233720368547758.08"\`. Careful: that number's size does not fit in a \`long long\`, so \`-amount\` is undefined behavior.
+
+Include \`<limits>\`.
+--- starter
+#include <limits>
+#include <string>
+
+std::string format_units(long long amount, int decimals) {
+    long long v = amount < 0 ? -amount : amount;
+    return (amount < 0 ? "-" : "") + std::to_string(v / 100) + "." + std::to_string(v % 100);
+}
+--- solution
+#include <limits>
+#include <string>
+
+std::string format_units(long long amount, int decimals) {
+    // The size as an unsigned number: unsigned arithmetic wraps, so this is
+    // right even for the most negative long long.
+    unsigned long long v = amount < 0 ? 0ULL - static_cast<unsigned long long>(amount) : static_cast<unsigned long long>(amount);
+    unsigned long long unit = 1;
+    for (int i = 0; i < decimals; ++i) unit *= 10;
+    std::string text = std::to_string(v / unit);
+    if (decimals > 0) {
+        std::string frac = std::to_string(v % unit);
+        while (frac.size() < static_cast<std::size_t>(decimals)) frac = "0" + frac;
+        text += "." + frac;
+    }
+    return (amount < 0 ? "-" : "") + text;
+}
+--- hint
+The big unit is 10 to the power \`decimals\`: 1 for yen, 100 for dollars, 1000 for dinars. The whole part is \`size / unit\` and the rest is \`size % unit\`, padded with zeros in front to exactly \`decimals\` digits.
+--- hint
+Take the size as an \`unsigned long long\`: \`0ULL - static_cast<unsigned long long>(amount)\` for a negative amount. Unsigned arithmetic wraps around by definition, so this gives the true size even for the most negative \`long long\`, and \`std::to_string\` accepts an \`unsigned long long\` too.
+--- check test | Two, three and four decimals
+format_units(123456, 2) == "1234.56" && format_units(5, 3) == "0.005" && format_units(7, 4) == "0.0007" && format_units(1500, 3) == "1.500"
+--- check test | No decimals: no point
+format_units(1234, 0) == "1234" && format_units(-1234, 0) == "-1234" && format_units(0, 0) == "0"
+--- check test | Zero and small negatives
+format_units(0, 3) == "0.000" && format_units(-5, 2) == "-0.05" && format_units(-100, 2) == "-1.00"
+--- check test | The largest and the most negative amounts
+format_units(std::numeric_limits<long long>::max(), 2) == "92233720368547758.07" && format_units(std::numeric_limits<long long>::min(), 2) == "-92233720368547758.08" && format_units(std::numeric_limits<long long>::min(), 0) == "-9223372036854775808"
+
++++ practice | Debug: the gift card that pays too much
+--- task
+**Bug report:** "A $30.00 payment from a card holding $20.00 says no, as it should, but afterwards the card is at -$10.00. Also, a top-up of $0.00 says it worked."
+
+The starter's \`GiftCard\` has these rules: \`top_up\` and \`pay\` need a positive amount, \`pay\` never takes the card below 0, and a refused call returns \`false\` and changes nothing. Find the two bugs and fix them. No \`main\`.
+--- starter
+class GiftCard {
+public:
+    explicit GiftCard(long long cents) : balance_(cents > 0 ? cents : 0) {}
+
+    long long balance() const { return balance_; }
+
+    bool top_up(long long cents) {
+        if (cents < 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    bool pay(long long cents) {
+        if (cents <= 0) return false;
+        balance_ -= cents;
+        if (balance_ < 0) return false;
+        return true;
+    }
+
+private:
+    long long balance_;
+};
+--- solution
+class GiftCard {
+public:
+    explicit GiftCard(long long cents) : balance_(cents > 0 ? cents : 0) {}
+
+    long long balance() const { return balance_; }
+
+    bool top_up(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    bool pay(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+private:
+    long long balance_;
+};
+--- hint
+In \`pay\`, trace a refused payment line by line. By the time the \`if\` finds the problem, what has already happened to the balance?
+--- hint
+A guard belongs before the change. And look closely at the comparison in \`top_up\`: is 0 a positive amount?
+--- check test | A refused payment leaves the card alone
+[] { GiftCard g(2000); bool ok = g.pay(3000); return !ok && g.balance() == 2000; }()
+--- check test | Paying exactly the balance is fine
+[] { GiftCard g(2000); bool a = g.pay(500); bool b = g.pay(1500); bool c = g.pay(1); return a && b && !c && g.balance() == 0; }()
+--- check test | Top-ups must be positive
+[] { GiftCard g(100); bool zero = g.top_up(0); bool neg = g.top_up(-50); bool ok = g.top_up(250); return !zero && !neg && ok && g.balance() == 350; }()
+--- check test | Zero and negative payments are refused
+[] { GiftCard g(100); return !g.pay(0) && !g.pay(-20) && g.balance() == 100; }()
+
++++ practice | Stretch: split a bill by shares, to the last cent
+--- task
+Friends share a bill, but not equally: each person has a number of **shares**. Money is whole cents, so the split cannot always be exact, and yet the amounts must add up to the bill **exactly**. Use the largest-remainder rule:
+
+1. Each person first gets \`total * share / (sum of shares)\` cents, rounded down.
+2. A few cents are left over. Give them out one each, to the people whose rounding threw away the **largest fraction**, largest first. On equal fractions, the person earlier in the list goes first.
+
+Write \`std::optional<std::vector<long long>> split(long long total, const std::vector<int>& shares)\`, returning each person's cents in the same order as \`shares\`. No \`main\`.
+
+- Return \`std::nullopt\` if \`total\` is negative, \`shares\` is empty, any share is negative, or every share is 0.
+- \`total\` is at most 10¹², and each share at most 1,000,000, so \`total * share\` fits in a \`long long\`.
+
+\`split(100, {1, 1, 1})\` is \`{34, 33, 33}\`. \`split(1000, {1, 2})\` is \`{333, 667}\`: the exact amounts are 333⅓ and 666⅔, and the second one threw away the bigger fraction, so it gets the spare cent.
+--- starter
+#include <optional>
+#include <vector>
+
+std::optional<std::vector<long long>> split(long long total, const std::vector<int>& shares) {
+    std::vector<long long> out;
+    long long sum = 0;
+    for (int s : shares) sum += s;
+    for (int s : shares) out.push_back(total * s / sum);
+    return out;
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+std::optional<std::vector<long long>> split(long long total, const std::vector<int>& shares) {
+    if (total < 0 || shares.empty()) return std::nullopt;
+    long long sum = 0;
+    for (int s : shares) {
+        if (s < 0) return std::nullopt;
+        sum += s;
+    }
+    if (sum == 0) return std::nullopt;
+
+    std::vector<long long> out;
+    std::vector<long long> thrown_away;   // numerators over sum: the fraction lost in rounding
+    long long given = 0;
+    for (int s : shares) {
+        out.push_back(total * s / sum);
+        thrown_away.push_back(total * s % sum);
+        given += out.back();
+    }
+
+    std::vector<std::size_t> order(shares.size());
+    for (std::size_t i = 0; i < order.size(); ++i) order[i] = i;
+    std::sort(order.begin(), order.end(), [&](std::size_t a, std::size_t b) {
+        if (thrown_away[a] != thrown_away[b]) return thrown_away[a] > thrown_away[b];
+        return a < b;
+    });
+    for (long long k = 0; k < total - given; ++k) ++out[order[k]];
+    return out;
+}
+--- hint
+Check the four refusals first. Then work out each person's rounded-down amount, and also what the rounding threw away: \`total * s % sum\`. Every fraction has the same bottom number, \`sum\`, so comparing those remainders compares the fractions.
+--- hint
+The cents left over are \`total\` minus the sum of the rounded amounts. There are always fewer of them than people, so each person gets at most one.
+--- hint
+Make a list of positions \`0, 1, 2, …\` and sort it with a comparator: bigger remainder first, and on a tie the smaller position first. Then add one cent to the people at the front of that order, one per spare cent.
+--- check test | Three equal shares
+split(100, {1, 1, 1}) == std::vector<long long>{34, 33, 33} && split(101, {1, 1, 1, 1}) == std::vector<long long>{26, 25, 25, 25}
+--- check test | The biggest fraction gets the spare cent
+split(1000, {1, 2}) == std::vector<long long>{333, 667} && split(7, {2, 2, 2}) == std::vector<long long>{3, 2, 2}
+--- check test | Exact splits, a zero share and a zero bill
+split(10, {3, 3, 4}) == std::vector<long long>{3, 3, 4} && split(5, {0, 1}) == std::vector<long long>{0, 5} && split(0, {1, 1}) == std::vector<long long>{0, 0}
+--- check test | More people than cents
+split(10, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}) == std::vector<long long>{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
+--- check test | Big amounts still add up
+[] { auto s = split(1000000000000LL, {1000000, 999999, 3}); return s && *s == std::vector<long long>{499999500000LL, 499999000001LL, 1499999LL} && (*s)[0] + (*s)[1] + (*s)[2] == 1000000000000LL; }()
+--- check test | Splits that make no sense
+!split(-1, {1}) && !split(100, {}) && !split(100, {0, 0}) && !split(100, {2, -1})
+
+=== cppp-06 | Bank 2: account types
+--- teach
+Last lesson you built one \`Account\` that keeps its rules, and you got it ready to be a base class: a virtual \`withdraw\`, an empty \`end_month\` hook, a virtual \`kind\`, a virtual destructor and a protected \`balance_\`. This lesson uses all of that. You add two new kinds of account.
+
+A real bank offers several kinds of account. They share almost everything: an id, an owner, a balance, deposits. They differ in a few rules. That is exactly what inheritance with virtual functions is for, as with the shapes in the advanced course. The shared parts live in \`Account\`. Each derived class **overrides** only what is different: it supplies its own version of a virtual function.
+
+### Passing the id and owner up to Account
+
+A derived class's constructor must build its \`Account\` part first. You did this with \`Square(double side) : Rectangle(side, side) {}\`: the base's constructor goes first in the initializer list, and then the derived class's own members.
+
+Here it is with a string. The derived constructor takes the string by value, the way \`Account\`'s constructor does, and moves it along to the base, so it is not copied a second time:
+
+\`\`\`cpp
+class BigLocker : public Locker {
+public:
+    BigLocker(int number, std::string label, int shelves)
+        : Locker(number, std::move(label)), shelves_(shelves) {}
+private:
+    int shelves_;
+};
+\`\`\`
+
+Read it as: "build the \`Locker\` part from \`number\` and \`label\`, then set my own \`shelves_\`."
+
+### A checking account: replace the rule
+
+A **checking account** is an everyday account that may go [[overdrawn|overdraft-word]]: below zero, down to a limit the bank has agreed. The limit is a positive number of cents. With a limit of $50.00 (5000 cents), the balance may fall as low as -5000, but no lower.
+
+Work through it with numbers. The balance is 2000 cents and the limit is 5000:
+
+- Withdraw 6000. The new balance would be 2000 − 6000 = −4000. That is not below −5000, so it is allowed.
+- Now withdraw 1500. The new balance would be −4000 − 1500 = −5500. That is below −5000, so it is refused, and the balance stays −4000.
+
+So the test is: refuse when "balance minus the amount" would be less than "minus the limit". The positive-amount rule still applies too.
+
+This rule does not build on the basic one; it is different. So \`CheckingAccount::withdraw\` **replaces** the base version completely: its own guard, then its own subtraction. Because \`balance_\` is protected, the derived class may subtract from it directly. Code outside the family of classes still cannot.
+
+### override, every time
+
+Write \`override\` after each function that replaces a virtual one:
+
+\`\`\`cpp
+std::string kind() const override { return "big"; }
+\`\`\`
+
+If the signature does not match the base exactly, say you forgot the \`const\` on \`kind\`, the compiler stops you. Without \`override\`, that mistake compiles as a brand-new function that no call through an \`Account\` ever reaches, as the shapes lesson warned.
+
+### A savings account: extend the rule
+
+A **savings account** is for keeping money, not spending it. It has three rules of its own:
+
+- It never goes below zero. That is exactly the basic rule.
+- At most **3 withdrawals per month**. The 4th fails until \`end_month()\` starts a new month. This is a limit that [[real savings accounts have had|withdrawal-limits]].
+- At the end of each month it pays **interest**: a little extra money, a percentage of the balance.
+
+The first rule is already written, in \`Account::withdraw\`. Writing it again would give two copies to keep in step. Instead, the savings version **calls the base version** by its full name, \`ClassName::function(...)\`:
+
+\`\`\`cpp
+// inside class CountingDoor : public Door
+bool open() override {
+    bool ok = Door::open();   // run Door's own rule
+    if (ok) ++opens_;         // then add my part
+    return ok;
+}
+\`\`\`
+
+\`Door::open()\` means "the version written in \`Door\`", not the override. Without the \`Door::\` in front, \`open()\` would call \`CountingDoor::open\` again, forever. Calling the base version like this is how an override [[extends a rule instead of replacing it|extend-not-replace]].
+
+For savings, the new part comes in two places. Before calling the base version, check the monthly limit. After it, count the withdrawal, but only if the base version said yes.
+
+If you like, name the limit instead of writing a bare \`3\`. Inside the class, \`static constexpr int kMaxOpens = 5;\` makes one constant shared by the whole class (\`static\` means "belongs to the class, not to each object").
+
+### Interest in basis points
+
+Interest rates are often tiny percentages, like 2.5%. To keep everything in whole numbers, the rate is given in **[[basis points|basis-points]]**: hundredths of a percent. 100 basis points (written bp) is 1%, so 250 bp is 2.5%, and 10000 bp would be 100%.
+
+To find the interest, multiply the balance by the rate and divide by 10000:
+
+\`\`\`cpp
+long long pot = 12345;       // $123.45
+int rate_bp = 150;           // 1.5%
+long long extra = pot * rate_bp / 10000;   // 1851750 / 10000 = 185
+\`\`\`
+
+The exact answer is 185.175 cents, but integer division throws the fraction away, so the interest is **[[rounded down|rounding-down]]** to 185.
+
+Multiply first, divide second. \`rate_bp / 10000\` on its own is \`150 / 10000\`, which is \`0\` in integer division, and then everyone gets no interest at all.
+
+Interest is paid only on a **positive** balance. A savings account never goes negative, but a zero balance earns nothing either, and the rule says so plainly.
+
+The next month, the interest is worked out on the new, bigger balance. With 4000 cents at 150 bp: 4000 × 150 / 10000 = 60, so 4060. Then 4060 × 150 / 10000 = 60.9, rounded down to 60, so 4120.
+
+\`end_month\` does two jobs for a savings account: pay the interest, and set the withdrawal count back to 0 for the new month.
+
+**Watch out:** only a withdrawal that *succeeded* uses up the monthly allowance. If someone asks for $50 from an account holding $1, the base rule refuses it, and that refusal must not count as one of the three. Count only after the base version has said yes.
+
+::: context overdraft-word Overdrawn
+To "draw" money from an account is an old word for taking it out, and to "overdraw" is to take out more than is there. The bank then lends you the difference for a while, usually with a fee or interest. An **overdraft limit** is how far the bank will let that go. In code it is one more invariant: for a checking account, the balance is always at least minus the limit, and every withdrawal must keep it that way.
+
+\`\`\`svg
+<svg viewBox="0 0 360 110" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="50" x2="340" y2="50" stroke="#1f2a44" stroke-width="2"/>
+  <rect x="115" y="40" width="175" height="20" fill="#8fb8f0" opacity="0.6"/>
+  <line x1="115" y1="36" x2="115" y2="64" stroke="#b4232c" stroke-width="2"/>
+  <text x="112" y="80" font-size="11" fill="#b4232c">limit −5000</text>
+  <line x1="240" y1="42" x2="240" y2="58" stroke="#1f2a44" stroke-width="2"/>
+  <text x="240" y="80" font-size="11" fill="#1f2a44" text-anchor="middle">0</text>
+  <circle cx="290" cy="50" r="5" fill="#1d6fd1"/>
+  <text x="290" y="30" font-size="11" fill="#1d6fd1" text-anchor="middle">2000 start</text>
+  <circle cx="140" cy="50" r="5" fill="#1d6fd1"/>
+  <text x="140" y="30" font-size="11" fill="#1d6fd1" text-anchor="middle">−4000 ok</text>
+  <circle cx="102" cy="50" r="5" fill="#ffffff" stroke="#b4232c" stroke-width="2"/>
+  <text x="98" y="80" font-size="11" fill="#b4232c" text-anchor="end">−5500 no</text>
+  <text x="180" y="102" font-size="11" fill="#6c7a93" text-anchor="middle">shaded: every balance the checking account may have</text>
+</svg>
+\`\`\`
+:::
+
+::: context withdrawal-limits A limit from real banking rules
+In the United States, a rule called Regulation D long limited savings accounts to six "convenient" withdrawals and transfers per month, such as online transfers and checks. Banks enforced it in software much like your counter, and many refused or charged for the seventh. In April 2020 the Federal Reserve removed that limit, but many banks kept their own monthly limits. It is a good example of a business rule that changes over time, which is why it belongs in one clearly named place in the code.
+:::
+
+::: context extend-not-replace One copy of each rule
+If \`SavingsAccount::withdraw\` wrote its own "positive, and not more than the balance" check, the program would have that rule twice. Suppose the bank later adds a rule to the base, for example a maximum single withdrawal. The copy in the savings class would not get it, and savings accounts would quietly break the new rule. Calling \`Account::withdraw\` means the savings class always follows the current basic rule, plus its own. Programmers call the goal "don't repeat yourself": each rule lives in exactly one place.
+:::
+
+::: context basis-points Where basis points come from
+"Basis point" is finance talk, often shortened to "bp" and said aloud as "bips". Traders use it because percentages of percentages get confusing: if a rate goes from 2% to 2.5%, is that a rise of 0.5% or of 25%? Saying "up 50 basis points" means only one thing. For code, basis points have another plus: 2.5% becomes the whole number 250, so every rate fits in an \`int\` and no \`double\` is needed anywhere.
+:::
+
+::: context rounding-down Who keeps the fraction of a cent?
+Integer division always drops the fraction, so the bank keeps the 0.175 of a cent in the example. With whole cents, some rounding rule has to be chosen, and real banks write theirs down, sometimes in the account's contract. Common choices are rounding down, rounding to the nearest cent, and rounding a half to the nearest even cent, which is called banker's rounding because, over many sums, it does not lean up or down. What matters most is that the rule is chosen on purpose and applied the same way every time.
+:::
+--- task
+Add two kinds of account, both deriving from \`Account\`. No \`main\`: the checker supplies it.
+
+- \`CheckingAccount(int id, std::string owner, long long overdraft_limit)\` passes \`id\` and \`owner\` on to \`Account\`. Its \`withdraw\` succeeds for a positive amount as long as the new balance stays \`>= -overdraft_limit\`; otherwise it returns \`false\` and changes nothing. Its \`kind()\` is \`"checking"\`.
+- \`SavingsAccount(int id, std::string owner, int rate_bp)\` passes \`id\` and \`owner\` on to \`Account\`. Its \`withdraw\` follows the basic rule (call \`Account::withdraw\`), but allows at most 3 successful withdrawals per month; a refused withdrawal does not count. Its \`end_month()\` adds \`balance * rate_bp / 10000\` when the balance is positive, and resets the monthly count to 0. Its \`kind()\` is \`"savings"\`.
+- Mark every overriding function \`override\`.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- hint
+Both constructors start like \`BigLocker\`'s: \`: Account(id, std::move(owner))\`, then their own member (\`overdraft_limit_\` or \`rate_bp_\`). The savings account also needs an \`int\` counter for this month's withdrawals, starting at 0.
+--- hint
+\`CheckingAccount::withdraw\`: return \`false\` if \`cents <= 0\` or \`balance_ - cents < -overdraft_limit_\`; otherwise subtract and return \`true\`.
+--- hint
+\`SavingsAccount::withdraw\`: if the counter has reached 3, return \`false\`. Then \`if (!Account::withdraw(cents)) return false;\`, and only after that add one to the counter and return \`true\`. \`end_month\`: \`if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;\`, then set the counter to 0.
+--- check test | Checking can go overdrawn up to the limit
+[] { CheckingAccount c(1, "A", 10000); c.deposit(5000); bool ok = c.withdraw(15000); bool beyond = c.withdraw(1); return ok && !beyond && c.balance() == -10000 && c.kind() == "checking"; }()
+--- check test | Savings allows three withdrawals a month
+[] { SavingsAccount s(2, "B", 0); s.deposit(1000); bool three = s.withdraw(10) && s.withdraw(10) && s.withdraw(10); bool fourth = s.withdraw(10); s.end_month(); bool again = s.withdraw(10); return three && !fourth && again && s.balance() == 960; }()
+--- check test | A failed savings withdrawal does not use up the allowance
+[] { SavingsAccount s(2, "B", 0); s.deposit(100); bool big = s.withdraw(5000); bool three = s.withdraw(1) && s.withdraw(1) && s.withdraw(1); return !big && three && !s.withdraw(1); }()
+--- check test | Savings pays interest, rounded down
+[] { SavingsAccount s(3, "C", 250); s.deposit(10000); s.end_month(); bool first = s.balance() == 10250; s.end_month(); return first && s.balance() == 10506 && s.kind() == "savings"; }()
+--- check test | Virtual calls through an Account reference
+[] { CheckingAccount c(1, "A", 500); SavingsAccount s(2, "B", 100); Account& a = c; Account& b = s; b.deposit(1000); bool ok = a.withdraw(300); b.end_month(); return ok && a.balance() == -300 && a.kind() == "checking" && b.balance() == 1010 && b.kind() == "savings"; }()
+
++++ practice | An account that charges a fee
+--- task
+The starter holds your \`Account\` from the bank project. Add \`class FeeAccount\`, deriving from \`Account\`. No \`main\`.
+
+- \`FeeAccount(int id, std::string owner, long long fee)\` passes \`id\` and \`owner\` on to \`Account\`.
+- Its \`withdraw(cents)\` takes out \`cents\` **plus** the fee, following the basic rule for the total (call \`Account::withdraw\`): the balance must cover amount and fee together. A withdrawal of 0 or less is refused, even though the fee alone would be positive.
+- Its \`kind()\` is \`"fee"\`.
+- Mark both functions \`override\`.
+
+With a fee of 50, a balance of 1000 allows \`withdraw(950)\`, leaving 0, but not \`withdraw(951)\`.
+--- starter
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class FeeAccount : public Account {
+public:
+    FeeAccount(int id, std::string owner, long long fee)
+        : Account(id, std::move(owner)), fee_(fee) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0) return false;   // the fee alone must not make a zero withdrawal look positive
+        return Account::withdraw(cents + fee_);
+    }
+
+    std::string kind() const override { return "fee"; }
+
+private:
+    long long fee_;
+};
+--- hint
+The constructor starts like the lesson's: \`: Account(id, std::move(owner))\`, then your own \`fee_\`.
+--- hint
+Let the base class check the total: \`Account::withdraw(cents + fee_)\`. But first refuse \`cents <= 0\` yourself, because \`0 + fee_\` is positive and the base would accept it.
+--- check test | The fee is taken with the amount
+[] { FeeAccount a(1, "Ada", 50); a.deposit(1000); bool ok = a.withdraw(200); return ok && a.balance() == 750 && a.kind() == "fee"; }()
+--- check test | The balance must cover amount and fee together
+[] { FeeAccount a(1, "Ada", 50); a.deposit(1000); bool too_much = a.withdraw(951); bool exact = a.withdraw(950); return !too_much && exact && a.balance() == 0; }()
+--- check test | A zero or negative withdrawal is refused
+[] { FeeAccount a(1, "Ada", 50); a.deposit(1000); return !a.withdraw(0) && !a.withdraw(-10) && a.balance() == 1000; }()
+--- check test | Virtual calls through an Account reference
+[] { FeeAccount f(2, "Lin", 25); Account& a = f; a.deposit(500); bool ok = a.withdraw(100); return ok && a.balance() == 375 && a.kind() == "fee" && a.owner() == "Lin" && a.id() == 2; }()
+
++++ practice | A loan: money owed, and interest rounded up
+--- task
+The starter holds your \`Account\`. Add \`class LoanAccount\`, deriving from \`Account\`. A loan is money the customer owes the bank, so its balance is **negative**. No \`main\`.
+
+- \`LoanAccount(int id, std::string owner, long long principal, int rate_bp)\` passes \`id\` and \`owner\` on to \`Account\`, and starts the balance at \`-principal\`: a loan of $1000.00 starts at -100000 cents.
+- Deposits pay the loan back. The inherited \`deposit\` already does that.
+- \`withdraw\` always returns \`false\`: nobody takes money out of a loan.
+- \`end_month()\` charges interest while money is still owed: when the balance is negative, the debt grows by \`debt * rate_bp / 10000\`, **rounded up** to a whole cent, where \`debt\` is the size of the negative balance. When nothing is owed, nothing happens.
+- \`bool paid_off() const\` is \`true\` when the balance is 0 or more.
+- \`kind()\` is \`"loan"\`. Mark every overriding function \`override\`.
+
+A $1000.00 loan at 150 bp is at -100000, then -101500 after one month, then -103023 after two (1522.5 rounds **up** to 1523).
+--- starter
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class LoanAccount : public Account {
+public:
+    LoanAccount(int id, std::string owner, long long principal, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {
+        balance_ = -principal;
+    }
+
+    bool withdraw(long long) override { return false; }
+
+    void end_month() override {
+        if (balance_ >= 0) return;
+        long long debt = -balance_;
+        // Rounded up: adding 9999 first pushes any fraction over the next whole cent.
+        balance_ -= (debt * rate_bp_ + 9999) / 10000;
+    }
+
+    bool paid_off() const { return balance_ >= 0; }
+
+    std::string kind() const override { return "loan"; }
+
+private:
+    int rate_bp_;
+};
+--- hint
+\`balance_\` is protected, so the constructor's body may set it: after passing \`id\` and \`owner\` to \`Account\`, write \`balance_ = -principal;\`.
+--- hint
+Integer division rounds down. To round up instead, add one less than the divisor before dividing: \`(debt * rate_bp_ + 9999) / 10000\`. An exact 1500 stays 1500, while 1522.5 becomes 1523.
+--- check test | A new loan is money owed
+[] { LoanAccount l(1, "Ada", 100000, 150); return l.balance() == -100000 && !l.paid_off() && l.kind() == "loan"; }()
+--- check test | Interest is charged and rounded up
+[] { LoanAccount l(1, "Ada", 100000, 150); l.end_month(); bool first = l.balance() == -101500; l.end_month(); return first && l.balance() == -103023; }()
+--- check test | Paying it back, and no interest once paid
+[] { LoanAccount l(1, "Ada", 5000, 1000); bool a = l.deposit(3000); l.end_month(); bool mid = l.balance() == -2200; l.deposit(2200); l.end_month(); return a && mid && l.paid_off() && l.balance() == 0; }()
+--- check test | Nothing can be withdrawn
+[] { LoanAccount l(1, "Ada", 5000, 100); l.deposit(9000); return !l.withdraw(100) && !l.withdraw(0) && l.balance() == 4000; }()
+--- check test | Through an Account reference
+[] { LoanAccount l(3, "Mo", 20000, 50); Account& a = l; a.end_month(); return a.balance() == -20100 && a.kind() == "loan" && !a.withdraw(1); }()
+
++++ practice | An account that sends an alert
+--- task
+The starter holds your \`Account\`. Add \`class AlertAccount\`, deriving from \`Account\`, which calls a function of your caller's choosing when the balance runs low. You met \`std::function\` in the callbacks lesson. No \`main\`.
+
+- \`AlertAccount(int id, std::string owner, long long threshold, std::function<void(long long)> on_low)\` passes \`id\` and \`owner\` on to \`Account\` and keeps the other two.
+- Its \`withdraw\` follows the basic rule (call \`Account::withdraw\`). After a **successful** withdrawal that leaves the balance **below** \`threshold\`, it calls \`on_low\` with the new balance. A refused withdrawal never calls it, and neither does one that leaves the balance at \`threshold\` or above.
+- If \`on_low\` holds no function, nothing is called.
+- Its \`kind()\` is \`"alert"\`. Mark both functions \`override\`.
+
+Include \`<functional>\`.
+--- starter
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <functional>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class AlertAccount : public Account {
+public:
+    AlertAccount(int id, std::string owner, long long threshold, std::function<void(long long)> on_low)
+        : Account(id, std::move(owner)), threshold_(threshold), on_low_(std::move(on_low)) {}
+
+    bool withdraw(long long cents) override {
+        if (!Account::withdraw(cents)) return false;
+        if (balance_ < threshold_ && on_low_) on_low_(balance_);
+        return true;
+    }
+
+    std::string kind() const override { return "alert"; }
+
+private:
+    long long threshold_;
+    std::function<void(long long)> on_low_;
+};
+--- hint
+Keep the callback in a \`std::function<void(long long)>\` member, moved in from the constructor's parameter, next to the threshold.
+--- hint
+In \`withdraw\`, run the base rule first and return \`false\` straight away if it refused. Only then compare the new balance with the threshold. A \`std::function\` tests as \`false\` when it holds nothing, so \`if (on_low_)\` guards the call.
+--- check test | Crossing below the threshold calls the function
+[] { std::vector<long long> calls; AlertAccount a(1, "Ada", 1000, [&calls](long long b) { calls.push_back(b); }); a.deposit(5000); a.withdraw(3000); a.withdraw(1500); a.withdraw(400); return calls == std::vector<long long>{500, 100} && a.balance() == 100; }()
+--- check test | Refused withdrawals never call it
+[] { int n = 0; AlertAccount a(1, "Ada", 1000, [&n](long long) { ++n; }); a.deposit(200); bool big = a.withdraw(500); bool zero = a.withdraw(0); return !big && !zero && n == 0 && a.balance() == 200; }()
+--- check test | Landing exactly on the threshold is not low
+[] { int n = 0; AlertAccount a(1, "Ada", 1000, [&n](long long) { ++n; }); a.deposit(1500); a.withdraw(500); return n == 0 && a.balance() == 1000; }()
+--- check test | No function, no call, and virtual dispatch
+[] { AlertAccount a(2, "Lin", 1000, nullptr); Account& r = a; r.deposit(300); bool ok = r.withdraw(100); return ok && r.balance() == 200 && r.kind() == "alert"; }()
+
++++ practice | Interest that never overflows
+--- task
+A savings account pays \`balance * rate_bp / 10000\`, rounded down. But \`balance * rate_bp\` can overflow a \`long long\` long before the interest itself is too big: at a rate of 10000 bp it overflows once the balance passes about $9.2 trillion, although the answer would still fit.
+
+Write \`long long monthly_interest(long long balance, int rate_bp)\`. No \`main\`.
+
+- It returns \`balance * rate_bp / 10000\`, rounded down, exactly, for **every** positive \`long long\` balance, with \`rate_bp\` from 0 to 10000. No step may overflow.
+- A balance of 0 or less, or a rate of 0, earns 0.
+
+For example, \`monthly_interest(12345, 150)\` is 185, and at the largest rate the largest balance earns itself: \`monthly_interest(std::numeric_limits<long long>::max(), 10000)\` is \`std::numeric_limits<long long>::max()\`. Include \`<limits>\`.
+--- starter
+#include <limits>
+
+long long monthly_interest(long long balance, int rate_bp) {
+    if (balance <= 0) return 0;
+    return balance * rate_bp / 10000;
+}
+--- solution
+#include <limits>
+
+long long monthly_interest(long long balance, int rate_bp) {
+    if (balance <= 0 || rate_bp <= 0) return 0;
+    long long q = balance / 10000;   // whole ten-thousands
+    long long r = balance % 10000;   // the rest, below 10000
+    // q * rate_bp is at most balance, and r * rate_bp is below 10^8: no overflow.
+    return q * rate_bp + r * rate_bp / 10000;
+}
+--- hint
+Split the balance into whole ten-thousands and what is left over: \`q = balance / 10000\` and \`r = balance % 10000\`, so \`balance\` is \`q * 10000 + r\`.
+--- hint
+Then \`balance * rate / 10000\` is \`q * rate\` plus \`r * rate / 10000\`. The first part has no fraction to lose, so rounding down only touches the second part, and the answer is exact.
+--- hint
+\`q * rate_bp\` can never be bigger than \`balance\` itself, since \`rate_bp\` is at most 10000, and \`r * rate_bp\` is below 10000 × 10000. So both products fit.
+--- check test | Ordinary interest, rounded down
+monthly_interest(12345, 150) == 185 && monthly_interest(10000, 250) == 250 && monthly_interest(9999, 1) == 0 && monthly_interest(10000, 1) == 1
+--- check test | Nothing for an empty or negative balance, or no rate
+monthly_interest(0, 500) == 0 && monthly_interest(-5000, 500) == 0 && monthly_interest(100000, 0) == 0
+--- check test | The largest balance at the largest rate
+monthly_interest(std::numeric_limits<long long>::max(), 10000) == std::numeric_limits<long long>::max()
+--- check test | The largest balance at small rates
+monthly_interest(std::numeric_limits<long long>::max(), 1) == 922337203685477LL && monthly_interest(std::numeric_limits<long long>::max(), 250) == 230584300921369395LL && monthly_interest(std::numeric_limits<long long>::max(), 9999) == 9222449699651090329LL
+
++++ practice | Debug: the savings account that forgets what it is
+--- task
+**Bug report:** "Through an \`Account&\`, my savings account says its kind is \`"basic"\`. And after two withdrawals are refused for lack of money, it lets me make only one real withdrawal that month instead of three."
+
+The starter holds \`Account\` and a \`SavingsAccount\` meant to follow the lesson's rules: at most 3 **successful** withdrawals a month, a refused one does not count, and \`kind()\` is \`"savings"\` however the account is reached. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class SavingsAccount : public Account {
+public:
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= 3) return false;
+        ++withdrawals_;
+        return Account::withdraw(cents);
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- solution
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class SavingsAccount : public Account {
+public:
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= 3) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;   // only a withdrawal that happened counts
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- hint
+Compare \`SavingsAccount::kind\` with \`Account::kind\` character by character. Without the \`const\`, it is a new function with the same name, not an override, so a call through \`Account&\` never reaches it. Which keyword would have made the compiler complain?
+--- hint
+In \`withdraw\`, the counter goes up before anyone knows whether the withdrawal will happen. Count only after \`Account::withdraw\` has said yes.
+--- check test | kind through an Account reference
+[] { SavingsAccount s(1, "Ada", 100); const Account& a = s; return a.kind() == "savings" && s.kind() == "savings"; }()
+--- check test | Refused withdrawals do not use up the month
+[] { SavingsAccount s(1, "Ada", 0); s.deposit(100); bool big1 = s.withdraw(500); bool big2 = s.withdraw(900); bool three = s.withdraw(10) && s.withdraw(10) && s.withdraw(10); bool fourth = s.withdraw(10); return !big1 && !big2 && three && !fourth && s.balance() == 70; }()
+--- check test | A new month starts a new count
+[] { SavingsAccount s(1, "Ada", 0); s.deposit(1000); s.withdraw(1); s.withdraw(1); s.withdraw(1); bool blocked = !s.withdraw(1); s.end_month(); return blocked && s.withdraw(1) && s.balance() == 996; }()
+--- check test | Interest still works through an Account reference
+[] { SavingsAccount s(1, "Ada", 250); Account& a = s; a.deposit(10000); a.end_month(); return a.balance() == 10250; }()
+
++++ practice | Stretch: a plan with free withdrawals and a monthly fee
+--- task
+The starter holds your \`Account\`. Add \`class PlanAccount\`, deriving from \`Account\`, for an everyday account with a price plan. No \`main\`.
+
+\`PlanAccount(int id, std::string owner, int free_withdrawals, long long fee, long long minimum, long long monthly_fee)\`:
+
+- **Withdrawals.** The first \`free_withdrawals\` successful withdrawals of each month cost nothing extra. Every later one that month also costs \`fee\`, taken out together with the amount. A withdrawal is refused, and changes nothing, unless the amount is positive and the balance covers everything it takes out. A refused withdrawal does not count.
+- **The lowest balance.** Each month the account remembers its lowest balance. It starts as the balance when the month began (0 for a new account), and only a successful withdrawal can lower it.
+- **\`end_month()\`.** If the month's lowest balance was below \`minimum\`, charge \`monthly_fee\`, but never take the balance below 0: if less than the fee is there, take only what is there. Then start the new month: the withdrawal count goes back to 0, and the lowest balance starts again at the current balance.
+- \`kind()\` is \`"plan"\`. Mark every overriding function \`override\`.
+
+For example, with 2 free withdrawals and a fee of 100: after a deposit of 10000, two withdrawals of 1000 leave 8000, and a third leaves 6900.
+--- starter
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+--- solution
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class PlanAccount : public Account {
+public:
+    PlanAccount(int id, std::string owner, int free_withdrawals, long long fee, long long minimum, long long monthly_fee)
+        : Account(id, std::move(owner)),
+          free_withdrawals_(free_withdrawals),
+          fee_(fee),
+          minimum_(minimum),
+          monthly_fee_(monthly_fee) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0) return false;
+        long long extra = withdrawals_ >= free_withdrawals_ ? fee_ : 0;
+        if (!Account::withdraw(cents + extra)) return false;
+        ++withdrawals_;
+        if (balance_ < lowest_) lowest_ = balance_;
+        return true;
+    }
+
+    void end_month() override {
+        if (lowest_ < minimum_) {
+            long long charge = monthly_fee_ < balance_ ? monthly_fee_ : balance_;
+            if (charge > 0) balance_ -= charge;
+        }
+        withdrawals_ = 0;
+        lowest_ = balance_;
+    }
+
+    std::string kind() const override { return "plan"; }
+
+private:
+    int free_withdrawals_;
+    long long fee_;
+    long long minimum_;
+    long long monthly_fee_;
+    int withdrawals_ = 0;
+    long long lowest_ = 0;   // lowest balance so far this month
+};
+--- hint
+Two new pieces of state besides the settings: this month's count of successful withdrawals, and this month's lowest balance, starting at 0 because a new account starts at 0.
+--- hint
+In \`withdraw\`, refuse a non-positive amount first. Work out whether this one pays the fee (the count has reached \`free_withdrawals\`), let \`Account::withdraw\` check the amount plus that extra, and only after it succeeds, count it and lower the lowest balance if needed.
+--- hint
+Deposits cannot lower a balance, so the inherited \`deposit\` needs no change. In \`end_month\`, the charge is the smaller of the fee and the balance; charge it only if the lowest balance was below the minimum, then reset the count and the lowest balance.
+--- check test | Free withdrawals, then a fee each
+[] { PlanAccount p(1, "Ada", 2, 100, 0, 0); p.deposit(10000); p.withdraw(1000); p.withdraw(1000); bool free_ok = p.balance() == 8000; p.withdraw(1000); return free_ok && p.balance() == 6900 && p.kind() == "plan"; }()
+--- check test | The balance must cover the fee too, and a refusal does not count
+[] { PlanAccount p(1, "Ada", 0, 100, 0, 0); p.deposit(1050); bool big = p.withdraw(1000); bool exact = p.withdraw(950); return !big && exact && p.balance() == 0 && !p.withdraw(0); }()
+--- check test | A new month gives the free withdrawals back
+[] { PlanAccount p(1, "Ada", 1, 100, 0, 0); p.deposit(5000); p.withdraw(1000); p.withdraw(1000); bool before = p.balance() == 2900; p.end_month(); p.withdraw(1000); return before && p.balance() == 1900; }()
+--- check test | The monthly fee depends on the lowest balance
+[] { PlanAccount p(1, "Ada", 5, 0, 1000, 500); p.deposit(50000); p.end_month(); bool first = p.balance() == 49500; p.end_month(); bool second = p.balance() == 49500; p.withdraw(49000); p.deposit(49000); p.end_month(); return first && second && p.balance() == 49000; }()
+--- check test | The fee never takes the balance below zero
+[] { PlanAccount p(1, "Ada", 5, 0, 1000, 500); p.deposit(200); p.end_month(); bool emptied = p.balance() == 0; p.end_month(); return emptied && p.balance() == 0; }()
+--- check test | Through an Account reference
+[] { PlanAccount p(7, "Mo", 0, 50, 0, 0); Account& a = p; a.deposit(1000); bool ok = a.withdraw(100); return ok && a.balance() == 850 && a.kind() == "plan"; }()
+
+=== cppp-07 | Bank 3: the bank owns the accounts
+--- teach
+Last lesson you added checking and savings accounts, each with its own rules, both deriving from \`Account\`. So far each account lives on its own. This lesson builds the \`Bank\` that holds them all: it opens accounts, finds them by id, moves money between them, and ends the month for everyone.
+
+### Who owns the accounts?
+
+Think of a library. The library **owns** its books: it buys them, and when it closes down, it gets rid of them. You only **borrow** a book: you can read it, but you may not throw it away, and it is only there as long as the library is.
+
+Code has the same question, called **[[ownership|ownership-word]]**: who creates an object, who destroys it, and who merely uses it? Here the answer is clear. The bank owns the accounts. Code that asks the bank for an account only borrows it.
+
+### Why not a vector of accounts?
+
+A first try might be \`std::vector<Account>\`. But a checking account and a savings account are different sizes and behave differently. Putting one into a slot made for a plain \`Account\` copies only the \`Account\` part. That is **[[object slicing|slicing-again]]**, from the advanced course: the copy forgets it was ever a savings account.
+
+Polymorphic objects live behind pointers. The bank keeps an **owning pointer** to each account: a \`std::unique_ptr<Account>\`, which deletes its account when it is destroyed.
+
+### A map from id to account
+
+The bank looks accounts up by id all the time, so it keeps them in a \`std::map\` whose key is the id. Here is the same idea for a zoo that owns its animals, looked up by pen number:
+
+\`\`\`cpp
+std::map<int, std::unique_ptr<Animal>> pens_;
+\`\`\`
+
+Read it as "a map from \`int\` to an owning pointer to an \`Animal\`". Each entry pairs a pen number with the animal in it. When the zoo object is destroyed, the map is destroyed, every \`unique_ptr\` in it is destroyed, and each one deletes its animal. Nobody has to remember to clean up. A \`std::map\` also keeps its keys [[in sorted order|map-order]], so looping over it visits the ids from smallest to largest.
+
+### Handing out ids
+
+The bank chooses each account's id, so two accounts can never share one. It keeps a counter, \`int next_id_ = 1;\`, and each new account takes the next number: 1, 2, 3, and so on.
+
+\`\`\`cpp
+int ticket = next_ticket_++;
+\`\`\`
+
+\`next_ticket_++\`, read "next ticket, then add one", is the **[[post-increment|post-increment]]**: it gives the counter's *current* value, and then adds one to the counter. If \`next_ticket_\` was 7, \`ticket\` is 7 and the counter is now 8.
+
+### Making the account
+
+To create an account of a derived type and put it in the map, use \`std::make_unique\`, as in the advanced course:
+
+\`\`\`cpp
+pens_[n] = std::make_unique<Lion>(n, "Leo");
+\`\`\`
+
+\`std::make_unique<Lion>(...)\` builds a \`Lion\` with those constructor arguments and returns a \`unique_ptr<Lion>\`. A \`unique_ptr<Lion>\` turns into a \`unique_ptr<Animal>\` on its own, because a lion is a kind of animal. The map now owns the lion.
+
+The bank needs two such functions, one for checking accounts and one for savings accounts. Each takes the next id, makes the account, stores it, and returns the id so the caller knows which account is theirs.
+
+### Lending an account out: find
+
+Other code needs to look at an account without owning it. For that, the bank returns a plain pointer, \`Account*\`. A plain pointer here means **non-owning**: "this is where the account is; do not delete it". The account stays valid as long as the bank does.
+
+To get the plain pointer out of a \`unique_ptr\`, call \`.get()\`. To look up a key in a map without adding it, use the map's own \`find\`, which returns an iterator. If the key is missing, the iterator equals the map's \`end()\`:
+
+\`\`\`cpp
+auto it = pens_.find(9);
+if (it == pens_.end()) {
+    // no pen number 9
+}
+Animal* a = it->second.get();   // only when found: it->second is the unique_ptr
+\`\`\`
+
+When there is no such id, the bank's \`find\` returns **\`nullptr\`**, the pointer that points at nothing. Callers must check for it before using the pointer.
+
+### Two versions of find: one for a const bank
+
+From the intermediate course: a function that takes a \`const Bank&\` may call only the bank's \`const\` member functions. Looking an account up does not change the bank, so a const bank should be able to do it too. But a const bank must not hand out an account that can be changed.
+
+So write **two versions** with the same name. One is for an ordinary bank and returns \`Account*\`. The other is marked \`const\` after its parameters and returns \`const Account*\`, a pointer through which the account can be read but not changed:
+
+\`\`\`cpp
+Animal* find(int n);               // on a zoo you may change
+const Animal* find(int n) const;   // on a const zoo: look, don't touch
+\`\`\`
+
+The compiler picks the version by whether the object is const. The bodies are the same.
+
+### Deposit and withdraw by id
+
+\`deposit(id, cents)\` finds the account, and then asks the account to do the real work. If there is no account with that id, the answer is \`false\`. One line can do both, because \`&&\` (read "and") [[stops as soon as it knows the answer|short-circuit]]:
+
+\`\`\`cpp
+return p && p->is_awake();
+\`\`\`
+
+If \`p\` is \`nullptr\`, the left side is false, so the whole thing is false, and the right side never runs. There is never a call through a null pointer.
+
+### Transfers: all or nothing
+
+A **transfer** takes money out of one account and puts it into another. Money must never vanish or appear out of nowhere, so a transfer must be **[[all or nothing|atomic-transfer]]**: either it happens completely, or nothing changes at all.
+
+Think of swapping trading cards with a friend. You do not hand over your card and then find out they have nothing to give. You check first.
+
+So do every check that can fail **first**:
+
+1. The two ids are different. A transfer to the same account is refused.
+2. The amount is positive.
+3. Both accounts exist.
+4. The withdrawal from the first account succeeds. This check also moves the money out.
+
+Only then deposit into the second account. A deposit of a positive amount cannot fail, so once the withdrawal has worked, the transfer will finish. The other order, deposit and then withdraw, is not safe: if the withdrawal is refused, money has already appeared in the second account.
+
+### The whole bank at once
+
+Two functions work on every account. \`total_balance\` adds up all the balances. \`end_month\` calls \`end_month\` on each account. Loop over the map with the structured binding from the intermediate course: \`for (auto& [id, account] : accounts_)\` names each key \`id\` and each \`unique_ptr\` \`account\`.
+
+Here the virtual hook from lesson 1 pays off. The bank calls \`account->end_month()\` on every account without knowing which kind it is. A savings account pays interest; the others do nothing. There is no \`if (kind == "savings")\` anywhere, and a new kind of account added later needs no change to the bank.
+
+**Watch out:** never \`delete\` the pointer that \`find\` gives you. It is only borrowed. The \`unique_ptr\` in the map still owns the account, and it will delete it again when the bank goes away, which is undefined behavior.
+
+::: context ownership-word Owning and borrowing
+In C++, the owner of an object is the one responsible for destroying it. Modern C++ writes ownership into the types. A \`std::unique_ptr\` owns. A plain pointer \`T*\` or a reference \`T&\` only borrows. The C++ Core Guidelines, a widely used set of rules edited by Bjarne Stroustrup and Herb Sutter, say exactly this: a raw pointer should never own. So a reader who sees \`Account*\` knows at once "I must not delete this", without reading any comments.
+
+\`\`\`svg
+<svg viewBox="0 0 360 170" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <rect x="10" y="20" width="140" height="130" rx="8" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="80" y="40" font-size="12" fill="#1f2a44" text-anchor="middle">Bank: accounts_</text>
+  <rect x="25" y="55" width="110" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="72" font-size="11" fill="#1f2a44" text-anchor="middle">1 → unique_ptr</text>
+  <rect x="25" y="95" width="110" height="26" rx="4" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="80" y="112" font-size="11" fill="#1f2a44" text-anchor="middle">2 → unique_ptr</text>
+  <rect x="220" y="50" width="120" height="30" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="280" y="70" font-size="11" fill="#1f2a44" text-anchor="middle">CheckingAccount</text>
+  <rect x="220" y="95" width="120" height="30" rx="6" fill="#ffffff" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="280" y="115" font-size="11" fill="#1f2a44" text-anchor="middle">SavingsAccount</text>
+  <line x1="135" y1="68" x2="212" y2="65" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="220,65 211,60 211,70" fill="#1d6fd1"/>
+  <line x1="135" y1="108" x2="212" y2="110" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="220,110 211,105 211,115" fill="#1d6fd1"/>
+  <text x="280" y="152" font-size="11" fill="#1f2a44" text-anchor="middle">Account* from find</text>
+  <line x1="280" y1="140" x2="280" y2="131" stroke="#f2b880" stroke-width="2" stroke-dasharray="4 3"/>
+  <polygon points="280,125 275,133 285,133" fill="#f2b880"/>
+  <text x="80" y="166" font-size="11" fill="#6c7a93" text-anchor="middle">solid: owns · dashed: borrows</text>
+</svg>
+\`\`\`
+:::
+
+::: context slicing-again Slicing, one more time
+A \`std::vector<Account>\` has slots exactly the size of an \`Account\`. A \`SavingsAccount\` is bigger: it adds a rate and a withdrawal counter. Pushing one in copies only the \`Account\` part, and the copy's hidden pointer to its virtual functions says \`Account\`. Every \`withdraw\` would then follow the basic rule, the month's interest would never be paid, and nothing would warn you. A vector or map of \`unique_ptr<Account>\` stores small pointers instead, and each one points at a complete object of its real type.
+:::
+
+::: context map-order Why a map, and why sorted
+A \`std::map\` keeps its entries sorted by key, in a structure called a balanced tree. Finding a key takes a number of steps that grows with the logarithm of the size: a million accounts need about 20 steps. \`std::unordered_map\`, the hash map, is usually faster to look up but visits its entries in no useful order. For a bank, going through the accounts in id order is handy: a total or a report comes out the same way every time, which makes tests and printouts easy to compare.
+:::
+
+::: context post-increment Before or after
+C++ has two ways to add one. \`++n\`, the **pre-increment**, adds one and then gives the new value. \`n++\`, the **post-increment**, gives the old value and then adds one. On a line by itself, like \`++withdrawals_;\`, they do the same thing, and many programmers prefer \`++n\` there. The difference matters only when the value is used in the same expression, as in \`int id = next_id_++;\`, where you want the old number for this account and the new one ready for the next.
+:::
+
+::: context short-circuit Stopping early
+The \`&&\` operator checks its left side first. If that is false, the answer must be false, so it never looks at the right side. \`||\` does the mirror image: if its left side is true, the right side is skipped. This is called **short-circuit evaluation**, and C++ promises it. That promise is what makes "check the pointer, then use it" safe in one expression. The same guard appears in flight code everywhere: \`sensor && sensor->healthy()\`.
+:::
+
+::: context atomic-transfer All or nothing, for real
+Databases call this property **atomicity**, from the Greek for "cannot be cut". It is the A in ACID, the four promises a database makes about a transaction. A bank transfer is the textbook example: the debit and the credit happen together or not at all, even if the power fails halfway. Real systems use logs and rollbacks to keep that promise. Your bank keeps it with a simpler trick: every step that can fail runs before any money moves, and the one step left after that cannot fail.
+:::
+--- task
+Add a \`class Bank\` that owns the accounts. No \`main\`: the checker supplies it. Keep them in a \`std::map<int, std::unique_ptr<Account>>\` (add \`#include <map>\` and \`#include <memory>\`), with a counter for the next id.
+
+- \`int open_checking(const std::string& owner, long long overdraft_limit)\` and \`int open_savings(const std::string& owner, int rate_bp)\` create the account and return its id. Ids are handed out 1, 2, 3, … in the order accounts are opened, whatever their kind.
+- \`Account* find(int id)\`, and a \`const\` version \`const Account* find(int id) const\`. Both return \`nullptr\` for an unknown id.
+- \`bool deposit(int id, long long cents)\` and \`bool withdraw(int id, long long cents)\` return \`false\` for an unknown id, and otherwise the account's own answer.
+- \`bool transfer(int from, int to, long long cents)\` is all or nothing. It returns \`false\` and changes nothing when an id is unknown, when \`from\` and \`to\` are the same, when the amount is not positive, or when the withdrawal is refused. Otherwise it moves the money and returns \`true\`.
+- \`long long total_balance() const\` returns the sum of every account's balance.
+- \`void end_month()\` calls \`end_month()\` on every account.
+--- starter
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!a->withdraw(cents)) return false;
+        b->deposit(cents);
+        return true;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+Give \`Bank\` two private members: \`std::map<int, std::unique_ptr<Account>> accounts_\` and \`int next_id_ = 1\`. In \`open_checking\`, take \`int id = next_id_++;\`, then \`accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);\`, and return \`id\`. \`open_savings\` is the same with \`SavingsAccount\`.
+--- hint
+\`find\` does \`auto it = accounts_.find(id);\` and returns \`nullptr\` when \`it == accounts_.end()\`, otherwise \`it->second.get()\`. The const version has the same body. \`deposit\` can then be \`Account* a = find(id); return a && a->deposit(cents);\`.
+--- hint
+In \`transfer\`, check in this order: \`from == to\` or \`cents <= 0\` gives \`false\`; find both accounts and give \`false\` if either is \`nullptr\`; then \`if (!a->withdraw(cents)) return false;\`. Only after all that, \`b->deposit(cents)\` and return \`true\`. For the totals, loop with \`for (const auto& [id, account] : accounts_)\` and use \`account->balance()\`.
+--- check test | Opening accounts hands out ids in order
+[] { Bank b; int a = b.open_checking("Ada", 0); int s = b.open_savings("Lin", 100); return a == 1 && s == 2 && b.find(1)->kind() == "checking" && b.find(2)->owner() == "Lin" && b.find(3) == nullptr; }()
+--- check test | Deposits and withdrawals by id
+[] { Bank b; int a = b.open_checking("Ada", 1000); bool d = b.deposit(a, 500); bool w = b.withdraw(a, 1200); bool nobody = b.deposit(42, 100); return d && w && !nobody && b.find(a)->balance() == -700; }()
+--- check test | A transfer moves money
+[] { Bank b; int a = b.open_checking("Ada", 0); int c = b.open_checking("Cy", 0); b.deposit(a, 1000); bool ok = b.transfer(a, c, 400); return ok && b.find(a)->balance() == 600 && b.find(c)->balance() == 400 && b.total_balance() == 1000; }()
+--- check test | Failed transfers change nothing
+[] { Bank b; int a = b.open_checking("Ada", 0); int c = b.open_savings("Cy", 0); b.deposit(a, 1000); bool poor = b.transfer(a, c, 5000); bool same = b.transfer(a, a, 10); bool unknown = b.transfer(a, 99, 10); bool zero = b.transfer(a, c, 0); return !poor && !same && !unknown && !zero && b.find(a)->balance() == 1000 && b.find(c)->balance() == 0; }()
+--- check test | end_month pays interest on savings only
+[] { Bank b; int a = b.open_checking("Ada", 0); int s = b.open_savings("Lin", 500); b.deposit(a, 10000); b.deposit(s, 10000); b.end_month(); return b.find(a)->balance() == 10000 && b.find(s)->balance() == 10500 && b.total_balance() == 20500; }()
+--- check test | find works on a const bank
+[] { Bank b; b.open_savings("Lin", 0); const Bank& c = b; return c.find(1) != nullptr && c.find(2) == nullptr; }()
+
++++ practice | A hangar that owns its aircraft
+--- task
+The starter holds a small family of classes: \`Aircraft\`, with a virtual \`type()\` and \`seats()\`, and two derived classes, \`Glider\` (always 2 seats) and \`Jet\`. \`Aircraft::alive\` counts how many aircraft objects exist, so the checks can see what gets destroyed.
+
+Write \`class Hangar\`, which **owns** its aircraft in a \`std::map<std::string, std::unique_ptr<Aircraft>>\`, keyed by tail number. No \`main\`.
+
+- \`bool park_glider(const std::string& tail)\` and \`bool park_jet(const std::string& tail, int seats)\` create the aircraft and keep it. They return \`false\`, and create nothing, if that tail number is already in the hangar.
+- \`Aircraft* find(const std::string& tail)\`, and a \`const\` version returning \`const Aircraft*\`. Both return \`nullptr\` for an unknown tail number.
+- \`bool remove(const std::string& tail)\` destroys that aircraft and forgets it; \`false\` if it is not there.
+- \`int total_seats() const\`: the seats of every aircraft added up.
+- \`std::vector<std::string> tails() const\`: every tail number, in alphabetical order.
+
+When the hangar itself is destroyed, every aircraft in it is destroyed too.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Aircraft {
+public:
+    static inline int alive = 0;   // how many aircraft exist right now
+    explicit Aircraft(std::string tail) : tail_(std::move(tail)) { ++alive; }
+    virtual ~Aircraft() { --alive; }
+    const std::string& tail() const { return tail_; }
+    virtual std::string type() const = 0;
+    virtual int seats() const = 0;
+private:
+    std::string tail_;
+};
+
+class Glider : public Aircraft {
+public:
+    explicit Glider(std::string tail) : Aircraft(std::move(tail)) {}
+    std::string type() const override { return "glider"; }
+    int seats() const override { return 2; }
+};
+
+class Jet : public Aircraft {
+public:
+    Jet(std::string tail, int seats) : Aircraft(std::move(tail)), seats_(seats) {}
+    std::string type() const override { return "jet"; }
+    int seats() const override { return seats_; }
+private:
+    int seats_;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Aircraft {
+public:
+    static inline int alive = 0;   // how many aircraft exist right now
+    explicit Aircraft(std::string tail) : tail_(std::move(tail)) { ++alive; }
+    virtual ~Aircraft() { --alive; }
+    const std::string& tail() const { return tail_; }
+    virtual std::string type() const = 0;
+    virtual int seats() const = 0;
+private:
+    std::string tail_;
+};
+
+class Glider : public Aircraft {
+public:
+    explicit Glider(std::string tail) : Aircraft(std::move(tail)) {}
+    std::string type() const override { return "glider"; }
+    int seats() const override { return 2; }
+};
+
+class Jet : public Aircraft {
+public:
+    Jet(std::string tail, int seats) : Aircraft(std::move(tail)), seats_(seats) {}
+    std::string type() const override { return "jet"; }
+    int seats() const override { return seats_; }
+private:
+    int seats_;
+};
+
+class Hangar {
+public:
+    bool park_glider(const std::string& tail) {
+        if (bays_.contains(tail)) return false;
+        bays_[tail] = std::make_unique<Glider>(tail);
+        return true;
+    }
+
+    bool park_jet(const std::string& tail, int seats) {
+        if (bays_.contains(tail)) return false;
+        bays_[tail] = std::make_unique<Jet>(tail, seats);
+        return true;
+    }
+
+    Aircraft* find(const std::string& tail) {
+        auto it = bays_.find(tail);
+        return it == bays_.end() ? nullptr : it->second.get();
+    }
+
+    const Aircraft* find(const std::string& tail) const {
+        auto it = bays_.find(tail);
+        return it == bays_.end() ? nullptr : it->second.get();
+    }
+
+    bool remove(const std::string& tail) {
+        return bays_.erase(tail) == 1;   // erasing the unique_ptr destroys the aircraft
+    }
+
+    int total_seats() const {
+        int total = 0;
+        for (const auto& [tail, plane] : bays_) total += plane->seats();
+        return total;
+    }
+
+    std::vector<std::string> tails() const {
+        std::vector<std::string> out;
+        for (const auto& [tail, plane] : bays_) out.push_back(tail);
+        return out;
+    }
+
+private:
+    std::map<std::string, std::unique_ptr<Aircraft>> bays_;
+};
+--- hint
+Check whether the tail number is taken before calling \`std::make_unique\`, so that a refused park never creates an aircraft at all. \`contains\` asks without adding.
+--- hint
+\`find\` is the lesson's pattern: the map's own \`find\`, then \`nullptr\` or \`it->second.get()\`. For \`remove\`, the map's \`erase(key)\` returns how many entries it removed, and removing the \`unique_ptr\` deletes the aircraft.
+--- hint
+The map keeps its keys in order, so \`tails()\` is one range-\`for\` that collects each key, and \`total_seats()\` one that adds up \`plane->seats()\`.
+--- check test | Parking and finding
+[] { Hangar h; bool a = h.park_glider("G-ABCD"); bool b = h.park_jet("N123", 180); return a && b && h.find("G-ABCD")->type() == "glider" && h.find("N123")->seats() == 180 && h.find("X-0000") == nullptr; }()
+--- check test | A tail number can only be parked once
+[] { Aircraft::alive = 0; Hangar h; h.park_jet("N123", 180); bool again = h.park_glider("N123"); return !again && Aircraft::alive == 1 && h.find("N123")->type() == "jet"; }()
+--- check test | Removing destroys the aircraft
+[] { Aircraft::alive = 0; Hangar h; h.park_glider("G1"); h.park_glider("G2"); bool gone = h.remove("G1"); bool twice = h.remove("G1"); return gone && !twice && Aircraft::alive == 1 && h.find("G1") == nullptr && h.tails() == std::vector<std::string>{"G2"}; }()
+--- check test | The hangar destroys what it owns
+[] { Aircraft::alive = 0; { Hangar h; h.park_glider("G1"); h.park_jet("N9", 90); h.park_jet("N1", 50); } return Aircraft::alive == 0; }()
+--- check test | Seats, sorted tails, and a const hangar
+[] { Hangar h; h.park_jet("N9", 90); h.park_glider("G1"); h.park_jet("A7", 12); const Hangar& c = h; return c.total_seats() == 104 && c.tails() == std::vector<std::string>{"A7", "G1", "N9"} && c.find("A7") != nullptr && c.find("B2") == nullptr; }()
+
++++ practice | Closing an account
+--- task
+The starter holds a small version of the bank: \`Account\`, \`CheckingAccount\` and a \`Bank\` that owns them. Give \`Bank\` two new member functions. No \`main\`.
+
+- \`std::optional<long long> close(int id)\`: closes the account and returns its final balance. The account is destroyed, \`find(id)\` gives \`nullptr\` from then on, and it no longer counts in \`total_balance()\`. Return \`std::nullopt\`, and change nothing, if there is no such account or if its balance is **negative** (a customer who owes money cannot close).
+- \`std::size_t count() const\`: how many accounts are open.
+
+Ids are never reused: after closing account 2, the next account opened still gets the next new number. Include \`<optional>\`.
+--- starter
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    std::optional<long long> close(int id) {
+        auto it = accounts_.find(id);
+        if (it == accounts_.end() || it->second->balance() < 0) return std::nullopt;
+        long long final_balance = it->second->balance();
+        accounts_.erase(it);   // the unique_ptr goes, and deletes the account
+        return final_balance;
+    }
+
+    std::size_t count() const { return accounts_.size(); }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+Look the id up with the map's \`find\`, and refuse before changing anything: a missing id, or a balance below 0.
+--- hint
+Read the balance **before** erasing: after \`accounts_.erase(it)\`, the account is gone and the iterator no longer points at anything. \`next_id_\` is never touched, so ids are never reused.
+--- check test | Closing returns the final balance
+[] { Bank b; int a = b.open_checking("Ada", 0); b.open_checking("Lin", 0); b.deposit(a, 2500); auto last = b.close(a); return last == 2500 && b.find(a) == nullptr && b.count() == 1 && b.total_balance() == 0; }()
+--- check test | An empty account can close too
+[] { Bank b; int a = b.open_checking("Ada", 0); return b.close(a) == 0 && b.count() == 0; }()
+--- check test | Owing money, unknown ids, and closing twice
+[] { Bank b; int a = b.open_checking("Ada", 5000); b.withdraw(a, 1200); auto owes = b.close(a); auto nobody = b.close(42); int c = b.open_checking("Cy", 0); auto first = b.close(c); auto again = b.close(c); return !owes && b.find(a) != nullptr && b.find(a)->balance() == -1200 && !nobody && first == 0 && !again; }()
+--- check test | Ids are never reused
+[] { Bank b; b.open_checking("A", 0); int two = b.open_checking("B", 0); b.close(two); int three = b.open_checking("C", 0); return two == 2 && three == 3 && b.find(2) == nullptr && b.find(3)->owner() == "C"; }()
+
++++ practice | Rank the accounts, and total them by owner
+--- task
+The starter holds a small version of the bank: \`Account\`, \`CheckingAccount\` and a \`Bank\` that owns them. Give \`Bank\` two new \`const\` member functions. No \`main\`.
+
+- \`std::vector<int> ranked_by_balance() const\`: every account's id, highest balance first. Accounts with equal balances go in order of id, smallest first.
+- \`std::map<std::string, long long> totals_by_owner() const\`: for each owner's name, the sum of the balances of all the accounts that owner holds.
+
+Both work on a \`const Bank&\`. Include \`<algorithm>\` and \`<vector>\`.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    std::vector<int> ranked_by_balance() const {
+        std::vector<const Account*> all;
+        for (const auto& [id, account] : accounts_) all.push_back(account.get());
+        std::sort(all.begin(), all.end(), [](const Account* a, const Account* b) {
+            if (a->balance() != b->balance()) return a->balance() > b->balance();
+            return a->id() < b->id();
+        });
+        std::vector<int> ids;
+        for (const Account* a : all) ids.push_back(a->id());
+        return ids;
+    }
+
+    std::map<std::string, long long> totals_by_owner() const {
+        std::map<std::string, long long> totals;
+        for (const auto& [id, account] : accounts_) totals[account->owner()] += account->balance();
+        return totals;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+For the ranking, collect borrowed pointers, \`const Account*\`, into a vector with \`.get()\`: the map keeps owning the accounts. Then sort the vector with a two-level comparator, as in the custom comparators lesson.
+--- hint
+The comparator returns \`a->balance() > b->balance()\` when the balances differ, and \`a->id() < b->id()\` otherwise. Afterwards, read the ids out in order.
+--- hint
+For the totals, a \`std::map<std::string, long long>\` and \`totals[account->owner()] += account->balance();\` for every account: a name seen for the first time starts at 0.
+--- check test | Highest balance first
+[] { Bank b; int a = b.open_checking("Ada", 0); int c = b.open_checking("Cy", 0); int d = b.open_checking("Di", 0); b.deposit(a, 300); b.deposit(c, 900); b.deposit(d, 500); const Bank& k = b; return k.ranked_by_balance() == std::vector<int>{c, d, a}; }()
+--- check test | Equal balances in order of id, negatives last
+[] { Bank b; b.open_checking("A", 1000); b.open_checking("B", 0); b.open_checking("C", 0); b.open_checking("D", 0); b.withdraw(1, 250); b.deposit(3, 100); b.deposit(4, 100); return b.ranked_by_balance() == std::vector<int>{3, 4, 2, 1}; }()
+--- check test | Totals by owner
+[] { Bank b; int a1 = b.open_checking("Ada", 1000); int l = b.open_checking("Lin", 0); int a2 = b.open_checking("Ada", 0); b.deposit(a1, 500); b.withdraw(a1, 1200); b.deposit(a2, 2000); b.deposit(l, 30); const Bank& k = b; auto t = k.totals_by_owner(); return t.size() == 2 && t["Ada"] == 1300 && t["Lin"] == 30; }()
+--- check test | An empty bank
+[] { const Bank b; return b.ranked_by_balance().empty() && b.totals_by_owner().empty(); }()
+
++++ practice | Pay several people at once
+--- task
+The starter holds the bank from the lesson. Give \`Bank\` a new member function \`bool pay_many(int from, const std::vector<int>& to, long long each)\`, which pays \`each\` cents from account \`from\` into every account listed in \`to\`. No \`main\`.
+
+It is **all or nothing**. It returns \`false\` and changes nothing when:
+
+- \`to\` is empty, or \`each\` is not positive;
+- \`from\`, or any id in \`to\`, is not an account;
+- any id in \`to\` is \`from\` itself, or appears in \`to\` more than once;
+- the withdrawal is refused.
+
+The money leaves \`from\` in **one** withdrawal of \`each * to.size()\` cents, so a savings account uses up only one of its three monthly withdrawals. \`each\` is at most 1,000,000,000,000, so the total fits. Otherwise it returns \`true\`. Include \`<set>\` and \`<vector>\`.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    bool pay_many(int from, const std::vector<int>& to, long long each) {
+        if (to.empty() || each <= 0) return false;
+        Account* payer = find(from);
+        if (!payer) return false;
+        std::vector<Account*> payees;
+        std::set<int> seen;
+        for (int id : to) {
+            Account* p = find(id);
+            if (!p || id == from || !seen.insert(id).second) return false;
+            payees.push_back(p);
+        }
+        // Every check has passed; only the withdrawal can still say no.
+        if (!payer->withdraw(each * static_cast<long long>(to.size()))) return false;
+        for (Account* p : payees) p->deposit(each);
+        return true;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+Do every check before any money moves, as the lesson's \`transfer\` does. Walk through \`to\` once, finding each account and remembering it in a vector of \`Account*\`, and refuse at the first problem.
+--- hint
+A \`std::set<int>\` catches repeats: its \`insert\` returns a pair whose \`.second\` is \`false\` when the id was already in the set.
+--- hint
+Only after all the checks, make the one withdrawal of \`each * to.size()\`. If it is refused, return \`false\`: nothing has changed yet. If it succeeds, deposit \`each\` into every remembered account; those deposits cannot fail.
+--- check test | Paying three people
+[] { Bank b; int a = b.open_checking("Ada", 0); int x = b.open_checking("X", 0); int y = b.open_checking("Y", 0); int z = b.open_savings("Z", 0); b.deposit(a, 1000); bool ok = b.pay_many(a, {x, y, z}, 250); return ok && b.find(a)->balance() == 250 && b.find(x)->balance() == 250 && b.find(z)->balance() == 250 && b.total_balance() == 1000; }()
+--- check test | Not enough money: nobody is paid
+[] { Bank b; int a = b.open_checking("Ada", 0); int x = b.open_checking("X", 0); int y = b.open_checking("Y", 0); b.deposit(a, 499); bool ok = b.pay_many(a, {x, y}, 250); return !ok && b.find(a)->balance() == 499 && b.find(x)->balance() == 0 && b.find(y)->balance() == 0; }()
+--- check test | Unknown, repeated or self: refused before anything moves
+[] { Bank b; int a = b.open_checking("Ada", 0); int x = b.open_checking("X", 0); b.deposit(a, 1000); bool unknown = b.pay_many(a, {x, 99}, 10); bool twice = b.pay_many(a, {x, x}, 10); bool self = b.pay_many(a, {x, a}, 10); bool nobody = b.pay_many(42, {x}, 10); return !unknown && !twice && !self && !nobody && b.find(a)->balance() == 1000 && b.find(x)->balance() == 0; }()
+--- check test | An empty list or a bad amount
+[] { Bank b; int a = b.open_checking("Ada", 0); int x = b.open_checking("X", 0); b.deposit(a, 1000); return !b.pay_many(a, {}, 10) && !b.pay_many(a, {x}, 0) && !b.pay_many(a, {x}, -5) && b.find(a)->balance() == 1000; }()
+--- check test | One withdrawal from a savings account, however many payees
+[] { Bank b; int s = b.open_savings("Sam", 0); int x = b.open_checking("X", 0); int y = b.open_checking("Y", 0); b.deposit(s, 10000); bool first = b.pay_many(s, {x, y}, 100); bool two = b.withdraw(s, 1) && b.withdraw(s, 1); bool third = b.withdraw(s, 1); return first && two && !third && b.find(s)->balance() == 9798; }()
+
++++ practice | Debug: the bank that crashes after a typo
+--- task
+**Bug report:** "After someone deposits into account 99, which does not exist, the deposit is refused as it should be, but the next \`total_balance()\` crashes. Also, a transfer the sender cannot afford is refused, yet the money still arrives in the other account."
+
+The starter's \`Bank\` has two bugs. Remember the lesson: looking an id up must never add it to the map, and a transfer does every check that can fail before any money moves. Find them and fix them. No \`main\`.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class Bank {
+public:
+    int open(const std::string& owner) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<Account>(id, owner);
+        return id;
+    }
+
+    Account* find(int id) {
+        return accounts_[id].get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!b->deposit(cents)) return false;
+        return a->withdraw(cents);
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class Bank {
+public:
+    int open(const std::string& owner) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<Account>(id, owner);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!a->withdraw(cents)) return false;
+        b->deposit(cents);   // a positive deposit cannot fail
+        return true;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- hint
+What does \`accounts_[99]\` do when there is no key 99? Think about what the map holds afterwards, and what \`total_balance\` then does with \`account->balance()\`.
+--- hint
+Use the map's \`find\` and compare with \`end()\`, as the lesson does. For the transfer, swap the order: the withdrawal is the step that can say no, so it goes first, and the deposit only happens once it has succeeded.
+--- check test | A failed deposit leaves the bank whole
+[] { Bank b; int a = b.open("Ada"); b.deposit(a, 500); bool nobody = b.deposit(99, 100); return !nobody && b.total_balance() == 500 && b.find(99) == nullptr; }()
+--- check test | An unaffordable transfer moves nothing
+[] { Bank b; int a = b.open("Ada"); int c = b.open("Cy"); b.deposit(a, 100); bool ok = b.transfer(a, c, 500); return !ok && b.find(a)->balance() == 100 && b.find(c)->balance() == 0 && b.total_balance() == 100; }()
+--- check test | Good transfers still work
+[] { Bank b; int a = b.open("Ada"); int c = b.open("Cy"); b.deposit(a, 1000); bool ok = b.transfer(a, c, 400); return ok && b.find(a)->balance() == 600 && b.find(c)->balance() == 400; }()
+--- check test | Transfers to or from unknown ids
+[] { Bank b; int a = b.open("Ada"); b.deposit(a, 1000); bool x = b.transfer(a, 7, 10); bool y = b.transfer(8, a, 10); return !x && !y && b.find(a)->balance() == 1000 && b.total_balance() == 1000; }()
+
++++ practice | Stretch: hand a vehicle to another depot
+--- task
+The starter holds \`Vehicle\`, with \`Truck\` and \`Van\` deriving from it. \`Vehicle::alive\` counts how many vehicle objects exist. Write \`class Depot\`, which **owns** its vehicles in a \`std::map<int, std::unique_ptr<Vehicle>>\`, keyed by the vehicle's id. No \`main\`.
+
+- \`explicit Depot(std::string name)\` and \`const std::string& name() const\`.
+- \`bool add_truck(int id, int capacity)\` and \`bool add_van(int id, int capacity)\`: \`false\`, creating nothing, if this depot already has that id.
+- \`Vehicle* find(int id)\`, and a \`const\` version returning \`const Vehicle*\`; \`nullptr\` for an unknown id.
+- \`bool send(int id, Depot& other)\` hands the vehicle over: afterwards \`other\` owns it and this depot does not. It is the **same object**, moved, never copied: a pointer from \`find\` before the move still points at it, and \`other.find(id)\` now returns that same pointer. Return \`false\`, changing nothing, if this depot has no such vehicle, if \`other\` is this same depot, or if \`other\` already has a vehicle with that id.
+- \`long long total_capacity() const\` and \`std::size_t size() const\`.
+
+Destroying a depot destroys the vehicles it owns at that moment.
+--- starter
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Vehicle {
+public:
+    static inline int alive = 0;   // how many vehicles exist right now
+    Vehicle(int id, int capacity) : id_(id), capacity_(capacity) { ++alive; }
+    virtual ~Vehicle() { --alive; }
+    int id() const { return id_; }
+    int capacity() const { return capacity_; }
+    virtual std::string kind() const = 0;
+private:
+    int id_;
+    int capacity_;
+};
+
+class Truck : public Vehicle {
+public:
+    using Vehicle::Vehicle;   // the same constructor as Vehicle
+    std::string kind() const override { return "truck"; }
+};
+
+class Van : public Vehicle {
+public:
+    using Vehicle::Vehicle;
+    std::string kind() const override { return "van"; }
+};
+--- solution
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+
+class Vehicle {
+public:
+    static inline int alive = 0;   // how many vehicles exist right now
+    Vehicle(int id, int capacity) : id_(id), capacity_(capacity) { ++alive; }
+    virtual ~Vehicle() { --alive; }
+    int id() const { return id_; }
+    int capacity() const { return capacity_; }
+    virtual std::string kind() const = 0;
+private:
+    int id_;
+    int capacity_;
+};
+
+class Truck : public Vehicle {
+public:
+    using Vehicle::Vehicle;   // the same constructor as Vehicle
+    std::string kind() const override { return "truck"; }
+};
+
+class Van : public Vehicle {
+public:
+    using Vehicle::Vehicle;
+    std::string kind() const override { return "van"; }
+};
+
+class Depot {
+public:
+    explicit Depot(std::string name) : name_(std::move(name)) {}
+
+    const std::string& name() const { return name_; }
+
+    bool add_truck(int id, int capacity) {
+        if (fleet_.contains(id)) return false;
+        fleet_[id] = std::make_unique<Truck>(id, capacity);
+        return true;
+    }
+
+    bool add_van(int id, int capacity) {
+        if (fleet_.contains(id)) return false;
+        fleet_[id] = std::make_unique<Van>(id, capacity);
+        return true;
+    }
+
+    Vehicle* find(int id) {
+        auto it = fleet_.find(id);
+        return it == fleet_.end() ? nullptr : it->second.get();
+    }
+
+    const Vehicle* find(int id) const {
+        auto it = fleet_.find(id);
+        return it == fleet_.end() ? nullptr : it->second.get();
+    }
+
+    bool send(int id, Depot& other) {
+        if (&other == this) return false;
+        auto it = fleet_.find(id);
+        if (it == fleet_.end() || other.fleet_.contains(id)) return false;
+        other.fleet_[id] = std::move(it->second);   // ownership moves; the vehicle stays put
+        fleet_.erase(it);                           // only an empty unique_ptr is erased
+        return true;
+    }
+
+    long long total_capacity() const {
+        long long total = 0;
+        for (const auto& [id, v] : fleet_) total += v->capacity();
+        return total;
+    }
+
+    std::size_t size() const { return fleet_.size(); }
+
+private:
+    std::string name_;
+    std::map<int, std::unique_ptr<Vehicle>> fleet_;
+};
+--- hint
+A \`std::unique_ptr\` cannot be copied, only moved. \`other.fleet_[id] = std::move(it->second);\` hands the pointer over: \`other\`'s map now owns the vehicle, and the entry left behind here holds an empty pointer, which you then erase.
+--- hint
+One member function can reach the private members of another object of the same class, so \`send\` may use \`other.fleet_\` directly. Compare addresses, \`&other == this\`, to spot a depot sending to itself.
+--- hint
+Do all three refusal checks before the move. Erasing the emptied entry destroys nothing, because the pointer in it no longer owns anything.
+--- check test | Sending moves the same vehicle
+[] { Vehicle::alive = 0; Depot a("North"); Depot b("South"); a.add_truck(7, 2000); Vehicle* before = a.find(7); bool ok = a.send(7, b); return ok && a.find(7) == nullptr && b.find(7) == before && b.find(7)->kind() == "truck" && Vehicle::alive == 1 && a.size() == 0 && b.size() == 1; }()
+--- check test | Refused sends change nothing
+[] { Depot a("North"); Depot b("South"); a.add_van(1, 500); b.add_truck(1, 900); bool clash = a.send(1, b); bool self = a.send(1, a); bool unknown = a.send(5, b); return !clash && !self && !unknown && a.find(1)->kind() == "van" && b.find(1)->kind() == "truck"; }()
+--- check test | Adding, and ids that are taken
+[] { Vehicle::alive = 0; Depot d("East"); bool t = d.add_truck(3, 1500); bool v = d.add_van(4, 400); bool again = d.add_van(3, 100); return t && v && !again && Vehicle::alive == 2 && d.total_capacity() == 1900 && d.name() == "East"; }()
+--- check test | Capacity follows the vehicle
+[] { Depot a("A"); Depot b("B"); a.add_truck(1, 1000); a.add_van(2, 300); b.add_van(3, 200); a.send(1, b); const Depot& ca = a; const Depot& cb = b; return ca.total_capacity() == 300 && cb.total_capacity() == 1200 && cb.find(1) != nullptr && ca.find(1) == nullptr; }()
+--- check test | Each depot destroys only what it owns
+[] { Vehicle::alive = 0; Depot b("B"); { Depot a("A"); a.add_truck(1, 1000); a.add_van(2, 300); a.send(2, b); } bool one_left = Vehicle::alive == 1 && b.find(2) != nullptr && b.find(2)->capacity() == 300; return one_left; }()
+
+=== cppp-08 | Bank 4: the transaction log and statements
+--- teach
+Last lesson your \`Bank\` took ownership of the accounts: it opens them, finds them, moves money all-or-nothing, and ends the month for every account. But afterwards it cannot tell anyone what happened. A bank that cannot say what happened is not a bank. This last step of the project records every operation in a **transaction log**, and prints each account's **statement** from it.
+
+Think of a shop's till roll. Every sale is printed on it, one line after another, in the order it happened. Nobody rubs a line out. At the end of the day, anyone can read the roll and see exactly what happened. The log is the bank's till roll.
+
+### Model the data first
+
+Before writing any code that logs, decide what one line of the log holds. A **transaction** is one operation: a deposit, a withdrawal or a transfer. It is a plain record, a \`struct\` with no rules of its own:
+
+\`\`\`cpp
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;        // 0 for a deposit
+    int to;          // 0 for a withdrawal
+    long long cents;
+    bool ok;         // did it succeed?
+};
+\`\`\`
+
+\`TxKind\` is an \`enum class\`, from the intermediate course: the kind is one of three names, not a string that could be misspelled.
+
+A deposit has no account the money comes *from*, and a withdrawal has no account it goes *to*. The struct stores \`0\` there, meaning "no account". That works because the bank's ids start at 1, so 0 can never be a real account. A value picked to mean "nothing here" like this is called a **[[sentinel|sentinel-value]]**.
+
+### Adding a line to the log
+
+The log itself is a \`std::vector<Transaction>\`. New lines go on the end with \`push_back\`, so the oldest is always first.
+
+A struct like \`Transaction\`, with only public data and no constructor, can be built straight from a **[[brace list|aggregate-init]]**: the values in curly braces fill in the members in the order they are declared. Here is the same idea for a library that logs its loans:
+
+\`\`\`cpp
+enum class LoanKind { Borrow, Return };
+struct Loan { LoanKind kind; int card; int book; bool ok; };
+
+std::vector<Loan> loans_;
+loans_.push_back({LoanKind::Borrow, 12, 305, true});   // card 12 borrowed book 305
+\`\`\`
+
+The order matters. \`{LoanKind::Borrow, 305, 12, true}\` would compile too, and would say card 305 borrowed book 12.
+
+### Decide what gets logged
+
+Not every call belongs in the log. There are two kinds of "no":
+
+- **A refused operation.** The account exists and the amount makes sense, but the account said no: not enough money, or a savings account's fourth withdrawal this month. This is worth seeing. An [[auditor|audit-trail]] wants to know that someone tried to take out $500 and was refused. So it is logged, with \`ok\` set to \`false\`.
+- **A rejected call.** The call never described a real operation: an unknown account, an amount of zero or less, or a transfer from an account to itself. These are turned away at the door and **not** logged.
+
+That gives each operation the same three steps:
+
+1. Do the "reject without logging" checks first, and return \`false\` if one fails.
+2. Try the operation, and keep its answer: \`bool ok = ...;\`.
+3. Append one \`Transaction\` with that \`ok\`, then return \`ok\`.
+
+A transfer adds one detail. The withdrawal might be refused. Only if it succeeds does the deposit happen. Either way, one \`Transfer\` line goes in the log, with \`ok\` saying which.
+
+### Keep one source of truth
+
+A statement is a list of one account's operations. You could keep a separate list inside each account, but then the same facts would be stored twice, and one day the two copies would disagree.
+
+Instead, a statement is **derived** from the log. Go through the log, pick out the transactions that involve the account, and format each one. The log is the **[[single source of truth|single-source]]**: nothing is stored twice, so the statement cannot disagree with the history.
+
+A transfer involves **two** accounts, so it appears in both statements. The account in \`from\` sees it as \`transfer out\`, and the account in \`to\` sees it as \`transfer in\`.
+
+### history: the raw records
+
+The bank gives out the raw log with \`history()\`. It returns \`const std::vector<Transaction>&\`, read "a reference to a vector of transactions that you may not change". A **[[reference|reference-return]]** means the vector is not copied, and \`const\` means the caller can read it but cannot add, remove or edit a line.
+
+### statement: the log turned into text
+
+\`statement(int id)\` builds text, so use the \`std::ostringstream\` from the intermediate course (add \`#include <sstream>\`). The text looks like this, for an account \`#3\` owned by Mo:
+
+\`\`\`
+Statement for #3 (Mo, savings)
+deposit +$12.00
+transfer in +$4.50 from #1
+withdraw -$2.00 FAILED
+balance $16.50
+\`\`\`
+
+- The first line gives the id, the owner and the kind.
+- Then one line per logged transaction that involves this account, oldest first. A deposit gets a \`+\`, a withdrawal a \`-\`, and a transfer says \`out\` with \`-\` and \`to\`, or \`in\` with \`+\` and \`from\`. Amounts use your \`format_cents\`.
+- A failed transaction gets \` FAILED\` on the end: a space, then the word.
+- The last line is the account's current balance.
+- For an id that does not exist, the whole statement is \`"no such account\\n"\`.
+
+The loop has to skip transactions that do not involve this account. The keyword **\`continue\`** means "stop this turn of the loop and go straight to the next one":
+
+\`\`\`cpp
+for (const Loan& l : loans_) {
+    if (l.card != card) continue;          // not this card's: skip it
+    out << (l.kind == LoanKind::Borrow ? "borrowed #" : "returned #") << l.book << "\\n";
+}
+\`\`\`
+
+For the bank, one transaction can match in four different ways, so an \`if\` / \`else if\` chain works well: each branch builds the line for one case, and a final \`else\` does \`continue\`.
+
+Keeping \`history()\` and \`statement()\` apart is a habit worth having: **[[separate the data from how it is shown|data-and-presentation]]**. Tests read the raw records. People read the text.
+
+**Watch out:** the log must be written for a *refused* operation too, but *not* for a rejected call. The easy mistake is to put the \`push_back\` only on the success path, so a refused withdrawal leaves no trace. Another is to log before the "reject" checks, so a deposit to account 99 appears in the history.
+
+::: context sentinel-value A value that means "none"
+A sentinel is a special value that stands for "nothing here", chosen so it can never be real data. Using 0 for "no account" works only because ids start at 1; if the bank ever gave out id 0, the log would become ambiguous. Another common sentinel is -1 for "not found". Modern C++ can say "maybe no value" more safely with \`std::optional<int>\`, from the intermediate course. Here a plain \`int\` keeps the record small and easy to test, and the rule "ids start at 1" is what makes it safe.
+:::
+
+::: context aggregate-init Filling a struct from braces
+A struct or class with only public data members, no constructors of its own and no virtual functions is called an **aggregate**. C++ lets you build one by listing its members' values in braces, in declaration order: \`Loan{LoanKind::Return, 7, 42, false}\`. Inside \`push_back(...)\` you can leave off the type name, because the vector already knows it holds \`Loan\`s. Values you leave off at the end are set to zero. The danger is that nothing checks you listed them in the right order when two neighbors have the same type, like \`from\` and \`to\`.
+:::
+
+::: context audit-trail Why keep the failures
+An **audit trail** is a record that lets someone check, later, exactly what happened. Banks are required by law to keep records of their transactions, often for years. Failed attempts matter too: many refused withdrawals in a row can be the first sign of fraud or of a broken machine. Aircraft keep the same kind of record in their flight data recorder, the "black box", which logs what the systems did and what the crew asked for, so investigators can work out what went wrong.
+:::
+
+::: context single-source One list, many views
+Accountants have worked this way for over five hundred years. In double-entry bookkeeping, which Luca Pacioli described in print in 1494, every movement of money is written as a debit in one account and a credit in another, the same way your transfer shows up as \`out\` for one account and \`in\` for the other. Every view is read from the same log:
+
+\`\`\`svg
+<svg viewBox="0 0 360 160" xmlns="http://www.w3.org/2000/svg" font-family="Inter, Arial, sans-serif">
+  <text x="85" y="18" font-size="12" fill="#1f2a44" text-anchor="middle">the log</text>
+  <rect x="10" y="28" width="150" height="24" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="18" y="44" font-size="11" fill="#1f2a44">deposit → #1</text>
+  <rect x="10" y="52" width="150" height="24" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="18" y="68" font-size="11" fill="#1f2a44">transfer #1 → #2</text>
+  <rect x="10" y="76" width="150" height="24" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="18" y="92" font-size="11" fill="#1f2a44">withdraw #2</text>
+  <rect x="220" y="30" width="130" height="44" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="285" y="48" font-size="11" fill="#1f2a44" text-anchor="middle">statement #1</text>
+  <text x="285" y="64" font-size="11" fill="#1f2a44" text-anchor="middle">deposit, transfer out</text>
+  <rect x="220" y="90" width="130" height="44" rx="6" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="285" y="108" font-size="11" fill="#1f2a44" text-anchor="middle">statement #2</text>
+  <text x="285" y="124" font-size="11" fill="#1f2a44" text-anchor="middle">transfer in, withdraw</text>
+  <line x1="160" y1="64" x2="214" y2="52" stroke="#1d6fd1" stroke-width="2"/>
+  <line x1="160" y1="64" x2="214" y2="112" stroke="#1d6fd1" stroke-width="2"/>
+  <text x="85" y="130" font-size="11" fill="#6c7a93" text-anchor="middle">one transfer line,</text>
+  <text x="85" y="145" font-size="11" fill="#6c7a93" text-anchor="middle">two statements</text>
+</svg>
+\`\`\`
+:::
+
+::: context reference-return How long the reference lasts
+The reference from \`history()\` refers to the bank's own vector, so it is good for as long as the bank exists. It even stays good while more transactions are added, because it names the vector itself. A reference to one *element*, like \`const Transaction& first = b.history()[0];\`, is different: the next \`push_back\` may move every element to a bigger block of memory, and \`first\` is left pointing at the old one. That is the iterator invalidation from the expert course, and it applies to references into a vector as well.
+:::
+
+::: context data-and-presentation Data first, text last
+Programmers often split a program into the **model**, which holds the facts, and the **view**, which shows them. Your \`history()\` is the model and \`statement()\` is one view. Tomorrow someone might want a web page, a spreadsheet or a monthly email, and each is a new view over the same records, with no change to how the bank works. Tests also get easier: checking that \`h[0].cents == 100\` is sturdier than searching a printed page for "$1.00". The next project, text statistics, uses the same split: count first, print last.
+:::
+--- task
+Give \`Bank\` a transaction log. No \`main\`: the checker supplies it. Add \`#include <vector>\` and \`#include <sstream>\`.
+
+- Above \`Bank\`, add \`enum class TxKind { Deposit, Withdraw, Transfer };\` and \`struct Transaction { TxKind kind; int from; int to; long long cents; bool ok; };\`. \`from\` is 0 for a deposit and \`to\` is 0 for a withdrawal.
+- Give \`Bank\` a \`std::vector<Transaction>\` for the log.
+- \`deposit\`, \`withdraw\` and \`transfer\` behave as before. When the accounts exist, the amount is positive and (for a transfer) the two ids differ, each one appends one \`Transaction\`, with \`ok\` saying whether it succeeded. Any other call is rejected: it returns \`false\` and is not logged.
+- \`const std::vector<Transaction>& history() const\` returns the log.
+- \`std::string statement(int id) const\` returns \`"no such account\\n"\` for an unknown id. Otherwise it returns text in exactly this form:
+
+\`\`\`
+Statement for #1 (Ada, checking)
+deposit +$100.00
+withdraw -$20.00
+transfer out -$30.00 to #2
+transfer in +$5.00 from #2
+withdraw -$500.00 FAILED
+balance $55.00
+\`\`\`
+
+That is: the header line, then one line per logged transaction involving the account, oldest first, with \` FAILED\` added to failed ones, then the balance line. Every line ends with \`\\n\`.
+--- starter
+#include <map>
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->deposit(cents);
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        return a && a->withdraw(cents);
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        if (!a->withdraw(cents)) return false;
+        b->deposit(cents);
+        return true;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    int next_id_ = 1;
+};
+--- solution
+#include <map>
+#include <memory>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+// Money is kept in whole cents: 123456 prints as $1234.56.
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+class Account {
+public:
+    Account(int id, std::string owner) : id_(id), owner_(std::move(owner)) {}
+    virtual ~Account() = default;
+
+    int id() const { return id_; }
+    const std::string& owner() const { return owner_; }
+    long long balance() const { return balance_; }
+
+    bool deposit(long long cents) {
+        if (cents <= 0) return false;
+        balance_ += cents;
+        return true;
+    }
+
+    virtual bool withdraw(long long cents) {
+        if (cents <= 0 || cents > balance_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    virtual void end_month() {}
+    virtual std::string kind() const { return "basic"; }
+
+protected:
+    long long balance_ = 0;
+
+private:
+    int id_;
+    std::string owner_;
+};
+
+class CheckingAccount : public Account {
+public:
+    CheckingAccount(int id, std::string owner, long long overdraft_limit)
+        : Account(id, std::move(owner)), overdraft_limit_(overdraft_limit) {}
+
+    bool withdraw(long long cents) override {
+        if (cents <= 0 || balance_ - cents < -overdraft_limit_) return false;
+        balance_ -= cents;
+        return true;
+    }
+
+    std::string kind() const override { return "checking"; }
+
+private:
+    long long overdraft_limit_;
+};
+
+class SavingsAccount : public Account {
+public:
+    static constexpr int kWithdrawalsPerMonth = 3;
+
+    SavingsAccount(int id, std::string owner, int rate_bp)
+        : Account(id, std::move(owner)), rate_bp_(rate_bp) {}
+
+    bool withdraw(long long cents) override {
+        if (withdrawals_ >= kWithdrawalsPerMonth) return false;
+        if (!Account::withdraw(cents)) return false;
+        ++withdrawals_;
+        return true;
+    }
+
+    void end_month() override {
+        if (balance_ > 0) balance_ += balance_ * rate_bp_ / 10000;
+        withdrawals_ = 0;
+    }
+
+    std::string kind() const override { return "savings"; }
+
+private:
+    int rate_bp_;
+    int withdrawals_ = 0;
+};
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+class Bank {
+public:
+    int open_checking(const std::string& owner, long long overdraft_limit) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<CheckingAccount>(id, owner, overdraft_limit);
+        return id;
+    }
+
+    int open_savings(const std::string& owner, int rate_bp) {
+        int id = next_id_++;
+        accounts_[id] = std::make_unique<SavingsAccount>(id, owner, rate_bp);
+        return id;
+    }
+
+    Account* find(int id) {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    const Account* find(int id) const {
+        auto it = accounts_.find(id);
+        return it == accounts_.end() ? nullptr : it->second.get();
+    }
+
+    bool deposit(int id, long long cents) {
+        Account* a = find(id);
+        if (!a || cents <= 0) return false;
+        bool ok = a->deposit(cents);
+        log_.push_back({TxKind::Deposit, 0, id, cents, ok});
+        return ok;
+    }
+
+    bool withdraw(int id, long long cents) {
+        Account* a = find(id);
+        if (!a || cents <= 0) return false;
+        bool ok = a->withdraw(cents);
+        log_.push_back({TxKind::Withdraw, id, 0, cents, ok});
+        return ok;
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || cents <= 0) return false;
+        Account* a = find(from);
+        Account* b = find(to);
+        if (!a || !b) return false;
+        bool ok = a->withdraw(cents);
+        if (ok) b->deposit(cents);
+        log_.push_back({TxKind::Transfer, from, to, cents, ok});
+        return ok;
+    }
+
+    long long total_balance() const {
+        long long total = 0;
+        for (const auto& [id, account] : accounts_) total += account->balance();
+        return total;
+    }
+
+    void end_month() {
+        for (auto& [id, account] : accounts_) account->end_month();
+    }
+
+    const std::vector<Transaction>& history() const { return log_; }
+
+    std::string statement(int id) const {
+        const Account* a = find(id);
+        if (!a) return "no such account\\n";
+        std::ostringstream out;
+        out << "Statement for #" << id << " (" << a->owner() << ", " << a->kind() << ")\\n";
+        for (const Transaction& t : log_) {
+            std::string line;
+            if (t.kind == TxKind::Deposit && t.to == id) {
+                line = "deposit +" + format_cents(t.cents);
+            } else if (t.kind == TxKind::Withdraw && t.from == id) {
+                line = "withdraw -" + format_cents(t.cents);
+            } else if (t.kind == TxKind::Transfer && t.from == id) {
+                line = "transfer out -" + format_cents(t.cents) + " to #" + std::to_string(t.to);
+            } else if (t.kind == TxKind::Transfer && t.to == id) {
+                line = "transfer in +" + format_cents(t.cents) + " from #" + std::to_string(t.from);
+            } else {
+                continue;
+            }
+            if (!t.ok) line += " FAILED";
+            out << line << "\\n";
+        }
+        out << "balance " << format_cents(a->balance()) << "\\n";
+        return out.str();
+    }
+
+private:
+    std::map<int, std::unique_ptr<Account>> accounts_;
+    std::vector<Transaction> log_;
+    int next_id_ = 1;
+};
+--- hint
+Add a member \`std::vector<Transaction> log_\`. In each operation, do the "reject without logging" checks first and return \`false\` if one fails. Then try the operation, keep \`bool ok\`, and append a line like \`log_.push_back({TxKind::Deposit, 0, id, cents, ok});\` before returning \`ok\`.
+--- hint
+In \`transfer\`, after the checks: \`bool ok = a->withdraw(cents);\`, then \`if (ok) b->deposit(cents);\`, then log one \`TxKind::Transfer\` line with \`from\`, \`to\`, \`cents\` and \`ok\`.
+--- hint
+In \`statement\`, find the account with \`find(id)\` and return \`"no such account\\n"\` if it is \`nullptr\`. Write the header line to an \`std::ostringstream\`. Loop over \`log_\`: build \`line\` in an \`if\` / \`else if\` chain (deposit with \`t.to == id\`, withdraw with \`t.from == id\`, transfer with \`t.from == id\` for "out", transfer with \`t.to == id\` for "in"), and \`continue\` in the final \`else\`. Add \`" FAILED"\` when \`!t.ok\`, write the line and \`"\\n"\`, and finish with \`"balance "\` plus \`format_cents\` of the balance.
+--- check case | Ada's statement
+[] { Bank b; int ada = b.open_checking("Ada", 0); int lin = b.open_savings("Lin", 100); b.deposit(ada, 10000); b.withdraw(ada, 2000); b.transfer(ada, lin, 3000); b.transfer(lin, ada, 500); b.withdraw(ada, 50000); return b.statement(ada); }()
+=> "Statement for #1 (Ada, checking)\\ndeposit +$100.00\\nwithdraw -$20.00\\ntransfer out -$30.00 to #2\\ntransfer in +$5.00 from #2\\nwithdraw -$500.00 FAILED\\nbalance $55.00\\n"
+--- check case | The other side of the transfers
+[] { Bank b; int ada = b.open_checking("Ada", 0); int lin = b.open_savings("Lin", 100); b.deposit(ada, 10000); b.transfer(ada, lin, 3000); b.transfer(lin, ada, 500); return b.statement(lin); }()
+=> "Statement for #2 (Lin, savings)\\ntransfer in +$30.00 from #1\\ntransfer out -$5.00 to #1\\nbalance $25.00\\n"
+--- check test | Failed transfers are logged; rejected calls are not
+[] { Bank b; int a = b.open_checking("A", 0); int c = b.open_checking("C", 0); b.transfer(a, c, 100); b.deposit(99, 100); b.deposit(a, -5); b.transfer(a, a, 10); b.withdraw(a, 0); const auto& h = b.history(); return h.size() == 1 && h[0].kind == TxKind::Transfer && !h[0].ok && h[0].from == a && h[0].to == c && h[0].cents == 100; }()
+--- check test | Deposits and withdrawals record their accounts
+[] { Bank b; int a = b.open_savings("A", 0); b.deposit(a, 700); b.withdraw(a, 200); const auto& h = b.history(); return h.size() == 2 && h[0].kind == TxKind::Deposit && h[0].from == 0 && h[0].to == a && h[0].ok && h[1].kind == TxKind::Withdraw && h[1].from == a && h[1].to == 0 && h[1].cents == 200; }()
+--- check case | An unknown account
+Bank().statement(3)
+=> "no such account\\n"
+--- check case | A statement with no transactions
+[] { Bank b; b.open_checking("Bo", 5000); return b.statement(1); }()
+=> "Statement for #1 (Bo, checking)\\nbalance $0.00\\n"
+
++++ practice | A door that logs who comes and goes
+--- task
+Write a door with an access log. No \`main\`. Above the class, declare:
+
+\`\`\`cpp
+enum class Move { Enter, Leave };
+struct Entry { Move kind; int badge; bool ok; };
+\`\`\`
+
+Then write \`class Door\`:
+
+- \`bool enter(int badge)\`: the person with that badge walks in. If they are already inside, it is **refused**: logged with \`ok\` set to \`false\`, and it returns \`false\`. Otherwise they are now inside, and it is logged with \`ok\` set to \`true\`.
+- \`bool leave(int badge)\`: the person walks out. Refused (logged, \`false\`) if they are not inside; otherwise logged with \`ok\` set to \`true\`.
+- A badge number of 0 or less is not a real badge: that call is **rejected**. It returns \`false\` and is not logged at all.
+- \`const std::vector<Entry>& log() const\`: every logged entry, oldest first.
+- \`std::size_t inside() const\`: how many people are inside now.
+
+Include \`<set>\` and \`<vector>\`.
+--- starter
+#include <cstddef>
+#include <vector>
+
+enum class Move { Enter, Leave };
+struct Entry { Move kind; int badge; bool ok; };
+
+class Door {
+public:
+    bool enter(int badge) { return true; }
+    bool leave(int badge) { return true; }
+    const std::vector<Entry>& log() const { return log_; }
+    std::size_t inside() const { return 0; }
+
+private:
+    std::vector<Entry> log_;
+};
+--- solution
+#include <cstddef>
+#include <set>
+#include <vector>
+
+enum class Move { Enter, Leave };
+struct Entry { Move kind; int badge; bool ok; };
+
+class Door {
+public:
+    bool enter(int badge) {
+        if (badge <= 0) return false;   // rejected: not logged
+        bool ok = inside_.insert(badge).second;
+        log_.push_back({Move::Enter, badge, ok});
+        return ok;
+    }
+
+    bool leave(int badge) {
+        if (badge <= 0) return false;
+        bool ok = inside_.erase(badge) == 1;
+        log_.push_back({Move::Leave, badge, ok});
+        return ok;
+    }
+
+    const std::vector<Entry>& log() const { return log_; }
+    std::size_t inside() const { return inside_.size(); }
+
+private:
+    std::set<int> inside_;
+    std::vector<Entry> log_;
+};
+--- hint
+Keep the badges of the people inside in a \`std::set<int>\`. \`insert\` tells you whether the badge was new (\`.second\` of what it returns), and \`erase\` returns how many it removed, 0 or 1.
+--- hint
+Each function follows the lesson's three steps: reject a bad badge without logging, try the move and keep \`bool ok\`, then \`push_back\` one \`Entry\` built from a brace list and return \`ok\`.
+--- check test | In and out
+[] { Door d; bool a = d.enter(7); bool b = d.enter(9); bool c = d.leave(7); const auto& g = d.log(); return a && b && c && d.inside() == 1 && g.size() == 3 && g[2].kind == Move::Leave && g[2].badge == 7 && g[2].ok; }()
+--- check test | Refused moves are logged as failed
+[] { Door d; d.enter(5); bool twice = d.enter(5); bool stranger = d.leave(8); const auto& g = d.log(); return !twice && !stranger && g.size() == 3 && g[1].kind == Move::Enter && !g[1].ok && g[2].kind == Move::Leave && g[2].badge == 8 && !g[2].ok && d.inside() == 1; }()
+--- check test | Rejected badges leave no trace
+[] { Door d; bool a = d.enter(0); bool b = d.leave(-3); bool c = d.enter(-1); return !a && !b && !c && d.log().empty() && d.inside() == 0; }()
+--- check test | Coming back after leaving is fine
+[] { Door d; d.enter(4); d.leave(4); bool back = d.enter(4); return back && d.inside() == 1 && d.log().size() == 3 && d.log()[2].ok; }()
+
++++ practice | Rebuild a balance from the log
+--- task
+The log is the single source of truth, so any balance can be worked out from it. The starter declares the lesson's \`TxKind\` and \`Transaction\`. Write \`long long balance_from_log(const std::vector<Transaction>& log, int id)\`, which replays the log for account \`id\` and returns its balance, assuming the account started at 0. No \`main\`.
+
+- Only transactions with \`ok\` set to \`true\` move money. Failed ones change nothing.
+- A deposit **to** \`id\` adds its cents; a withdrawal **from** \`id\` takes them away; a transfer from \`id\` takes them away, and a transfer to \`id\` adds them.
+- An account that never appears has a balance of 0.
+- Remember that 0 is the sentinel for "no account" in \`from\` and \`to\`: for an \`id\` of 0 or less, the answer is 0.
+--- starter
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+--- solution
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+long long balance_from_log(const std::vector<Transaction>& log, int id) {
+    if (id <= 0) return 0;   // 0 means "no account", never a real one
+    long long balance = 0;
+    for (const Transaction& t : log) {
+        if (!t.ok) continue;
+        if (t.to == id) balance += t.cents;
+        if (t.from == id) balance -= t.cents;
+    }
+    return balance;
+}
+--- hint
+Walk the log once. Skip a failed transaction with \`continue\`. For the others, money arrives when \`t.to == id\` and leaves when \`t.from == id\`, whatever the kind.
+--- hint
+Why the guard for \`id <= 0\`? Every deposit has \`from\` set to 0, so asking about "account 0" would subtract every deposit ever made.
+--- check test | Deposits and withdrawals
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 1000, true}, {TxKind::Withdraw, 1, 0, 300, true}, {TxKind::Deposit, 0, 2, 50, true}}; return balance_from_log(log, 1) == 700 && balance_from_log(log, 2) == 50; }()
+--- check test | Failed transactions move nothing
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 1000, true}, {TxKind::Withdraw, 1, 0, 5000, false}, {TxKind::Transfer, 1, 2, 9000, false}}; return balance_from_log(log, 1) == 1000 && balance_from_log(log, 2) == 0; }()
+--- check test | A transfer counts on both sides
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 1000, true}, {TxKind::Transfer, 1, 2, 400, true}, {TxKind::Transfer, 2, 1, 150, true}}; return balance_from_log(log, 1) == 750 && balance_from_log(log, 2) == 250; }()
+--- check test | Unknown accounts and the sentinel
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 1000, true}, {TxKind::Withdraw, 1, 0, 100, true}}; return balance_from_log(log, 9) == 0 && balance_from_log(log, 0) == 0 && balance_from_log(log, -1) == 0 && balance_from_log({}, 1) == 0; }()
+
++++ practice | Which accounts are busiest?
+--- task
+The starter declares the lesson's \`TxKind\` and \`Transaction\`. Write \`std::vector<std::pair<int, int>> busiest(const std::vector<Transaction>& log)\`. No \`main\`.
+
+- For every account that appears in the log, count the logged transactions that involve it. Failed ones count too. A transfer involves two accounts, so it counts once for each.
+- 0 is the "no account" sentinel, not an account, so it never appears in the answer.
+- Return \`{id, count}\` pairs, the highest count first. Equal counts go in order of id, smallest first.
+
+For a log of a deposit to 2, a transfer from 2 to 1, and a failed withdrawal from 3, the answer is \`{{2, 2}, {1, 1}, {3, 1}}\`. Include \`<algorithm>\`, \`<map>\` and \`<utility>\`.
+--- starter
+#include <utility>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::vector<std::pair<int, int>> busiest(const std::vector<Transaction>& log) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <map>
+#include <utility>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::vector<std::pair<int, int>> busiest(const std::vector<Transaction>& log) {
+    std::map<int, int> counts;
+    for (const Transaction& t : log) {
+        if (t.from != 0) counts[t.from]++;
+        if (t.to != 0) counts[t.to]++;
+    }
+    std::vector<std::pair<int, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    return ranked;
+}
+--- hint
+Count into a \`std::map<int, int>\`: for each transaction, add one for \`from\` and one for \`to\`, but only when that side is not the sentinel 0.
+--- hint
+Copy the map into a vector of pairs, then sort it with a comparator: bigger count first, and on equal counts the smaller id first.
+--- check test | The example from the task
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 2, 500, true}, {TxKind::Transfer, 2, 1, 100, true}, {TxKind::Withdraw, 3, 0, 900, false}}; return busiest(log) == std::vector<std::pair<int, int>>{{2, 2}, {1, 1}, {3, 1}}; }()
+--- check test | Failed transfers count for both accounts
+[] { std::vector<Transaction> log{{TxKind::Transfer, 5, 4, 100, false}, {TxKind::Transfer, 5, 4, 100, false}, {TxKind::Deposit, 0, 4, 10, true}}; return busiest(log) == std::vector<std::pair<int, int>>{{4, 3}, {5, 2}}; }()
+--- check test | The sentinel is never an account
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 5, true}, {TxKind::Deposit, 0, 1, 5, true}, {TxKind::Withdraw, 1, 0, 5, true}}; auto b = busiest(log); return b.size() == 1 && b[0] == std::pair<int, int>{1, 3}; }()
+--- check test | An empty log
+busiest({}).empty()
+
++++ practice | The last transaction of an account
+--- task
+The starter declares the lesson's \`TxKind\` and \`Transaction\`. Write \`std::optional<Transaction> last_for(const std::vector<Transaction>& log, int id, bool only_ok)\`. No \`main\`.
+
+- It returns the **most recent** transaction in the log that involves account \`id\`, as \`from\` or as \`to\`.
+- When \`only_ok\` is \`true\`, failed transactions are skipped: it returns the most recent **successful** one.
+- It returns \`std::nullopt\` when there is no such transaction: an empty log, an account that never appears, or only failed ones when \`only_ok\` is \`true\`.
+- 0 is the sentinel for "no account", so for an \`id\` of 0 or less the answer is always \`std::nullopt\`, even though every deposit has \`from\` set to 0.
+
+Include \`<optional>\`.
+--- starter
+#include <optional>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::optional<Transaction> last_for(const std::vector<Transaction>& log, int id, bool only_ok) {
+    for (const Transaction& t : log) {
+        if (t.from == id || t.to == id) return t;
+    }
+    return std::nullopt;
+}
+--- solution
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::optional<Transaction> last_for(const std::vector<Transaction>& log, int id, bool only_ok) {
+    if (id <= 0) return std::nullopt;   // 0 marks "no account"
+    for (std::size_t i = log.size(); i > 0; --i) {
+        const Transaction& t = log[i - 1];   // newest first
+        if (t.from != id && t.to != id) continue;
+        if (only_ok && !t.ok) continue;
+        return t;
+    }
+    return std::nullopt;
+}
+--- hint
+The most recent is the last one, so walk the log backwards and stop at the first match. A \`std::size_t\` can never go below 0, so \`i >= 0\` would always be true. Count down safely instead: start at \`log.size()\` and look at \`log[i - 1]\` while \`i > 0\`.
+--- hint
+Skip what does not count with \`continue\`: transactions that do not involve \`id\`, and failed ones when \`only_ok\` is set. And refuse \`id <= 0\` before the loop, or a question about "account 0" would match every deposit.
+--- check test | The newest one wins
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 100, true}, {TxKind::Transfer, 2, 1, 40, true}, {TxKind::Deposit, 0, 2, 7, true}}; auto t = last_for(log, 1, false); return t && t->kind == TxKind::Transfer && t->cents == 40 && t->from == 2; }()
+--- check test | Skipping failures when asked
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 100, true}, {TxKind::Withdraw, 1, 0, 900, false}}; auto any = last_for(log, 1, false); auto good = last_for(log, 1, true); return any && !any->ok && any->cents == 900 && good && good->kind == TxKind::Deposit && good->cents == 100; }()
+--- check test | Nothing to find
+[] { std::vector<Transaction> log{{TxKind::Withdraw, 3, 0, 900, false}}; return !last_for(log, 3, true) && !last_for(log, 8, false) && !last_for({}, 1, false); }()
+--- check test | Account 0 is the sentinel, not an account
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 100, true}, {TxKind::Withdraw, 1, 0, 50, true}}; return !last_for(log, 0, false) && !last_for(log, 0, true) && !last_for(log, -2, false); }()
+
++++ practice | Debug: the library log that tells lies
+--- task
+**Bug report:** "When a book is already out, a second borrow is refused, as it should be, but it leaves no trace in the log. And the log says card 305 borrowed book 12, when really card 12 borrowed book 305."
+
+The starter's \`Library\` follows the lesson's rules. A call with a card number of 0 or less, or for a book the library does not have, is rejected and not logged. Any other borrow or return is logged, with \`ok\` saying whether it worked. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <map>
+#include <vector>
+
+enum class LoanKind { Borrow, Return };
+struct Loan { LoanKind kind; int card; int book; bool ok; };
+
+class Library {
+public:
+    void add_book(int book) { on_shelf_[book] = true; }
+
+    bool borrow(int card, int book) {
+        if (card <= 0 || !on_shelf_.contains(book)) return false;
+        bool ok = on_shelf_[book];
+        if (ok) {
+            on_shelf_[book] = false;
+            log_.push_back({LoanKind::Borrow, book, card, ok});
+        }
+        return ok;
+    }
+
+    bool give_back(int card, int book) {
+        if (card <= 0 || !on_shelf_.contains(book)) return false;
+        bool ok = !on_shelf_[book];
+        if (ok) on_shelf_[book] = true;
+        log_.push_back({LoanKind::Return, card, book, ok});
+        return ok;
+    }
+
+    const std::vector<Loan>& log() const { return log_; }
+
+private:
+    std::map<int, bool> on_shelf_;
+    std::vector<Loan> log_;
+};
+--- solution
+#include <map>
+#include <vector>
+
+enum class LoanKind { Borrow, Return };
+struct Loan { LoanKind kind; int card; int book; bool ok; };
+
+class Library {
+public:
+    void add_book(int book) { on_shelf_[book] = true; }
+
+    bool borrow(int card, int book) {
+        if (card <= 0 || !on_shelf_.contains(book)) return false;
+        bool ok = on_shelf_[book];
+        if (ok) on_shelf_[book] = false;
+        log_.push_back({LoanKind::Borrow, card, book, ok});
+        return ok;
+    }
+
+    bool give_back(int card, int book) {
+        if (card <= 0 || !on_shelf_.contains(book)) return false;
+        bool ok = !on_shelf_[book];
+        if (ok) on_shelf_[book] = true;
+        log_.push_back({LoanKind::Return, card, book, ok});
+        return ok;
+    }
+
+    const std::vector<Loan>& log() const { return log_; }
+
+private:
+    std::map<int, bool> on_shelf_;
+    std::vector<Loan> log_;
+};
+--- hint
+Compare \`borrow\` with \`give_back\`, which is right. Where does each one put its \`push_back\`? A refused borrow must be logged too, so the line cannot live inside the \`if (ok)\`.
+--- hint
+A brace list fills a struct's members in the order they are declared: \`kind\`, then \`card\`, then \`book\`, then \`ok\`. Read the brace list in \`borrow\` against that order.
+--- check test | A borrow records the card and the book in their places
+[] { Library l; l.add_book(305); l.borrow(12, 305); const auto& g = l.log(); return g.size() == 1 && g[0].kind == LoanKind::Borrow && g[0].card == 12 && g[0].book == 305 && g[0].ok; }()
+--- check test | A refused borrow is logged as failed
+[] { Library l; l.add_book(305); bool first = l.borrow(12, 305); bool second = l.borrow(40, 305); const auto& g = l.log(); return first && !second && g.size() == 2 && g[1].card == 40 && g[1].book == 305 && !g[1].ok; }()
+--- check test | Rejected calls are not logged
+[] { Library l; l.add_book(1); bool a = l.borrow(0, 1); bool b = l.borrow(5, 99); bool c = l.give_back(5, 99); return !a && !b && !c && l.log().empty(); }()
+--- check test | Borrow, return, borrow again
+[] { Library l; l.add_book(8); bool a = l.borrow(3, 8); bool b = l.give_back(3, 8); bool c = l.give_back(3, 8); bool d = l.borrow(4, 8); const auto& g = l.log(); return a && b && !c && d && g.size() == 4 && g[3].card == 4 && g[3].ok && !g[2].ok; }()
+
++++ practice | Stretch: an audit report with alerts
+--- task
+An auditor wants one line per account, and a warning when someone keeps trying to take out money they cannot have. The starter declares the lesson's \`TxKind\`, \`Transaction\` and \`format_cents\`. Write \`std::string audit(const std::vector<Transaction>& log)\`. No \`main\`.
+
+One line for every account that appears in the log (as \`from\` or \`to\`; 0 is the sentinel, not an account), in order of id, smallest first:
+
+\`\`\`
+#2: in $30.00, out $12.50, failed 3 ALERT
+\`\`\`
+
+- **in**: the cents of successful deposits to the account plus successful transfers to it.
+- **out**: the cents of successful withdrawals from it plus successful transfers from it.
+- **failed**: how many withdrawals from it and transfers from it failed.
+- \` ALERT\` (a space and the word) goes on the end if, looking in log order only at the transactions where this account is **paying** (its withdrawals and its transfers out), **3 or more failed in a row**.
+- Every line ends with \`\\n\`. An empty log gives \`""\`.
+
+Include \`<map>\` and \`<sstream>\`.
+--- starter
+#include <string>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+std::string audit(const std::vector<Transaction>& log) {
+    return "";
+}
+--- solution
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+enum class TxKind { Deposit, Withdraw, Transfer };
+
+struct Transaction {
+    TxKind kind;
+    int from;   // 0 for a deposit
+    int to;     // 0 for a withdrawal
+    long long cents;
+    bool ok;
+};
+
+std::string format_cents(long long cents) {
+    long long v = cents < 0 ? -cents : cents;
+    std::string frac = std::to_string(v % 100);
+    if (frac.size() < 2) frac = "0" + frac;
+    return (cents < 0 ? "-$" : "$") + std::to_string(v / 100) + "." + frac;
+}
+
+struct Tally {
+    long long in = 0;
+    long long out = 0;
+    int failed = 0;
+    int failed_in_a_row = 0;   // current run of failed payments
+    bool alert = false;
+};
+
+std::string audit(const std::vector<Transaction>& log) {
+    std::map<int, Tally> accounts;
+    for (const Transaction& t : log) {
+        if (t.to != 0) {
+            Tally& receiver = accounts[t.to];
+            if (t.ok) receiver.in += t.cents;
+        }
+        if (t.from != 0) {
+            Tally& payer = accounts[t.from];
+            if (t.ok) {
+                payer.out += t.cents;
+                payer.failed_in_a_row = 0;
+            } else {
+                ++payer.failed;
+                if (++payer.failed_in_a_row >= 3) payer.alert = true;
+            }
+        }
+    }
+    std::ostringstream report;
+    for (const auto& [id, a] : accounts) {
+        report << "#" << id << ": in " << format_cents(a.in) << ", out " << format_cents(a.out) << ", failed " << a.failed;
+        if (a.alert) report << " ALERT";
+        report << "\\n";
+    }
+    return report.str();
+}
+--- hint
+Keep one small record per account in a \`std::map<int, ...>\`, so the report comes out in order of id. The record holds the two totals, the failure count, the length of the current run of failed payments, and whether an alert was ever raised.
+--- hint
+For each transaction, \`to\` (if not 0) is the receiving side and \`from\` (if not 0) the paying side. Touch the map for both sides, even for a failed transfer, so that every account in the log gets its line.
+--- hint
+On the paying side, a success adds to \`out\` and resets the run to 0; a failure adds one to \`failed\` and one to the run, and sets the alert once the run reaches 3.
+--- check case | Money in and out, and one failure
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 1, 10000, true}, {TxKind::Transfer, 1, 2, 3000, true}, {TxKind::Withdraw, 2, 0, 1250, true}, {TxKind::Withdraw, 1, 0, 90000, false}}; return audit(log); }()
+=> "#1: in $100.00, out $30.00, failed 1\\n#2: in $30.00, out $12.50, failed 0\\n"
+--- check case | Three failed payments in a row raise the alert
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 3, 500, true}, {TxKind::Withdraw, 3, 0, 900, false}, {TxKind::Deposit, 0, 3, 100, true}, {TxKind::Transfer, 3, 4, 800, false}, {TxKind::Withdraw, 3, 0, 700, false}}; return audit(log); }()
+=> "#3: in $6.00, out $0.00, failed 3 ALERT\\n#4: in $0.00, out $0.00, failed 0\\n"
+--- check case | A success breaks the run
+[] { std::vector<Transaction> log{{TxKind::Deposit, 0, 5, 100, true}, {TxKind::Withdraw, 5, 0, 900, false}, {TxKind::Withdraw, 5, 0, 900, false}, {TxKind::Withdraw, 5, 0, 50, true}, {TxKind::Withdraw, 5, 0, 900, false}, {TxKind::Withdraw, 5, 0, 900, false}}; return audit(log); }()
+=> "#5: in $1.00, out $0.50, failed 4\\n"
+--- check case | An empty log
+audit({})
+=> ""
+
+=== cppp-09 | Text stats 1: counting lines, words and characters
+--- teach
+Last lesson, the bank printed statements from its transaction log, and that finished the bank project. Now a new project begins: a tool that reads a piece of text and tells you facts about it.
+
+### A new kind of project
+
+Picture a teacher who asks for "an essay of at least 500 words". Somebody has to count. You could count by hand, word by word, but a program can do it in a blink, for a page or for a whole book.
+
+That is this project. You will build a **command-line tool**: a complete program you run on its own, which reads text and prints a short report. It works in the spirit of the Unix [[wc command|wc-command]] ("word count"), which programmers have used for fifty years.
+
+The tool grows over four lessons, and each lesson adds to the code of the one before:
+
+1. count lines, words and characters (this lesson);
+2. find the most common words;
+3. count sentences, and measure word lengths;
+4. draw a small bar chart of word lengths.
+
+In the bank project you wrote classes and the checker called them. Here you write **whole programs with \`main\`**, and the checker runs them and compares what they print with the expected report, character for character. So every space and every line break in your output matters.
+
+### Reading every line of the input
+
+The text comes in through **standard input**: the stream your program reads with \`std::cin\`. In this app, the text sits in the lesson's input box, and it arrives at \`std::cin\` as if someone had typed it.
+
+You met \`std::getline(std::cin, line)\` in the basics: it reads one whole line, spaces included, into a \`std::string\`. The line break at the end is thrown away, so \`line\` holds only the text.
+
+To read **every** line, put \`getline\` inside the condition of a \`while\` loop. Here it prints each line of a shopping list with a star in front:
+
+\`\`\`cpp
+std::string item;
+while (std::getline(std::cin, item)) {
+    std::cout << "* " << item << "\\n";
+}
+\`\`\`
+
+How does the loop know when to stop? \`std::getline\` gives back the stream itself, and a stream can be tested like a \`bool\`. It counts as \`true\` while reading works, and turns \`false\` once there is nothing left to read: the [[end of the input|end-of-file]]. So the loop runs once per line, then stops by itself.
+
+Every line counts, **blank lines too**. A blank line is read as an empty string, \`""\`, and the loop body still runs for it.
+
+### Counting characters
+
+Inside the loop, \`item.size()\` tells you how many characters that line holds. Because \`getline\` already dropped the line break, \`size()\` does **not** count it. Add the sizes up and you have the characters of the whole text, without the line breaks.
+
+\`\`\`cpp
+long long letters_seen = 0;
+std::string item = "milk and eggs";
+letters_seen += static_cast<long long>(item.size());   // adds 13
+\`\`\`
+
+\`static_cast<long long>(...)\`, "convert to \`long long\`", turns the \`std::size_t\` that \`size()\` gives into the same type as the total, so the addition is between two numbers of one type.
+
+### Counting words inside a line
+
+You met \`std::istringstream\`, from \`<sstream>\`, in the string streams lesson: a stream that reads from a string the way \`std::cin\` reads from the input. Its \`>>\` into a \`std::string\` does two things. It skips any amount of [[whitespace|whitespace]] first, then reads one run of non-space characters.
+
+That means double spaces and tabs are handled for you. Here it counts the pieces of a label with messy spacing:
+
+\`\`\`cpp
+std::istringstream parts("ten   green\\tbottles");
+std::string piece;
+int pieces = 0;
+while (parts >> piece) ++pieces;    // pieces is 3
+\`\`\`
+
+Like \`getline\`, \`>>\` gives back the stream, and the loop stops when the string has nothing left. To count the words of each input line, build a new \`std::istringstream\` from that line inside your line loop.
+
+### Decide what the numbers mean
+
+Before you write the code, pin down exactly what each number means. A tool is only useful when its numbers mean something precise.
+
+- **lines**: how many lines were read, blank ones included.
+- **words**: whitespace-separated pieces, punctuation included. \`"summer."\` is one word, and so is \`"--"\`.
+- **chars**: characters on the lines, **not** counting the line breaks.
+
+These are **definitions**: rules you choose and write down, so everyone who reads the report knows what was counted.
+
+### Room to grow
+
+Use \`long long\` for counts that grow with the size of the input, like the character count. An \`int\` tops out a little above two billion, and a tool should not [[break on a big file|big-counts]].
+
+**Watch out:** do not add 1 per line "for the line break" to the character count. \`getline\` has already removed it, and this tool's definition leaves line breaks out. Adding them would count the way \`wc\` does, not the way the task asks.
+
+::: context wc-command The tool this one copies
+\`wc\` has been part of Unix since its first version in 1971, and it is still on every Linux and Mac computer. Run \`wc story.txt\` and it prints three numbers: lines, words and bytes. Programmers use it every day, often at the end of a pipe: \`grep error log.txt | wc -l\` counts the lines that mention "error".
+
+Your tool counts characters a little differently: \`wc\` counts the line breaks too. For this lesson's sample text, \`wc\` reports 266 characters, while your tool reports 261, one fewer for each of the 5 line breaks.
+:::
+
+::: context end-of-file How a stream knows the text is over
+When the input runs out, the stream reaches **end of file**, often written EOF. From then on every read fails, the stream tests as \`false\`, and your \`while\` loop ends.
+
+In this app, the end of the input box is the end of the file. If you run the program yourself in a terminal and type the text, you tell it "no more" by pressing Ctrl+D on Linux or a Mac (Ctrl+Z then Enter on Windows). You can also feed it a file: \`./stats < story.txt\` sends the file into standard input, and the program never knows the difference.
+:::
+
+::: context whitespace What counts as a space
+Whitespace means the characters that print as empty space: the ordinary space, the tab \`\\t\`, the line break \`\\n\`, and a few rarer ones such as the carriage return \`\\r\`. \`>>\` skips all of them before a word and stops at the first one after it.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <g font-size="13" text-anchor="middle" fill="#1f2a44">
+    <rect x="10" y="30" width="60" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+    <text x="40" y="50">ten</text>
+    <rect x="70" y="30" width="60" height="30" fill="#fff" stroke="#6c7a93"/>
+    <text x="100" y="50" fill="#6c7a93">3 spaces</text>
+    <rect x="130" y="30" width="70" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+    <text x="165" y="50">green</text>
+    <rect x="200" y="30" width="50" height="30" fill="#fff" stroke="#6c7a93"/>
+    <text x="225" y="50" fill="#6c7a93">tab</text>
+    <rect x="250" y="30" width="90" height="30" fill="#8fb8f0" stroke="#1f2a44"/>
+    <text x="295" y="50">bottles</text>
+  </g>
+  <g font-size="12" text-anchor="middle" fill="#1d6fd1">
+    <text x="40" y="82">word 1</text>
+    <text x="165" y="82">word 2</text>
+    <text x="295" y="82">word 3</text>
+  </g>
+  <text x="180" y="108" font-size="11" text-anchor="middle" fill="#1f2a44">grey gaps are skipped, blue runs are read</text>
+</svg>
+\`\`\`
+:::
+
+::: context big-counts Why a long long
+An \`int\` on today's computers holds numbers up to 2,147,483,647. A text file bigger than about 2 GB has more characters than that, and log files that size are common on servers. Going past the top of an \`int\` is signed overflow, which the debugging lesson in the expert course showed is undefined behavior. A \`long long\` holds up to about 9.2 quintillion (9,223,372,036,854,775,807), far more than any file.
+:::
+--- task
+Write a complete program, with \`main\`, that reads all of standard input and prints exactly these three lines:
+
+\`\`\`
+lines: <number of lines>
+words: <number of whitespace-separated words>
+chars: <number of characters, not counting line breaks>
+\`\`\`
+
+- Read the input line by line with \`std::getline(std::cin, line)\` in a \`while\` loop. Every line counts, blank ones too.
+- Count the words of each line with a \`std::istringstream\` and \`>>\`. Punctuation stays part of a word.
+- Add up the lines' \`size()\` for the characters, in a \`long long\`.
+
+--- starter
+#include <iostream>
+#include <string>
+
+// Step 1 of the text-statistics tool: read all of standard input and count it.
+int main() {
+    std::cout << "lines: 0\\n";
+    std::cout << "words: 0\\n";
+    std::cout << "chars: 0\\n";
+    return 0;
+}
+--- solution
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- hint
+Start with the line loop from the explanation: \`while (std::getline(std::cin, line))\` runs once per line, blank lines included. Add one to a \`lines\` counter inside it.
+--- hint
+Still inside the loop, add \`static_cast<long long>(line.size())\` to a \`long long chars\`. Then make a \`std::istringstream in(line);\` (include \`<sstream>\`) and count words with \`while (in >> word) ++words;\`.
+--- hint
+After the loop ends, print the three lines, for example \`std::cout << "lines: " << lines << "\\n";\`, then the same for \`words:\` and \`chars:\`, in that order.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | Counts the sample text
+lines: 5
+words: 52
+chars: 261
+
++++ practice | Blank lines and the longest line
+--- task
+Write a complete program, with \`main\`, that reads all of standard input and prints exactly these three lines:
+
+\`\`\`
+lines: <number of lines>
+blank lines: <number of blank lines>
+longest line: <the most characters on any one line>
+\`\`\`
+
+- Read line by line with \`std::getline\` in a \`while\` loop. Every line counts, blank ones too.
+- A line is **blank** when it has no words at all: it is empty, or holds only spaces and tabs. Use a \`std::istringstream\` and \`>>\` to find out.
+- The longest line counts every character on the line, spaces included, but not the line break. With no input at all, it is 0.
+--- starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    return 0;
+}
+--- solution
+#include <cstddef>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int blank = 0;
+    std::size_t longest = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        std::istringstream in(line);
+        std::string word;
+        if (!(in >> word)) ++blank;   // not even one word on this line
+        if (line.size() > longest) longest = line.size();
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "blank lines: " << blank << "\\n";
+    std::cout << "longest line: " << longest << "\\n";
+    return 0;
+}
+--- hint
+Inside the loop, make a \`std::istringstream\` from the line and try to read one word with \`>>\`. If even that first read fails, the line is blank.
+--- hint
+Keep the longest length seen so far, starting at 0, and replace it whenever \`line.size()\` is bigger. Print the three lines after the loop.
+--- stdin
+Mission log, day one.
+
+   
+Engines lit at dawn; all four burned clean for ninety seconds.
+	
+Landing gear up.
+--- check output | Counts blank lines, spaces-only lines and the longest line
+lines: 6
+blank lines: 3
+longest line: 62
+
++++ practice | Count a text held in a string
+--- task
+The tool reads \`std::cin\`, but the same counting is useful on text a program already holds. Write a function instead of a program. No \`main\`.
+
+\`\`\`cpp
+struct Counts {
+    long long lines;
+    long long words;
+    long long chars;
+};
+\`\`\`
+
+Write \`Counts count_text(const std::string& text)\`, with exactly the lesson's definitions: lines as \`std::getline\` reads them, whitespace-separated words, and characters on the lines, not counting line breaks.
+
+- Read the lines from a \`std::istringstream\` made from \`text\`, the same way the tool reads \`std::cin\`.
+- So \`""\` has 0 lines. \`"a\\n"\` has 1 line, because a line break at the very end does not start a new line. \`"a\\n\\nb"\` has 3.
+--- starter
+#include <string>
+
+struct Counts {
+    long long lines;
+    long long words;
+    long long chars;
+};
+
+Counts count_text(const std::string& text) {
+    return {0, 0, static_cast<long long>(text.size())};
+}
+--- solution
+#include <sstream>
+#include <string>
+
+struct Counts {
+    long long lines;
+    long long words;
+    long long chars;
+};
+
+Counts count_text(const std::string& text) {
+    Counts c{0, 0, 0};
+    std::istringstream input(text);
+    std::string line;
+    while (std::getline(input, line)) {
+        ++c.lines;
+        c.chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++c.words;
+    }
+    return c;
+}
+--- hint
+\`std::getline\` works on any input stream, not only \`std::cin\`. Make \`std::istringstream input(text);\` and loop \`while (std::getline(input, line))\`.
+--- hint
+Inside the loop it is the lesson's body: one more line, the line's \`size()\` added to the characters, and a second \`std::istringstream\` over the line to count its words.
+--- check test | Two lines of text
+[] { Counts c = count_text("to the moon\\nand back"); return c.lines == 2 && c.words == 5 && c.chars == 19; }()
+--- check test | Nothing at all
+[] { Counts c = count_text(""); return c.lines == 0 && c.words == 0 && c.chars == 0; }()
+--- check test | A line break at the end, and blank lines in the middle
+[] { Counts a = count_text("a\\n"); Counts b = count_text("a\\n\\nb"); Counts d = count_text("\\n\\n"); return a.lines == 1 && a.chars == 1 && b.lines == 3 && b.words == 2 && d.lines == 2 && d.chars == 0; }()
+--- check test | Tabs and runs of spaces between words
+[] { Counts c = count_text("  lift\\t\\toff   now "); return c.lines == 1 && c.words == 3 && c.chars == 18; }()
+
++++ practice | The busiest line
+--- task
+Write two functions. No \`main\`.
+
+- \`std::vector<int> words_per_line(const std::string& text)\`: for each line of \`text\`, as \`std::getline\` reads it, the number of whitespace-separated words on it. \`"a b\\n\\nc"\` gives \`{2, 0, 1}\`.
+- \`int busiest_line(const std::string& text)\`: the number of the line with the most words, counting lines from **1**. On a tie, the first such line. If the text has no words at all, return 0.
+
+Use \`std::max_element\` from \`<algorithm>\` for the second one. Include \`<sstream>\`.
+--- starter
+#include <string>
+#include <vector>
+
+std::vector<int> words_per_line(const std::string& text) {
+    return {};
+}
+
+int busiest_line(const std::string& text) {
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<int> words_per_line(const std::string& text) {
+    std::vector<int> counts;
+    std::istringstream input(text);
+    std::string line;
+    while (std::getline(input, line)) {
+        std::istringstream in(line);
+        std::string word;
+        int n = 0;
+        while (in >> word) ++n;
+        counts.push_back(n);
+    }
+    return counts;
+}
+
+int busiest_line(const std::string& text) {
+    std::vector<int> counts = words_per_line(text);
+    if (counts.empty()) return 0;
+    auto best = std::max_element(counts.begin(), counts.end());   // the first of the largest
+    if (*best == 0) return 0;
+    return static_cast<int>(best - counts.begin()) + 1;
+}
+--- hint
+\`words_per_line\` is the lesson's two loops, but instead of one running total it pushes each line's own count onto a vector.
+--- hint
+\`std::max_element\` returns an iterator to the first largest element, so ties are already handled. Subtracting \`counts.begin()\` from it gives the index, counting from 0; add 1 for a line number.
+--- hint
+Two cases have no answer: no lines at all (the iterator would be \`end()\`, so check for an empty vector first), and lines that all have 0 words.
+--- check test | Words on each line
+words_per_line("a b\\n\\nc") == std::vector<int>{2, 0, 1} && words_per_line("one two three") == std::vector<int>{3} && words_per_line("").empty()
+--- check test | The busiest line, counted from 1
+busiest_line("go\\nthree more words\\nfour of them here") == 3 && busiest_line("a b c\\nd e") == 1
+--- check test | A tie goes to the first
+busiest_line("x\\na b\\nc d\\ne") == 2
+--- check test | No words at all
+busiest_line("") == 0 && busiest_line("\\n   \\n\\t") == 0
+
++++ practice | Count the way wc counts
+--- task
+The Unix tool \`wc\` uses different definitions from yours. Write a function that counts its way. No \`main\`.
+
+\`\`\`cpp
+struct WcCounts {
+    long long lines;
+    long long words;
+    long long bytes;
+};
+\`\`\`
+
+Write \`WcCounts wc(const std::string& text)\` with \`wc\`'s definitions:
+
+- **lines** is the number of line-break characters \`'\\n'\` in the text. So a last line with no line break after it is **not** counted: \`"a"\` has 0 lines, and \`"a\\nb"\` has 1.
+- **words** is the number of whitespace-separated pieces in the whole text.
+- **bytes** is every character, line breaks included: \`text.size()\`.
+
+\`wc("to the moon\\nand back\\n")\` is \`{2, 5, 21}\`.
+--- starter
+#include <sstream>
+#include <string>
+
+struct WcCounts {
+    long long lines;
+    long long words;
+    long long bytes;
+};
+
+WcCounts wc(const std::string& text) {
+    WcCounts c{0, 0, 0};
+    std::istringstream input(text);
+    std::string line;
+    while (std::getline(input, line)) {
+        ++c.lines;
+        c.bytes += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++c.words;
+    }
+    return c;
+}
+--- solution
+#include <sstream>
+#include <string>
+
+struct WcCounts {
+    long long lines;
+    long long words;
+    long long bytes;
+};
+
+WcCounts wc(const std::string& text) {
+    WcCounts c{0, 0, static_cast<long long>(text.size())};
+    for (char ch : text) {
+        if (ch == '\\n') ++c.lines;
+    }
+    std::istringstream in(text);   // >> skips line breaks like any other space
+    std::string word;
+    while (in >> word) ++c.words;
+    return c;
+}
+--- hint
+None of these three needs \`std::getline\`. Lines are a count of one character, so a plain loop over the text finds them; bytes is simply the text's size.
+--- hint
+For words, one \`std::istringstream\` over the whole text is enough: \`>>\` treats a line break as whitespace, like a space or a tab.
+--- check test | The example
+[] { WcCounts c = wc("to the moon\\nand back\\n"); return c.lines == 2 && c.words == 5 && c.bytes == 21; }()
+--- check test | A last line with no line break
+[] { WcCounts a = wc("a"); WcCounts b = wc("a\\nb"); return a.lines == 0 && a.words == 1 && a.bytes == 1 && b.lines == 1 && b.words == 2 && b.bytes == 3; }()
+--- check test | Empty text, and only line breaks
+[] { WcCounts a = wc(""); WcCounts b = wc("\\n\\n"); return a.lines == 0 && a.words == 0 && a.bytes == 0 && b.lines == 2 && b.words == 0 && b.bytes == 2; }()
+--- check test | Spaces and tabs only between words
+[] { WcCounts c = wc("  x\\t y  "); return c.lines == 0 && c.words == 2 && c.bytes == 8; }()
+
++++ practice | Debug: one line too many
+--- task
+**Bug report:** "For a file of 3 lines, the tool says \`lines: 4\`. The character count is too big as well: for \`ab\` and \`cde\` it should be 5."
+
+The starter's program should print the lesson's three counts: lines as read, whitespace-separated words, and characters on the lines not counting line breaks. Find the two bugs and fix them.
+--- starter
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (!std::cin.eof()) {
+        std::getline(std::cin, line);
+        ++lines;
+        chars += static_cast<long long>(line.size()) + 1;
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- solution
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- hint
+After the last real line has been read, \`eof()\` is still false: the stream has not yet tried to read past the end. So the loop runs once more, \`getline\` fails, and a line that does not exist is counted. Test the read itself instead, as the lesson does.
+--- hint
+\`getline\` has already thrown the line break away, and the tool's definition leaves line breaks out. Where does the extra character per line come from?
+--- stdin
+ab
+cde
+  f  g
+--- check output | Three lines, four words, eleven characters
+lines: 3
+words: 4
+chars: 11
+
++++ practice | Stretch: a telemetry summary
+--- task
+A ground station logs sensor readings as lines of text, \`time,sensor,value\`, and some lines are damaged. Write a complete program, with \`main\`, that reads the log from standard input and prints a summary.
+
+- Skip blank lines, and comment lines that start with \`#\`. They count nowhere.
+- Every other line is a data line. Split it at the commas with \`std::getline(row, field, ',')\`. A good data line has **exactly 3** fields, and its value field is a number, possibly with spaces around it, with nothing else after it. Any other data line is **bad**.
+- For each sensor, in alphabetical order, print its count, smallest, largest and average value, each value with two decimal places:
+
+\`\`\`
+temp: n=3 min=21.50 max=23.50 mean=22.33
+\`\`\`
+
+- Finally print \`skipped: <number of bad lines>\`.
+--- starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+    }
+    std::cout << "skipped: 0\\n";
+    return 0;
+}
+--- solution
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+struct Summary {
+    int n = 0;
+    double min = 0;
+    double max = 0;
+    double sum = 0;
+};
+
+int main() {
+    std::map<std::string, Summary> sensors;
+    int skipped = 0;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.empty() || line[0] == '#') continue;
+        std::istringstream row(line);
+        std::vector<std::string> fields;
+        std::string field;
+        while (std::getline(row, field, ',')) fields.push_back(field);
+        double value = 0;
+        bool good = fields.size() == 3;
+        if (good) {
+            std::istringstream number(fields[2]);
+            good = static_cast<bool>(number >> value);
+            number >> std::ws;   // spaces after the number are fine
+            good = good && number.eof();
+        }
+        if (!good) {
+            ++skipped;
+            continue;
+        }
+        Summary& s = sensors[fields[1]];
+        if (s.n == 0 || value < s.min) s.min = value;
+        if (s.n == 0 || value > s.max) s.max = value;
+        s.sum += value;
+        ++s.n;
+    }
+    std::cout << std::fixed << std::setprecision(2);
+    for (const auto& [name, s] : sensors) {
+        std::cout << name << ": n=" << s.n << " min=" << s.min << " max=" << s.max << " mean=" << s.sum / s.n << "\\n";
+    }
+    std::cout << "skipped: " << skipped << "\\n";
+    return 0;
+}
+--- hint
+Work out, for each line, which of three kinds it is: skipped silently (empty, or starting with \`#\`), bad, or good. Split a data line into a vector of fields first, then check the count.
+--- hint
+To check the value, read it from a \`std::istringstream\` with \`>>\`, then skip trailing spaces with \`>> std::ws\`; the value is good only if the read worked and the stream is then at \`eof()\`. That catches \`oops\` and \`12abc\`.
+--- hint
+Keep a small record per sensor in a \`std::map<std::string, ...>\`: count, smallest, largest and sum. Let the first reading set both the smallest and the largest. The map prints the sensors in alphabetical order for free.
+--- stdin
+# time,sensor,value
+0,temp,21.5
+0,pressure,1013.2
+1,temp,22.0
+
+2,temp,oops
+2,pressure,1012.8
+3,humidity,40
+bad line
+4,temp,20.25,extra
+5,humidity,42.5
+6,temp,12abc
+7,temp, 23.5
+# end of log
+--- check output | The summary, with four bad lines skipped
+humidity: n=2 min=40.00 max=42.50 mean=41.25
+pressure: n=2 min=1012.80 max=1013.20 mean=1013.00
+temp: n=3 min=21.50 max=23.50 mean=22.33
+skipped: 4
+
+=== cppp-10 | Text stats 2: word frequencies
+--- teach
+Last lesson, your tool counted the lines, words and characters of its input. This lesson it learns which words [[come up most often|zipf]], the way a teacher might notice you wrote "very" eleven times.
+
+### When are two words "the same"?
+
+Counting words was easy: every piece between spaces counted once. Counting **the same** word is harder, because first you have to decide what "the same" means.
+
+In the sample text, \`The\` starts a sentence, \`the\` sits in the middle of one, and \`river,\` has a comma stuck to it. A person reading sees \`The\` and \`the\` as one word, and \`river,\` as the word "river". Your program sees three different strings. So before counting, you **[[normalize|normalising]]** each word: turn it into one standard form, so that words a person would call the same really are the same string.
+
+Here are the three rules, in order:
+
+1. **Trim** punctuation from both ends. "Punctuation" here means anything that is not a letter or a digit. \`"summer."\` becomes \`"summer"\`, and \`"(yes)"\` becomes \`"yes"\`. Punctuation *inside* a word stays, like the apostrophe in \`don't\`.
+2. **Lowercase** what is left. \`"The"\` becomes \`"the"\`.
+3. If **nothing** is left, skip it. The "word" \`--\` is all punctuation, so it trims down to the empty string \`""\`, and it is not counted at all.
+
+Put these rules in their own function, \`normalize\`. It has one job, you can test it on its own, and the next two lessons use it again. (British English often spells the word "normalise"; the code uses the American spelling, as C++ programmers usually do.)
+
+### Is it a letter or a digit?
+
+In the lesson on \`std::map\`, \`std::unordered_map\` and \`std::set\` you met \`std::isalpha\` from \`<cctype>\`, which asks "is this a letter?". Its neighbor **\`std::isalnum\`** asks "is this a letter **or** a digit?" ("alnum" is short for alphanumeric). It gives true for \`'a'\`, \`'Q'\` and \`'7'\`, and false for \`'.'\`, \`','\` and \`'-'\`.
+
+\`\`\`cpp
+std::isalnum(static_cast<unsigned char>('7'))    // true: a digit
+std::isalnum(static_cast<unsigned char>('!'))    // false: punctuation
+\`\`\`
+
+As with \`std::isalpha\` and \`std::tolower\`, hand it the character converted to an \`unsigned char\`. That keeps it [[safe with non-English letters|unsigned-char]].
+
+### Trimming with two positions
+
+To trim, keep two positions in the string: one that walks **forward** from the start, and one that walks **backward** from the end. Each stops at the first character you want to keep.
+
+Walking forward looks like this. Here it skips the leading zeros of a code number:
+
+\`\`\`cpp
+std::string code = "0042";
+std::size_t first = 0;
+while (first < code.size() && code[first] == '0') ++first;   // first is 2
+\`\`\`
+
+Walking backward needs care. Start at \`size()\`, which is **one past** the last character, and look at the character just before your position, \`[end - 1]\`. Here it trims the exclamation marks off a shout:
+
+\`\`\`cpp
+std::string shout = "wow!!!";
+std::size_t end = shout.size();                             // 6
+while (end > 0 && shout[end - 1] == '!') --end;             // end is 3
+\`\`\`
+
+Then **\`substr(start, count)\`** copies out \`count\` characters starting at position \`start\`. The kept part runs from the forward position up to (not including) the backward one, so its length is the difference:
+
+\`\`\`cpp
+std::string kept = shout.substr(0, end);                    // "wow"
+\`\`\`
+
+For trimming both ends, the backward walk should stop when it meets the forward position, so the two never cross.
+
+### Lowercasing, one character at a time
+
+\`std::tolower\` changes one character. To change a whole string, loop over it **by reference**, so the loop changes the real characters and not copies. Here its opposite, \`std::toupper\`, turns a call sign into capitals:
+
+\`\`\`cpp
+std::string sign = "eagle";
+for (char& c : sign) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+// sign is "EAGLE"
+\`\`\`
+
+\`std::tolower\` works the same way in the other direction.
+
+### Counting with a map
+
+With every word in its standard form, counting is the \`std::map<std::string, int>\` pattern from the basics. \`counts[w]++\` adds one to \`w\`'s count, and a word seen for the first time starts at 0:
+
+\`\`\`cpp
+std::map<std::string, int> votes;
+votes["pizza"]++;
+votes["tacos"]++;
+votes["pizza"]++;        // votes: {"pizza": 2, "tacos": 1}
+\`\`\`
+
+It helps to keep the normalized words in a \`std::vector<std::string>\` as you read them, then count them after the reading loop. The next two lessons compute more statistics from that same list.
+
+### Ranking: from map to sorted vector
+
+A \`std::map\` keeps its entries in order of the **key**: alphabetical, for strings. But you want them in order of the **count**, and a map cannot be re-sorted. So copy its entries into a vector you *can* sort.
+
+A \`std::vector\` can be built straight from a map's [[begin and end|range-constructor]]. Each entry becomes a \`std::pair\`, with the word in \`.first\` and the count in \`.second\`:
+
+\`\`\`cpp
+std::vector<std::pair<std::string, int>> ranking(votes.begin(), votes.end());
+// ranking: {("pizza", 2), ("tacos", 1)}
+\`\`\`
+
+Now sort it with a comparator, as in the custom comparators lesson: **higher count first**, and **alphabetical order to break ties**. That is "count descending, word ascending", which the \`std::tie\` trick (from \`<tuple>\`) writes in one line by swapping \`a\` and \`b\` in the first position only:
+
+\`\`\`cpp
+return std::tie(b.second, a.first) < std::tie(a.second, b.first);
+\`\`\`
+
+Here \`a\` and \`b\` are two entries of the vector, so each is a \`std::pair<std::string, int>\`. Writing that type twice in the lambda's brackets is long; \`const auto& a, const auto& b\` lets the compiler fill it in, the way \`auto\` does for variables.
+
+The two-line \`if\` form from that lesson (compare counts when they differ, otherwise compare words) works equally well.
+
+The tie-breaker is not decoration. Without it, words with equal counts could come out in any order, and the output could change from one run to the next. A tool's output should be [[the same every time|same-every-time]] for the same input.
+
+### Only the top few
+
+To print only the first few entries, stop the loop at whichever comes first: the end of the vector, or your limit. Here is a top three:
+
+\`\`\`cpp
+for (std::size_t i = 0; i < ranking.size() && i < 3; ++i) {
+    std::cout << ranking[i].first << "\\n";
+}
+\`\`\`
+
+The \`i < ranking.size()\` part matters when there are fewer entries than the limit: the loop then stops early instead of reading past the end.
+
+### The old count stays
+
+The \`words:\` line from step 1 stays exactly as it was. It counts pieces of text, punctuation-only pieces included. The new ranking counts normalized words. They are two different questions, and your report answers both.
+
+**Watch out:** trimming only one end. \`"(yes)"\` must lose both brackets, and \`"--"\` must become empty and be skipped. If an empty string slips through, it gets counted as a "word" and can even show up in the top five as a blank line.
+
+::: context zipf The most common words are always the small ones
+Count the words of almost any long English text and the winners are tiny words: "the", "of", "and", "to". In the Brown Corpus, a famous collection of about a million words of American English from 1961, "the" is about 7 percent of all words. The linguist George Zipf noticed in the 1930s and 1940s that a word's count is roughly proportional to one over its rank: the second word appears about half as often as the first, the third about a third as often. Real search tools often skip such "stop words" because they say little about what a text is about.
+:::
+
+::: context normalising Where normalizing shows up
+Search engines, spell checkers and databases all normalize text before comparing it. Searching a website for "Mars" also finds "mars" and "MARS" because both sides were lowercased first, a step often called case folding. Bigger tools go further: they may turn "rockets" into "rocket" (stemming) or drop accents. Each step is a choice about what should count as the same, which is why this lesson writes the rules down before any code.
+:::
+
+::: context unsigned-char Why the unsigned char cast
+A \`char\` holds one byte. On most PCs a \`char\` is signed, so bytes above 127 come out as negative numbers. Letters like é or ñ are stored as two such bytes in UTF-8, the usual text encoding. The \`<cctype>\` functions only accept values from 0 to 255 (and a special end-of-file value); a negative \`char\` passed straight in is undefined behavior. Converting to \`unsigned char\` first turns every byte into 0 to 255. The functions then treat those bytes as "not a letter", so é is trimmed like punctuation: a known limit of byte-by-byte tools.
+:::
+
+::: context range-constructor Building a container from a range
+Most standard containers have a constructor that takes two iterators, a start and an end, and copies every element between them. \`std::vector<int> v(s.begin(), s.end());\` copies a set into a vector, for instance. A map's elements are pairs whose key is \`const\` (\`std::pair<const std::string, int>\`), because a key inside a map must never change. The vector's pairs have a plain \`std::string\`, and C++ converts each one as it copies. After the copy, the vector owns its own pairs, so sorting it leaves the map untouched.
+:::
+
+::: context same-every-time Deterministic output
+A program is **deterministic** when the same input always gives the same output. \`std::sort\` makes no promise about the order of elements that compare equal, so without a tie-breaker the order of equal counts could change with the compiler or library version. That breaks automatic checks like this lesson's, and it breaks people too: comparing two reports is useless if they shuffle for no reason.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <g font-size="12" fill="#1f2a44">
+    <text x="20" y="22" font-weight="bold">no tie-breaker</text>
+    <text x="200" y="22" font-weight="bold">count, then word</text>
+    <text x="20" y="48">river: 3</text><text x="20" y="68">was: 3</text>
+    <text x="100" y="48">was: 3</text><text x="100" y="68">river: 3</text>
+    <text x="200" y="48">river: 3</text><text x="200" y="68">was: 3</text>
+    <text x="280" y="48">river: 3</text><text x="280" y="68">was: 3</text>
+  </g>
+  <g font-size="11" fill="#6c7a93">
+    <text x="20" y="92">run 1</text><text x="100" y="92">run 2</text>
+    <text x="200" y="92">run 1</text><text x="280" y="92">run 2</text>
+  </g>
+  <text x="60" y="126" font-size="12" text-anchor="middle" fill="#b4232c">may differ</text>
+  <text x="250" y="126" font-size="12" text-anchor="middle" fill="#1d6fd1">always the same</text>
+</svg>
+\`\`\`
+:::
+--- task
+Extend the tool from step 1. Keep its three lines exactly as they are, then print the five most frequent **normalized** words:
+
+\`\`\`
+top words:
+  <word>: <count>
+\`\`\`
+
+- Write \`std::string normalize(const std::string& raw)\`: trim every character that is not a letter or digit (\`std::isalnum\`) from both ends, then lowercase the rest (\`std::tolower\`). Skip words that become empty.
+- Count the normalized words in a \`std::map<std::string, int>\`, copy it into a \`std::vector<std::pair<std::string, int>>\`, and sort it: most frequent first, equal counts in alphabetical order.
+- Each word line starts with two spaces. Print fewer than five lines if there are fewer than five different words.
+- The \`words:\` line still counts the raw pieces, as in step 1.
+
+--- starter
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int words = 0;
+    long long chars = 0;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string word;
+        while (in >> word) ++words;
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- hint
+Start with \`normalize\`. Walk a start position forward and an end position backward, each past characters where \`std::isalnum(static_cast<unsigned char>(...))\` is false, take the \`substr\` between them, then lowercase it with a \`for (char& c : ...)\` loop.
+--- hint
+In the reading loop, keep the \`++words\` for every raw piece, but also call \`normalize\` on it and \`push_back\` the result into a \`std::vector<std::string>\` when it is not empty. After the loop, count that vector into a \`std::map<std::string, int>\`.
+--- hint
+Build \`std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());\`, sort it with a comparator that returns \`a.second > b.second\` when the counts differ and \`a.first < b.first\` otherwise, print \`top words:\`, then loop while \`i < ranked.size() && i < 5\`, printing \`"  " << word << ": " << count\`.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | Counts and the top five words
+lines: 5
+words: 52
+chars: 261
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+
++++ practice | Trim the spaces off both ends
+--- task
+Write \`std::string trim(const std::string& s)\`, which returns \`s\` without the whitespace at its start and at its end. Whitespace in the middle stays exactly as it is. No \`main\`.
+
+- "Whitespace" is whatever \`std::isspace\` from \`<cctype>\` says is whitespace: spaces, tabs, line breaks and a few rarer ones. As with \`std::isalnum\`, hand it the character converted to an \`unsigned char\`.
+- A string of only whitespace, or an empty string, trims to \`""\`.
+
+\`trim("  lift  off \\t")\` is \`"lift  off"\`.
+--- starter
+#include <string>
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0;
+    while (a < s.size() && s[a] == ' ') ++a;
+    return s.substr(a);
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <string>
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0;
+    std::size_t b = s.size();
+    while (a < b && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+    while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+    return s.substr(a, b - a);
+}
+--- hint
+Two positions: one walks forward from the start past whitespace, the other walks backward from \`size()\`, looking at \`[b - 1]\`. The backward walk stops when it meets the forward one.
+--- hint
+The kept part runs from the forward position up to the backward one, so \`substr(a, b - a)\`. For a string of only spaces, the two meet and the length is 0.
+--- check test | Both ends, middle untouched
+trim("  lift  off \\t") == "lift  off" && trim("orbit") == "orbit" && trim(" x ") == "x"
+--- check test | Tabs and line breaks count as whitespace
+trim("\\tburn\\n") == "burn" && trim("\\n\\n go \\t\\n") == "go"
+--- check test | Only whitespace, or nothing at all
+trim("     ") == "" && trim("") == "" && trim("\\t\\n") == ""
+--- check test | Punctuation is not whitespace
+trim("(yes)") == "(yes)" && trim(" -- ") == "--"
+
++++ practice | The top words, returned instead of printed
+--- task
+The starter holds the lesson's \`normalize\`. Write \`std::vector<std::pair<std::string, int>> top_words(const std::string& text, std::size_t n)\`, which returns the report's ranking instead of printing it. No \`main\`.
+
+- Split \`text\` into whitespace-separated pieces (line breaks count as whitespace), normalize each one, and skip the ones that become empty.
+- Return up to \`n\` \`{word, count}\` pairs: the most frequent first, and equal counts in alphabetical order.
+- Fewer than \`n\` different words gives fewer pairs, and \`n\` of 0 gives none.
+
+\`top_words("The cat saw the dog. The DOG ran!", 2)\` is \`{{"the", 3}, {"dog", 2}}\`. Include \`<algorithm>\`, \`<map>\` and \`<sstream>\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::pair<std::string, int>> top_words(const std::string& text, std::size_t n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::pair<std::string, int>> top_words(const std::string& text, std::size_t n) {
+    std::map<std::string, int> counts;
+    std::istringstream in(text);
+    std::string raw;
+    while (in >> raw) {
+        std::string w = normalize(raw);
+        if (!w.empty()) counts[w]++;
+    }
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    if (ranked.size() > n) ranked.resize(n);
+    return ranked;
+}
+--- hint
+One \`std::istringstream\` over the whole text and \`>>\` reads every piece, across line breaks. Normalize each piece and count the non-empty ones in a \`std::map<std::string, int>\`.
+--- hint
+Copy the map into a vector of pairs, sort it with the two-level comparator from the lesson, and then cut it down to at most \`n\` entries, for example with \`resize(n)\` when it is longer.
+--- check test | The example
+top_words("The cat saw the dog. The DOG ran!", 2) == std::vector<std::pair<std::string, int>>{{"the", 3}, {"dog", 2}}
+--- check test | Ties in alphabetical order, across lines
+top_words("To be, or not to be: that is the question.\\nWhether 'tis nobler in the mind to suffer", 4) == std::vector<std::pair<std::string, int>>{{"to", 3}, {"be", 2}, {"the", 2}, {"in", 1}}
+--- check test | Fewer words than asked for, and none asked for
+top_words("go go GO!", 5) == std::vector<std::pair<std::string, int>>{{"go", 3}} && top_words("a b c", 0).empty()
+--- check test | Pieces that are only punctuation are skipped
+top_words("-- ... !?", 3).empty() && top_words("", 3).empty()
+
++++ practice | Keywords, without the little words
+--- task
+The most frequent words are usually tiny ones like "the" and "to", which say little about a text. Search tools skip such **stop words**. The starter holds the lesson's \`normalize\`. Write:
+
+\`std::vector<std::string> keywords(const std::string& text, const std::set<std::string>& stop, std::size_t n)\`
+
+No \`main\`.
+
+- Normalize every whitespace-separated piece of \`text\`, and keep only the words that are **not** in \`stop\` and are **at least 3** characters long.
+- Rank those by count, most frequent first, equal counts in alphabetical order, and return the first \`n\` words (the words only, without their counts).
+
+With the stop words \`{"the", "and", "to", "is", "in", "of"}\`, the text \`"The rocket and the rocket engine. Engine tests, engine fires; the rocket flies to orbit in time. Orbit!"\` gives \`{"engine", "rocket", "orbit"}\` for \`n\` = 3. Include \`<algorithm>\`, \`<map>\` and \`<sstream>\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <set>
+#include <string>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::string> keywords(const std::string& text, const std::set<std::string>& stop, std::size_t n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::string> keywords(const std::string& text, const std::set<std::string>& stop, std::size_t n) {
+    std::map<std::string, int> counts;
+    std::istringstream in(text);
+    std::string raw;
+    while (in >> raw) {
+        std::string w = normalize(raw);
+        if (w.size() >= 3 && !stop.contains(w)) counts[w]++;
+    }
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::vector<std::string> out;
+    for (std::size_t i = 0; i < ranked.size() && i < n; ++i) out.push_back(ranked[i].first);
+    return out;
+}
+--- hint
+Filter before counting: a word goes into the map only if it has at least 3 characters and \`stop.contains(w)\` is false. The length test also throws away the empty strings.
+--- hint
+After the usual map-to-vector copy and sort, collect just \`.first\` of the first \`n\` entries, stopping early if there are fewer.
+--- check test | The rocket text
+[] { std::set<std::string> stop{"the", "and", "to", "is", "in", "of"}; return keywords("The rocket and the rocket engine. Engine tests, engine fires; the rocket flies to orbit in time. Orbit!", stop, 3) == std::vector<std::string>{"engine", "rocket", "orbit"}; }()
+--- check test | Everything that is left, ties alphabetical
+[] { std::set<std::string> stop{"the", "and", "to", "is", "in", "of"}; return keywords("The rocket and the rocket engine. Engine tests, engine fires; the rocket flies to orbit in time. Orbit!", stop, 10) == std::vector<std::string>{"engine", "rocket", "orbit", "fires", "flies", "tests", "time"}; }()
+--- check test | Short words are dropped even without a stop list
+keywords("a an ox yak Yak", {}, 5) == std::vector<std::string>{"yak"}
+--- check test | Stop words are compared after normalizing
+keywords("THE The the! (the) sun", {"the"}, 5) == std::vector<std::string>{"sun"} && keywords("of in to", {"of", "in", "to"}, 5).empty()
+
++++ practice | Ranks that share a place
+--- task
+In a race, two runners who tie for second both come second, and the next runner is fourth. That is **competition ranking**. The starter holds the lesson's \`normalize\`. Write \`std::vector<std::string> ranking(const std::string& text, std::size_t n)\`. No \`main\`.
+
+- Count the normalized words of \`text\` (skipping empty ones), and order them as the lesson does: most frequent first, equal counts alphabetical.
+- Return the first \`n\` of them as lines of the form \`"3. cat (2)"\`: the rank, a point and a space, the word, a space, and the count in brackets.
+- A word's rank is 1 plus the number of words with a **strictly higher** count. So words that tie share a rank, and the rank after a tie skips.
+- Only the first \`n\` entries appear, even when the next one ties with the last one shown. Empty text, or \`n\` of 0, gives an empty list.
+
+For \`"The cat saw the dog. The DOG ran! A cat, a dog -- and the bird."\` and \`n\` = 4, the lines are \`"1. the (4)"\`, \`"2. dog (3)"\`, \`"3. a (2)"\` and \`"3. cat (2)"\`. Include \`<algorithm>\`, \`<map>\` and \`<sstream>\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::string> ranking(const std::string& text, std::size_t n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::string> ranking(const std::string& text, std::size_t n) {
+    std::map<std::string, int> counts;
+    std::istringstream in(text);
+    std::string raw;
+    while (in >> raw) {
+        std::string w = normalize(raw);
+        if (!w.empty()) counts[w]++;
+    }
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::vector<std::string> lines;
+    std::size_t rank = 1;
+    for (std::size_t i = 0; i < ranked.size() && i < n; ++i) {
+        // A new count starts a new rank: one more than everyone ahead of it.
+        if (i > 0 && ranked[i].second != ranked[i - 1].second) rank = i + 1;
+        lines.push_back(std::to_string(rank) + ". " + ranked[i].first + " (" + std::to_string(ranked[i].second) + ")");
+    }
+    return lines;
+}
+--- hint
+After sorting, the words with a strictly higher count are exactly the ones in front of the first word that has this count. So the rank of the entry at position \`i\` (counting from 0) is \`i + 1\`, unless its count equals the previous entry's, in which case it shares that entry's rank.
+--- hint
+Keep a \`rank\` variable while you walk the sorted vector, and change it only when the count changes. Build each line with \`std::to_string\` and \`+\`.
+--- check test | Ties share a rank
+ranking("The cat saw the dog. The DOG ran! A cat, a dog -- and the bird.", 4) == std::vector<std::string>{"1. the (4)", "2. dog (3)", "3. a (2)", "3. cat (2)"}
+--- check test | The rank after a tie skips
+ranking("b a c b a", 5) == std::vector<std::string>{"1. a (2)", "1. b (2)", "3. c (1)"}
+--- check test | Everyone tied
+ranking("x y z", 3) == std::vector<std::string>{"1. x (1)", "1. y (1)", "1. z (1)"}
+--- check test | Cut off after n, even inside a tie
+ranking("b a c b a", 1) == std::vector<std::string>{"1. a (2)"} && ranking("b a c b a", 0).empty() && ranking("", 3).empty() && ranking("-- !!", 2).empty()
+
++++ practice | Debug: words that lose their last letter
+--- task
+**Bug report:** "\`normalize("River,")\` gives \`"rive"\`, and \`normalize("A")\` gives an empty string. Also, nothing is ever lowercased: \`normalize("Mars")\` gives \`"Mars"\`."
+
+The starter's \`normalize\` should trim every character that is not a letter or digit from both ends, then lowercase what is left, exactly as in the lesson. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <string>
+
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <string>
+
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+--- hint
+\`b\` starts at \`size()\`, one past the last character. Which character should the backward walk look at when \`b\` is 6 in a 6-character word?
+--- hint
+The lowercasing loop changes something, but not the string: \`char c\` is a copy of each character. Which symbol makes the loop variable the real character?
+--- check test | Trailing punctuation goes, the last letter stays
+normalize("River,") == "river" && normalize("summer.") == "summer" && normalize("(yes)") == "yes"
+--- check test | One-letter words
+normalize("A") == "a" && normalize("I!") == "i" && normalize("7") == "7"
+--- check test | Everything is lowercased
+normalize("Mars") == "mars" && normalize("NASA's") == "nasa's" && normalize("Don't") == "don't"
+--- check test | All punctuation, or nothing
+normalize("--") == "" && normalize("...") == "" && normalize("") == ""
+
++++ practice | Stretch: the most common word pairs
+--- task
+Single words miss phrases. A **bigram** is a pair of words that stand next to each other. The starter holds the lesson's \`normalize\`. Write \`std::vector<std::pair<std::string, int>> top_bigrams(const std::string& text, std::size_t n)\`. No \`main\`.
+
+- Normalize every whitespace-separated piece of the whole text and drop the empty ones, keeping the rest in order. Line breaks do not stop a pair: the last word of a line and the first word of the next line are neighbors.
+- Each two neighboring words make one bigram, written as the two words with one space between them: \`"the river"\`. A text of \`k\` words has \`k - 1\` bigrams (none for 0 or 1 word).
+- Return up to \`n\` \`{bigram, count}\` pairs, the most frequent first, equal counts in alphabetical order.
+
+For \`"The river was low. The river was high!\\nThe river -- was it low? The river was."\`, the top three are \`{"river was", 4}\`, \`{"the river", 4}\` and \`{"low the", 2}\`. Include \`<algorithm>\`, \`<map>\` and \`<sstream>\`.
+--- starter
+#include <cctype>
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::pair<std::string, int>> top_bigrams(const std::string& text, std::size_t n) {
+    return {};
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::vector<std::pair<std::string, int>> top_bigrams(const std::string& text, std::size_t n) {
+    std::vector<std::string> words;
+    std::istringstream in(text);
+    std::string raw;
+    while (in >> raw) {
+        std::string w = normalize(raw);
+        if (!w.empty()) words.push_back(w);
+    }
+    std::map<std::string, int> counts;
+    for (std::size_t i = 0; i + 1 < words.size(); ++i) counts[words[i] + " " + words[i + 1]]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    if (ranked.size() > n) ranked.resize(n);
+    return ranked;
+}
+--- hint
+First collect the normalized, non-empty words of the whole text into one vector. Reading with \`>>\` over the whole text already joins the lines, and dropping the empty words makes \`river -- was\` count as \`river was\`.
+--- hint
+Then walk the vector with \`i\` and pair each word with the next one. Write the condition as \`i + 1 < words.size()\`: with \`words.size() - 1\`, an empty vector would make the unsigned subtraction wrap round to a gigantic number.
+--- hint
+Count the joined pairs in a \`std::map<std::string, int>\`, then rank them exactly as the lesson ranks words.
+--- check test | The river text
+top_bigrams("The river was low. The river was high!\\nThe river -- was it low? The river was.", 3) == std::vector<std::pair<std::string, int>>{{"river was", 4}, {"the river", 4}, {"low the", 2}}
+--- check test | Pairs run across line breaks
+top_bigrams("a b\\nb a", 5) == std::vector<std::pair<std::string, int>>{{"a b", 1}, {"b a", 1}, {"b b", 1}}
+--- check test | One word or none: no pairs
+top_bigrams("one", 3).empty() && top_bigrams("", 3).empty() && top_bigrams("-- solo --", 3).empty()
+--- check test | Case and punctuation do not split a pair
+top_bigrams("Go, team! GO team. go TEAM", 1) == std::vector<std::pair<std::string, int>>{{"go team", 3}}
+
+=== cppp-11 | Text stats 3: sentences and word lengths
+--- teach
+Last lesson, your tool learned to normalize words and rank the five most common ones. This lesson adds three more numbers to the report: how many sentences there are, how long the words are on average, and which word is the longest.
+
+Each one needs a precise definition first, the way lines, words and characters did.
+
+### Sentences: count the endings
+
+Think about how you know a sentence has ended when you read. You look for a full stop, an exclamation mark or a question mark. So the rule starts simple: a sentence ends with \`.\`, \`!\` or \`?\`.
+
+But look at two cases from real text:
+
+- \`there...\` has **three** dots, and ends **one** sentence.
+- \`Wait?!\` has two ending marks, and is one sentence too.
+
+Counting every ending character would give 3 and 2. So count **runs** instead. A **run** is a group of the same kind of character standing next to each other. Three dots in a row are one run. A new sentence ends each time an ending character comes right after a character that was **not** one.
+
+(A colon, as in \`said yes:\`, does not end a sentence. Only \`.\`, \`!\` and \`?\` do.)
+
+### Remembering the character before
+
+To spot "an ending character right after a non-ending one", your loop has to remember one fact about the previous character. Keep it in a \`bool\`, a **flag**: a true-or-false variable that remembers something for the next step. Call it \`previous_was_end\`, and start it at \`false\`, because before the first character there is nothing.
+
+Here is the walk through \`Wait?!\` by hand:
+
+| character | is it an ending? | previous_was_end | count it? |
+|---|---|---|---|
+| \`W\`, \`a\`, \`i\`, \`t\` | no | false | no |
+| \`?\` | yes | false | **yes: 1** |
+| \`!\` | yes | true | no |
+
+For each character, two steps happen in this order:
+
+1. If it is an ending **and** the previous one was not, count one sentence. In code the test reads \`if (is_end && !previous_was_end)\`: "is an end, and not previous-was-end".
+2. Then set \`previous_was_end = is_end;\`, so the flag is ready for the next character.
+
+Deciding "is this an ending?" needs **or**: \`c == '.' || c == '!' || c == '?'\`. Read \`||\` as "or": true when any one of the three tests is true.
+
+This is the [[same trick|state-flag]] whenever you count groups rather than single items. Here it counts groups of dashes, a different problem with the same shape:
+
+\`\`\`cpp
+std::string track = "a--b-c---d";
+int groups = 0;
+bool in_dashes = false;
+for (char c : track) {
+    bool dash = (c == '-');
+    if (dash && !in_dashes) ++groups;   // a new group starts here
+    in_dashes = dash;
+}
+// groups is 3
+\`\`\`
+
+Put your sentence counter in its own function, \`int count_sentences(const std::string& line)\`, that counts the sentence endings in one line. Your reading loop then adds \`count_sentences(line)\` to a running total for each line. The flag starts fresh on every line, so the rule is "runs of endings **within a line**".
+
+Real sentence detection is [[much harder than this|sentence-hard]], but a precise, simple rule is where every tool starts.
+
+### Average word length
+
+The **average** (also called the mean) is the total divided by how many there are. The average length of \`{"sky", "blue"}\` is (3 + 4) / 2 = 3.5.
+
+Use the **normalized** words from step 2, the vector your program already keeps. That way punctuation does not count towards length: \`"summer."\` counts as 6 letters, not 7.
+
+Two things to get right:
+
+- Both totals are whole numbers, and dividing two whole numbers throws away the fraction, as the basics showed with [[integer division|integer-division]]. Convert to \`double\` first: \`static_cast<double>(total) / static_cast<double>(count)\`.
+- If there are no words at all, dividing by zero is meaningless. Use \`0.0\` in that case. The \`? :\` operator, "if this then that, else the other", does it in one line: \`double avg = n == 0 ? 0.0 : static_cast<double>(sum) / static_cast<double>(n);\`
+
+### Two decimal places
+
+The report prints the average with exactly two decimal places. You met the tools in the string streams lessons: \`std::fixed\` and \`std::setprecision\`, from \`<iomanip>\`.
+
+\`\`\`cpp
+#include <iomanip>
+std::cout << std::fixed << std::setprecision(2) << 2.0 / 3.0 << "\\n";   // prints 0.67
+\`\`\`
+
+\`std::fixed\` means "always write a decimal point, never the \`e\` notation", and \`std::setprecision(2)\` then means "two digits after the point". The last digit is [[rounded|rounding]], so 0.6666… prints as 0.67.
+
+Both settings **stay** on \`std::cout\` afterwards. That is harmless here: they only affect \`double\` values, and everything printed after the average is text or whole numbers. But it is the kind of side effect worth knowing about.
+
+### The longest word
+
+The longest word is **the first** normalized word of the greatest length. "First" matters, because several words may tie. A precise rule makes the output the same every time.
+
+To get the first one, keep a best-so-far, and replace it only when a word is **strictly longer**: use \`>\`, not \`>=\`. Here it finds the first longest planet name:
+
+\`\`\`cpp
+std::vector<std::string> planets = {"mars", "venus", "earth", "pluto"};
+std::string best;                         // starts empty: length 0
+for (const auto& p : planets) {
+    if (p.size() > best.size()) best = p;
+}
+// best is "venus": "earth" and "pluto" are only as long, not longer
+\`\`\`
+
+With \`>=\`, each tie would replace the best, and you would end up with the **last** longest word, "pluto", instead.
+
+You can find the longest word and add up the lengths for the average in **one** loop over the normalized words.
+
+### Keep main readable
+
+\`normalize\` has its own function, and now \`count_sentences\` does too. As the tool grows, \`main\` should read like a summary of what the program does ("read the lines, count, print"), with the details inside named helpers.
+
+**Watch out:** the order of the two steps inside the sentence loop. If you update \`previous_was_end\` **before** the test, the flag already says "yes, an ending" when you ask about the current character, and no sentence is ever counted. Test first, then update.
+
+::: context state-flag A flag is a tiny memory
+A loop that looks at one character at a time forgets everything from the step before, unless you give it somewhere to keep it. A flag is the smallest possible memory: one yes-or-no fact. Programmers call a loop like this a **state machine**: at each step it is in some state ("inside a run" or "not inside a run"), and each character may move it to another state.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="50" width="120" height="40" rx="20" fill="#fff" stroke="#1f2a44"/>
+  <text x="80" y="75" font-size="12" text-anchor="middle" fill="#1f2a44">not in a run</text>
+  <rect x="220" y="50" width="120" height="40" rx="20" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="280" y="75" font-size="12" text-anchor="middle" fill="#1f2a44">in a run</text>
+  <line x1="140" y1="60" x2="214" y2="60" stroke="#1d6fd1" stroke-width="2"/>
+  <polygon points="214,55 222,60 214,65" fill="#1d6fd1"/>
+  <text x="180" y="40" font-size="11" text-anchor="middle" fill="#1d6fd1">. or ! or ? (count one)</text>
+  <line x1="220" y1="82" x2="146" y2="82" stroke="#6c7a93" stroke-width="2"/>
+  <polygon points="146,77 138,82 146,87" fill="#6c7a93"/>
+  <text x="180" y="108" font-size="11" text-anchor="middle" fill="#6c7a93">any other character</text>
+  <text x="180" y="138" font-size="11" text-anchor="middle" fill="#1f2a44">a count happens only on the blue arrow</text>
+</svg>
+\`\`\`
+
+Parsers, network code and flight software's mode logic are all built from state machines, usually with more than two states.
+:::
+
+::: context sentence-hard Why real tools find sentences hard
+This lesson's rule counts \`Dr. Ride flew in 1983.\` as two sentences, because the dot after "Dr" looks like an ending. Numbers like \`3.5\`, initials like \`U.S.\` and web addresses fool it too. Tools that need to get this right, such as text-to-speech readers and translation software, use lists of abbreviations and statistical models trained on huge amounts of text, and even they make mistakes. A simple rule that is written down and predictable is still the right first step, and good enough for a report like this.
+:::
+
+::: context integer-division The fraction that disappears
+In C++, \`200 / 52\` with two whole numbers gives \`3\`: the fraction is thrown away, not rounded. That is what the sample text would print as its average if you forgot the conversion, \`3.00\` instead of \`3.85\`. Converting one side to \`double\` is enough to make the division keep the fraction, but converting both makes it plain to the reader what is going on.
+:::
+
+::: context rounding How the last digit is chosen
+The sample text has 52 normalized words with 200 letters between them. 200 divided by 52 is 3.846153…, and with two decimal places that prints as \`3.85\`: the third decimal, 6, is 5 or more, so the second rounds up from 4 to 5. A \`double\` stores most decimals only approximately, so a value that looks like an exact half, such as 2.675, may really be stored as 2.67499999… and round down. For a report like this one, two decimals are plenty.
+:::
+--- task
+Extend the tool. After the \`chars:\` line and before \`top words:\`, print three new lines:
+
+\`\`\`
+sentences: <count>
+average word length: <two decimal places>
+longest word: <word>
+\`\`\`
+
+- Write \`int count_sentences(const std::string& line)\`: a sentence ends at each run of one or more \`.\`, \`!\` or \`?\` characters within the line. Add up its result for every line.
+- The average and the longest word use the normalized words from step 2. Print the average with \`std::fixed\` and \`std::setprecision(2)\` (include \`<iomanip>\`), and use \`0.0\` when there are no words.
+- The longest word is the first one of the greatest length.
+
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- hint
+Write \`count_sentences\` first. Walk the line's characters with a \`bool previous_was_end = false;\` flag. For each one, work out whether it is \`.\`, \`!\` or \`?\`, count a sentence only when it is an ending and the previous character was not, and then update the flag.
+--- hint
+In the reading loop, add \`count_sentences(line)\` to an \`int sentences\` total, and print \`sentences:\` right after \`chars:\`.
+--- hint
+Then loop once over the normalized words: add each \`w.size()\` to a \`long long\` total, and set \`longest = w\` only when \`w.size() > longest.size()\`. Divide as \`double\`s (or use \`0.0\` for no words) and print \`"average word length: " << std::fixed << std::setprecision(2) << average\`, then \`longest word:\`, before the \`top words:\` block.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | All the statistics so far
+lines: 5
+words: 52
+chars: 261
+sentences: 6
+average word length: 3.85
+longest word: children
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+
++++ practice | Count the paragraphs
+--- task
+A paragraph is a group of non-blank lines, and paragraphs are separated by one or more blank lines. Write \`int count_paragraphs(const std::string& text)\`. No \`main\`.
+
+- Read \`text\` line by line with \`std::getline\` from a \`std::istringstream\`.
+- A line is **blank** when it is empty or holds only spaces and tabs.
+- Count the **runs** of non-blank lines: a new paragraph starts at each non-blank line that comes right after a blank line, or at the very first line if it is not blank. Blank lines at the start or the end start nothing.
+
+So \`"a\\n\\nb"\` has 2 paragraphs, \`"\\n\\na\\nb\\n\\n\\nc\\n"\` has 2, and \`"one\\ntwo"\` has 1. Include \`<sstream>\`.
+--- starter
+#include <string>
+
+int count_paragraphs(const std::string& text) {
+    return 0;
+}
+--- solution
+#include <sstream>
+#include <string>
+
+int count_paragraphs(const std::string& text) {
+    std::istringstream input(text);
+    std::string line;
+    int paragraphs = 0;
+    bool in_paragraph = false;   // was the line before part of a paragraph?
+    while (std::getline(input, line)) {
+        std::istringstream in(line);
+        std::string word;
+        bool blank = !(in >> word);
+        if (!blank && !in_paragraph) ++paragraphs;
+        in_paragraph = !blank;
+    }
+    return paragraphs;
+}
+--- hint
+This is the lesson's flag trick with lines instead of characters. Keep a \`bool\` that remembers whether the previous line was inside a paragraph, starting at \`false\`.
+--- hint
+For each line: work out whether it is blank (try to read one word from it with \`>>\`). Count one when the line is not blank and the flag says the previous one was not in a paragraph. Then update the flag.
+--- check test | Two paragraphs, however many blank lines between
+count_paragraphs("a\\n\\nb") == 2 && count_paragraphs("\\n\\na\\nb\\n\\n\\nc\\n") == 2 && count_paragraphs("x\\n\\n\\n\\ny\\n\\nz") == 3
+--- check test | One paragraph of several lines
+count_paragraphs("one\\ntwo") == 1 && count_paragraphs("only line") == 1
+--- check test | Lines of spaces and tabs are blank
+count_paragraphs("a\\n   \\t\\nb") == 2 && count_paragraphs("  \\n\\t\\n") == 0
+--- check test | Nothing at all
+count_paragraphs("") == 0 && count_paragraphs("\\n\\n") == 0
+
++++ practice | The shortest first, the longest last
+--- task
+The lesson kept the **first** longest word by replacing it only when a word was strictly longer. Now write \`std::pair<std::string, std::string> extremes(const std::vector<std::string>& words)\`, which returns two words at once. No \`main\`.
+
+- \`.first\` is the **first** of the shortest words.
+- \`.second\` is the **last** of the longest words.
+- For an empty list, both are \`""\`.
+
+\`extremes({"mars", "io", "venus", "earth", "ceres", "ab"})\` is \`{"io", "ceres"}\`: \`"io"\` and \`"ab"\` tie for shortest and \`"io"\` comes first, while \`"venus"\`, \`"earth"\` and \`"ceres"\` tie for longest and \`"ceres"\` comes last.
+--- starter
+#include <string>
+#include <utility>
+#include <vector>
+
+std::pair<std::string, std::string> extremes(const std::vector<std::string>& words) {
+    std::string shortest;
+    std::string longest;
+    for (const auto& w : words) {
+        if (w.size() < shortest.size()) shortest = w;
+        if (w.size() > longest.size()) longest = w;
+    }
+    return {shortest, longest};
+}
+--- solution
+#include <string>
+#include <utility>
+#include <vector>
+
+std::pair<std::string, std::string> extremes(const std::vector<std::string>& words) {
+    if (words.empty()) return {"", ""};
+    std::string shortest = words[0];
+    std::string longest = words[0];
+    for (const auto& w : words) {
+        if (w.size() < shortest.size()) shortest = w;   // strictly shorter: the first one stays
+        if (w.size() >= longest.size()) longest = w;    // as long or longer: the last one wins
+    }
+    return {shortest, longest};
+}
+--- hint
+Which comparison keeps the first of a tie, and which the last? \`<\` and \`>\` replace only on a strictly better word, so the first stays; \`<=\` and \`>=\` also replace on a tie, so the last wins.
+--- hint
+The shortest cannot start as \`""\`: nothing is shorter than an empty string, so it would never change. Start both from the first word, after handling the empty list.
+--- check test | The example
+extremes({"mars", "io", "venus", "earth", "ceres", "ab"}) == std::pair<std::string, std::string>{"io", "ceres"}
+--- check test | One word is both
+extremes({"orbit"}) == std::pair<std::string, std::string>{"orbit", "orbit"}
+--- check test | All the same length
+extremes({"aa", "bb", "cc"}) == std::pair<std::string, std::string>{"aa", "cc"}
+--- check test | No words
+extremes({}) == std::pair<std::string, std::string>{"", ""}
+
++++ practice | Cut a line into sentences
+--- task
+Counting sentences was the lesson's job. Now cut them out. Write \`std::vector<std::string> split_sentences(const std::string& line)\`, for a line of text with no line breaks. No \`main\`.
+
+- A sentence ends at the end of a **run** of \`.\`, \`!\` and \`?\`, and the run belongs to the sentence: \`"Wait?! Yes"\` gives \`"Wait?!"\` first.
+- Each sentence is **trimmed**: no spaces at its start or end.
+- Text after the last run, if it is not only spaces, is one more sentence without an ending: \`"Stop. go on"\` gives \`{"Stop.", "go on"}\`.
+- Pieces that are only spaces are not sentences. A line of only spaces, or an empty line, gives an empty list.
+
+\`split_sentences("Hi. Bye!")\` is \`{"Hi.", "Bye!"}\`, and \`split_sentences("A.B")\` is \`{"A.", "B"}\`. Include \`<cctype>\`.
+--- starter
+#include <string>
+#include <vector>
+
+std::vector<std::string> split_sentences(const std::string& line) {
+    return {line};
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+bool is_end(char c) { return c == '.' || c == '!' || c == '?'; }
+
+std::string trim(const std::string& s) {
+    std::size_t a = 0;
+    std::size_t b = s.size();
+    while (a < b && std::isspace(static_cast<unsigned char>(s[a]))) ++a;
+    while (b > a && std::isspace(static_cast<unsigned char>(s[b - 1]))) --b;
+    return s.substr(a, b - a);
+}
+
+std::vector<std::string> split_sentences(const std::string& line) {
+    std::vector<std::string> out;
+    std::string current;
+    for (std::size_t i = 0; i < line.size(); ++i) {
+        current += line[i];
+        bool run_ends_here = is_end(line[i]) && (i + 1 == line.size() || !is_end(line[i + 1]));
+        if (run_ends_here) {
+            std::string s = trim(current);
+            if (!s.empty()) out.push_back(s);
+            current.clear();
+        }
+    }
+    std::string rest = trim(current);   // text after the last ending
+    if (!rest.empty()) out.push_back(rest);
+    return out;
+}
+--- hint
+Build the current sentence one character at a time. The sentence ends where a run of endings **ends**: at an ending character whose next character is not an ending, or that is the last character of the line.
+--- hint
+Look one character ahead with \`line[i + 1]\`, but only when \`i + 1 < line.size()\`. When a sentence ends, trim it, keep it if it is not empty, and start a new one.
+--- hint
+After the loop, whatever is left in the current sentence is the last one, if it is not only spaces. A small trimming helper, like the one from the previous lesson, keeps the code short.
+--- check test | Two sentences
+split_sentences("Hi. Bye!") == std::vector<std::string>{"Hi.", "Bye!"}
+--- check test | Runs belong to their sentence
+split_sentences("Wait?! Yes... ok") == std::vector<std::string>{"Wait?!", "Yes...", "ok"} && split_sentences("...") == std::vector<std::string>{"..."}
+--- check test | No space after the ending, and no ending at all
+split_sentences("A.B") == std::vector<std::string>{"A.", "B"} && split_sentences("no end here") == std::vector<std::string>{"no end here"}
+--- check test | Spaces are trimmed away
+split_sentences("   Up.   Down!   ") == std::vector<std::string>{"Up.", "Down!"}
+--- check test | Nothing to cut
+split_sentences("").empty() && split_sentences("     ").empty()
+
++++ practice | The median word length
+--- task
+An average can be pulled far off by one very long word. The **median** is steadier: sort the values, and take the one in the middle. Write \`double median_length(const std::vector<std::string>& words)\`, the median of the words' lengths. No \`main\`.
+
+- Sort the lengths from shortest to longest. With an odd number of words, the median is the middle length.
+- With an even number, there are two middle lengths, and the median is their average, which may end in \`.5\`.
+- For no words at all, return \`0.0\`.
+- The list itself must not change: it is passed by \`const\` reference.
+
+For \`{"aa", "b", "cccc", "ddd"}\` the sorted lengths are 1, 2, 3, 4, so the median is (2 + 3) / 2 = 2.5. Include \`<algorithm>\`.
+--- starter
+#include <string>
+#include <vector>
+
+double median_length(const std::vector<std::string>& words) {
+    return words[words.size() / 2].size();
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+double median_length(const std::vector<std::string>& words) {
+    if (words.empty()) return 0.0;
+    std::vector<std::size_t> lengths;
+    for (const auto& w : words) lengths.push_back(w.size());
+    std::sort(lengths.begin(), lengths.end());
+    std::size_t mid = lengths.size() / 2;
+    if (lengths.size() % 2 == 1) return static_cast<double>(lengths[mid]);
+    // Two middles: convert before dividing, or 2.5 would come out as 2.
+    return (static_cast<double>(lengths[mid - 1]) + static_cast<double>(lengths[mid])) / 2.0;
+}
+--- hint
+You cannot sort the words themselves (they are \`const\`, and sorting would put them in alphabetical order anyway). Copy their lengths into a vector of your own and sort that.
+--- hint
+With \`n\` lengths, the middle one is at index \`n / 2\` when \`n\` is odd. When \`n\` is even, the two middle ones are at \`n / 2 - 1\` and \`n / 2\`. Turn both into \`double\`s before adding and halving, and handle \`n\` of 0 first.
+--- check test | An even number of words
+median_length({"aa", "b", "cccc", "ddd"}) == 2.5 && median_length({"a", "abc"}) == 2.0
+--- check test | An odd number of words
+median_length({"abcd", "a", "abc"}) == 3.0 && median_length({"sky"}) == 3.0
+--- check test | One long word does not pull it far
+median_length({"a", "bb", "cc", "extraordinarily"}) == 2.0
+--- check test | No words
+median_length({}) == 0.0
+
++++ practice | Debug: the wrong longest word and a lost fraction
+--- task
+**Bug report:** "For the words \`mars\`, \`venus\` and \`pluto\`, the longest word should be \`venus\`, the first of the longest, but it says \`pluto\`. And the average length of \`sky\` and \`blue\` comes out as \`3\` instead of \`3.5\`."
+
+The starter's \`word_stats\` should return the average length of the words, as a \`double\` with its fraction, or \`0.0\` for no words, and the **first** longest word, or \`""\` for no words. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <string>
+#include <vector>
+
+struct WordStats {
+    double average;
+    std::string longest;
+};
+
+WordStats word_stats(const std::vector<std::string>& words) {
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() >= longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters / static_cast<long long>(words.size()));
+    return {average, longest};
+}
+--- solution
+#include <string>
+#include <vector>
+
+struct WordStats {
+    double average;
+    std::string longest;
+};
+
+WordStats word_stats(const std::vector<std::string>& words) {
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    return {average, longest};
+}
+--- hint
+Replacing the best-so-far on a tie means the last of the longest words wins. Which comparison replaces only on a strictly longer word?
+--- hint
+Look at where the conversion to \`double\` happens. \`letters / words.size()\` is worked out first, in whole numbers, and throws the fraction away; converting the answer afterwards cannot bring it back. Convert before dividing.
+--- check test | The first of the longest
+word_stats({"mars", "venus", "pluto"}).longest == "venus" && word_stats({"a", "bb", "cc"}).longest == "bb"
+--- check test | The average keeps its fraction
+word_stats({"sky", "blue"}).average == 3.5 && word_stats({"a", "b", "cd"}).average == 4.0 / 3.0
+--- check test | No words at all
+word_stats({}).average == 0.0 && word_stats({}).longest == ""
+--- check test | One word
+word_stats({"orbit"}).average == 5.0 && word_stats({"orbit"}).longest == "orbit"
+
++++ practice | Stretch: a readability score for each paragraph
+--- task
+The **Automated Readability Index** estimates how hard a text is to read, roughly as a school grade:
+
+\`ARI = 4.71 × (characters / words) + 0.5 × (words / sentences) − 21.43\`
+
+Write a complete program, with \`main\`, that reads standard input and prints one line per paragraph. Paragraphs are separated by one or more blank lines (empty, or only spaces and tabs).
+
+- **characters**: the letters and digits in the paragraph (\`std::isalnum\`); spaces and punctuation do not count.
+- **words**: whitespace-separated pieces that contain at least one letter or digit, so \`--\` is not a word.
+- **sentences**: runs of \`.\`, \`!\` and \`?\`, counted within each line as in the lesson, but at least 1: a paragraph with no ending counts as one sentence.
+- Print \`paragraph <n>: words=<w> sentences=<s> ARI=<score>\`, counting paragraphs from 1, with the score to one decimal place. A paragraph with no words prints \`ARI=n/a\` instead of a score.
+
+Watch the divisions: all three counts are whole numbers.
+--- starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string line;
+    int paragraph = 0;
+    while (std::getline(std::cin, line)) {
+        if (!line.empty()) ++paragraph;
+    }
+    return 0;
+}
+--- solution
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+bool has_alnum(const std::string& piece) {
+    for (char c : piece)
+        if (std::isalnum(static_cast<unsigned char>(c))) return true;
+    return false;
+}
+
+struct Paragraph {
+    long long characters = 0;
+    long long words = 0;
+    long long sentences = 0;
+};
+
+void report(int number, const Paragraph& p) {
+    long long sentences = p.sentences > 0 ? p.sentences : 1;
+    std::cout << "paragraph " << number << ": words=" << p.words << " sentences=" << sentences << " ARI=";
+    if (p.words == 0) {
+        std::cout << "n/a\\n";
+        return;
+    }
+    double chars = static_cast<double>(p.characters);
+    double words = static_cast<double>(p.words);
+    double ari = 4.71 * (chars / words) + 0.5 * (words / static_cast<double>(sentences)) - 21.43;
+    std::cout << std::fixed << std::setprecision(1) << ari << "\\n";
+}
+
+int main() {
+    std::string line;
+    Paragraph current;
+    bool in_paragraph = false;
+    int number = 0;
+    while (std::getline(std::cin, line)) {
+        std::istringstream in(line);
+        std::string piece;
+        bool blank = true;
+        while (in >> piece) {
+            blank = false;
+            if (has_alnum(piece)) ++current.words;
+        }
+        if (blank) {
+            if (in_paragraph) report(++number, current);
+            current = Paragraph{};
+            in_paragraph = false;
+            continue;
+        }
+        in_paragraph = true;
+        for (char c : line)
+            if (std::isalnum(static_cast<unsigned char>(c))) ++current.characters;
+        current.sentences += count_sentences(line);
+    }
+    if (in_paragraph) report(++number, current);   // the last paragraph has no blank line after it
+    return 0;
+}
+--- hint
+Keep running counts for the current paragraph. When a blank line arrives after a non-blank one, the paragraph is finished: print its line and start fresh. Do not forget the last paragraph, which usually has no blank line after it.
+--- hint
+For each non-blank line: add its letters and digits to the characters, add \`count_sentences(line)\` to the sentences, and count the pieces from \`>>\` that contain a letter or digit as words.
+--- hint
+Turn the counts into \`double\`s before dividing, use 1 for a sentence count of 0, and print the score with \`std::fixed << std::setprecision(1)\`.
+--- stdin
+The cat sat. The dog ran!
+It was fun.
+
+Photosynthesis transforms electromagnetic radiation into chemical energy; chloroplasts orchestrate extraordinarily intricate biochemical transformations
+
+--  ...
+
+
+Go. Now? Yes!! Run...
+--- check output | Four paragraphs, one with no words
+paragraph 1: words=9 sentences=3 ARI=-6.3
+paragraph 2: words=13 sentences=1 ARI=35.4
+paragraph 3: words=0 sentences=1 ARI=n/a
+paragraph 4: words=4 sentences=4 ARI=-8.0
+
+=== cppp-12 | Text stats 4: a word-length histogram
+--- teach
+Last lesson, your tool counted sentences and measured the average and longest word. This last step draws a picture: a small bar chart, made of text, that shows how many words there are of each length.
+
+### A bar chart made of characters
+
+Picture a class tallying its favorite fruit on the board. Each vote adds one mark next to the fruit's name, and the longest row of marks wins. You can see the answer before you count.
+
+That row of marks is a **[[histogram|histogram-word]]**: a bar chart of how many things fall into each group. Here the groups are word lengths. Every 3-letter word adds one \`#\` to the row for length 3. Laid out neatly, it looks like this (on some other text):
+
+\`\`\`
+   3 | ####### 7
+  12 | ## 2
+\`\`\`
+
+Layout is the part of a command-line tool people [[notice first|text-layout]], so this lesson is mostly about lining things up.
+
+### Counting by length
+
+Count how many words have each length in a \`std::map<std::size_t, int>\`: the key is a length, the value is how many words have it. Use \`std::size_t\` for the key because that is the type \`size()\` gives. Here the same idea counts dice rolls:
+
+\`\`\`cpp
+std::vector<int> rolls = {3, 6, 3, 1, 6, 3};
+std::map<int, int> times;
+for (int r : rolls) times[r]++;      // times: {1: 1, 3: 3, 6: 2}
+\`\`\`
+
+A \`std::map\` keeps its keys in **increasing order**, so a range-for over it visits the shortest length first. No sorting needed. And only lengths that really occur become keys, so only those get a line. There is no row for 2 above, because nobody rolled a 2.
+
+Reading the pairs back out works like the bank's \`total_balance\` loop, with a structured binding naming both halves:
+
+\`\`\`cpp
+for (const auto& [face, count] : times) {
+    std::cout << face << " came up " << count << " times\\n";
+}
+\`\`\`
+
+### Right-aligning a number
+
+Look at the sample layout again. The \`|\` characters line up, even though \`3\` has one digit and \`12\` has two. That is because each length is **right-aligned** in a column 4 characters wide: padded with spaces on the left until it fills 4 characters.
+
+**\`std::setw(n)\`**, from \`<iomanip>\` ("set width"), does exactly that. It makes the **next** thing printed take up at least \`n\` characters, padding on the left:
+
+\`\`\`cpp
+std::cout << "[" << std::setw(5) << 42 << "]\\n";    // prints [   42]
+std::cout << "[" << std::setw(5) << 7 << "]\\n";     // prints [    7]
+\`\`\`
+
+Unlike \`std::fixed\`, \`setw\` [[does not stick|setw-resets]]. It applies to one value, then the width goes back to normal. So you give it again on every line.
+
+### Building the bar
+
+A bar is a row of \`n\` identical characters. A \`std::string\` can be built that way directly: **\`std::string(n, c)\`** makes a string of \`n\` copies of the character \`c\`.
+
+\`\`\`cpp
+std::string stars(4, '*');      // "****"
+std::cout << std::string(3, '=') << "\\n";   // prints ===
+\`\`\`
+
+### One line of the chart
+
+Each line has these parts, in order:
+
+1. the length, right-aligned in 4 characters;
+2. the text \` | \` (a space, a bar, a space);
+3. one \`#\` for each word of that length;
+4. a space and the count, then the line break.
+
+The count at the end matters: a bar of 23 \`#\` is hard to count by eye.
+
+Print the heading \`word lengths:\` on its own line first, after the top words. The histogram uses the same normalized words as the average and the longest word.
+
+### Looking back at the whole tool
+
+With four features in place, look at the shape of your program:
+
+- The input is read **once**.
+- Every statistic is computed from the **same** list of normalized words.
+- Each rule that needs thought (normalizing, counting sentences) is a **named function**.
+
+Adding the histogram took one new block at the end. That is the payoff of the structure you built step by step: new features slot in without disturbing the old ones. And because the check compares the **whole** report, it also proves that nothing earlier changed. A test that guards old behavior like this is called a [[regression test|regression-test]].
+
+**Watch out:** \`std::setw(4)\` must come right before the length. If you put it before \`" | "\` or anywhere else, it pads that instead, and the length prints with no padding at all.
+
+::: context histogram-word Where the word comes from
+The statistician Karl Pearson introduced the word "histogram" in the 1890s, for a chart of bars standing side by side, one per group, each as tall as the group's count. Engineers use them all the time: how long a loop takes to run, how big each sensor error was, how many packets arrived late. Here are the eight lengths of this project's sample text, drawn as bars:
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 190" font-family="Inter, Arial, sans-serif">
+  <line x1="40" y1="160" x2="340" y2="160" stroke="#1f2a44"/>
+  <g fill="#8fb8f0" stroke="#1f2a44">
+    <rect x="50" y="155" width="26" height="5"/>
+    <rect x="86" y="145" width="26" height="15"/>
+    <rect x="122" y="45" width="26" height="115"/>
+    <rect x="158" y="95" width="26" height="65"/>
+    <rect x="194" y="135" width="26" height="25"/>
+    <rect x="230" y="140" width="26" height="20"/>
+    <rect x="266" y="155" width="26" height="5"/>
+    <rect x="302" y="150" width="26" height="10"/>
+  </g>
+  <g font-size="11" fill="#1f2a44" text-anchor="middle">
+    <text x="63" y="176">1</text><text x="99" y="176">2</text><text x="135" y="176">3</text><text x="171" y="176">4</text>
+    <text x="207" y="176">5</text><text x="243" y="176">6</text><text x="279" y="176">7</text><text x="315" y="176">8</text>
+    <text x="135" y="38">23</text><text x="171" y="88">13</text>
+  </g>
+  <text x="190" y="20" font-size="12" text-anchor="middle" fill="#1f2a44">words of each length, 5 units of height per word</text>
+</svg>
+\`\`\`
+:::
+
+::: context text-layout Pictures made of text
+Long before screens could draw graphics, programs drew charts, boxes and gauges out of ordinary characters, and many still do. The system monitor \`htop\` shows each processor's load as a bar of \`|\` characters, and progress bars in installers are rows of \`#\` or \`=\`. Text output works over the slowest connection, fits in a log file, and can be checked by a program, which is exactly how this lesson's report is checked. The catch is that everything must line up by counting characters, which is why widths matter so much.
+:::
+
+::: context setw-resets Which stream settings stick
+Most stream settings stay until you change them: \`std::fixed\`, \`std::setprecision\`, and others like \`std::left\` (pad on the right instead). The width is the exception. Every time \`<<\` prints a number or a string, the stream sets its width back to 0, meaning "no padding". That suits tables well, because each column usually needs its own width.
+:::
+
+::: context regression-test Guarding what already works
+A **regression** is when something that used to work stops working, often because of a change somewhere else. A regression test runs the program on a fixed input and compares the output with the output you know is right. Each step of this project had one: the full report, character for character. Flight software teams keep thousands of these and rerun them on every change, because a small edit to one feature quietly breaking another is one of the most common kinds of bug.
+:::
+--- task
+Extend the tool one last time. After the top words, print the heading:
+
+\`\`\`
+word lengths:
+\`\`\`
+
+Then print one line for each word length that occurs among the normalized words, shortest first:
+
+- the length, right-aligned in 4 characters with \`std::setw(4)\`;
+- then \` | \` (space, bar, space);
+- then one \`#\` per word of that length, built with \`std::string(n, '#')\`;
+- then a space and the count.
+
+Count the lengths in a \`std::map<std::size_t, int>\`.
+
+--- starter
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cctype>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+// Lowercase, with punctuation trimmed from both ends ("River," becomes "river").
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+// Each run of . ! ? ends one sentence ("there..." counts once).
+int count_sentences(const std::string& line) {
+    int n = 0;
+    bool previous_was_end = false;
+    for (char c : line) {
+        bool end = c == '.' || c == '!' || c == '?';
+        if (end && !previous_was_end) ++n;
+        previous_was_end = end;
+    }
+    return n;
+}
+
+int main() {
+    std::string line;
+    int lines = 0;
+    int raw_words = 0;
+    long long chars = 0;
+    int sentences = 0;
+    std::vector<std::string> words;
+    while (std::getline(std::cin, line)) {
+        ++lines;
+        chars += static_cast<long long>(line.size());
+        sentences += count_sentences(line);
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            ++raw_words;
+            std::string w = normalize(raw);
+            if (!w.empty()) words.push_back(w);
+        }
+    }
+    std::cout << "lines: " << lines << "\\n";
+    std::cout << "words: " << raw_words << "\\n";
+    std::cout << "chars: " << chars << "\\n";
+    std::cout << "sentences: " << sentences << "\\n";
+    long long letters = 0;
+    std::string longest;
+    for (const auto& w : words) {
+        letters += static_cast<long long>(w.size());
+        if (w.size() > longest.size()) longest = w;
+    }
+    double average = words.empty() ? 0.0 : static_cast<double>(letters) / static_cast<double>(words.size());
+    std::cout << "average word length: " << std::fixed << std::setprecision(2) << average << "\\n";
+    std::cout << "longest word: " << longest << "\\n";
+    std::map<std::string, int> counts;
+    for (const auto& w : words) counts[w]++;
+    std::vector<std::pair<std::string, int>> ranked(counts.begin(), counts.end());
+    std::sort(ranked.begin(), ranked.end(), [](const auto& a, const auto& b) {
+        if (a.second != b.second) return a.second > b.second;
+        return a.first < b.first;
+    });
+    std::cout << "top words:\\n";
+    for (std::size_t i = 0; i < ranked.size() && i < 5; ++i) {
+        std::cout << "  " << ranked[i].first << ": " << ranked[i].second << "\\n";
+    }
+    std::map<std::size_t, int> by_length;
+    for (const auto& w : words) by_length[w.size()]++;
+    std::cout << "word lengths:\\n";
+    for (const auto& [length, n] : by_length) {
+        std::cout << std::setw(4) << length << " | " << std::string(n, '#') << " " << n << "\\n";
+    }
+    return 0;
+}
+--- hint
+After the top-words loop, make a \`std::map<std::size_t, int>\` and add one to the entry for \`w.size()\` for every normalized word \`w\`.
+--- hint
+Print \`word lengths:\`, then loop over the map with \`for (const auto& [length, n] : ...)\`. The map already visits the shortest length first.
+--- hint
+Each line is one chain of \`<<\`: \`std::setw(4)\` right before \`length\`, then \`" | "\`, then \`std::string(n, '#')\`, then \`" "\`, \`n\` and \`"\\n"\`.
+--- stdin
+The river was low that summer. The boats sat in the mud, and the children
+walked out to them at noon!
+
+Was the river ever this low before? Old Mara said yes: once, when she was a girl.
+The children did not believe her. The river, they said, had always been there...
+--- check output | The full report with the histogram
+lines: 5
+words: 52
+chars: 261
+sentences: 6
+average word length: 3.85
+longest word: children
+top words:
+  the: 7
+  river: 3
+  was: 3
+  children: 2
+  low: 2
+word lengths:
+   1 | # 1
+   2 | ### 3
+   3 | ####################### 23
+   4 | ############# 13
+   5 | ##### 5
+   6 | #### 4
+   7 | # 1
+   8 | ## 2
+
++++ practice | A chart of star ratings
+--- task
+Visitors rate a museum from 1 to 5 stars. Write \`std::string rating_chart(const std::vector<int>& ratings)\`, which draws a bar chart of how many gave each rating. No \`main\`.
+
+- One line for **every** rating, from 5 down to 1, even a rating nobody gave.
+- Each line is the rating, then \` | \` (space, bar, space), then one \`*\` per vote built with \`std::string(n, '*')\`, then a space and the count, then \`\\n\`.
+- A rating nobody gave has no stars, so its line is \`3 |  0\`, with two spaces before the 0.
+- Ratings outside 1 to 5 are mistakes: ignore them.
+
+\`rating_chart({5, 4, 5, 1})\` is \`"5 | ** 2\\n4 | * 1\\n3 |  0\\n2 |  0\\n1 | * 1\\n"\`. Include \`<map>\` and \`<sstream>\`.
+--- starter
+#include <string>
+#include <vector>
+
+std::string rating_chart(const std::vector<int>& ratings) {
+    std::string out;
+    for (int r : ratings) out += std::to_string(r) + "\\n";
+    return out;
+}
+--- solution
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string rating_chart(const std::vector<int>& ratings) {
+    std::map<int, int> votes;
+    for (int r : ratings) {
+        if (r >= 1 && r <= 5) votes[r]++;
+    }
+    std::ostringstream out;
+    for (int r = 5; r >= 1; --r) {
+        int n = votes[r];   // 0 for a rating nobody gave
+        out << r << " | " << std::string(n, '*') << " " << n << "\\n";
+    }
+    return out.str();
+}
+--- hint
+Count the valid ratings in a \`std::map<int, int>\`, skipping anything below 1 or above 5.
+--- hint
+The lines do not follow the map: a rating with no votes is not in it. Loop \`r\` from 5 down to 1 yourself, and look each one up; \`votes[r]\` gives 0 for a rating that was never counted.
+--- check case | The example
+rating_chart({5, 4, 5, 1})
+=> "5 | ** 2\\n4 | * 1\\n3 |  0\\n2 |  0\\n1 | * 1\\n"
+--- check case | Nobody voted
+rating_chart({})
+=> "5 |  0\\n4 |  0\\n3 |  0\\n2 |  0\\n1 |  0\\n"
+--- check case | Mistakes are ignored
+rating_chart({0, 6, 3, -1, 3, 3})
+=> "5 |  0\\n4 |  0\\n3 | *** 3\\n2 |  0\\n1 |  0\\n"
+
++++ practice | A histogram standing up
+--- task
+Turn the bars on their end. Write \`std::string vertical(const std::vector<int>& counts)\`, which draws one **column** per count, with the tallest column's top on the first line. No \`main\`.
+
+- There is one row for each level, from the largest count down to 1.
+- In a row for level \`L\`, column \`i\` is \`#\` if \`counts[i]\` is at least \`L\`, and a space otherwise. Columns are separated by one space.
+- Remove the spaces at the end of every row, then end it with \`\\n\`.
+- If \`counts\` is empty, or every count is 0, return \`""\`. Every count is 0 or more.
+
+\`vertical({3, 1, 2})\` is \`"#\\n#   #\\n# # #\\n"\`:
+
+\`\`\`
+#
+#   #
+# # #
+\`\`\`
+--- starter
+#include <string>
+#include <vector>
+
+std::string vertical(const std::vector<int>& counts) {
+    std::string out;
+    for (int c : counts) out += std::string(c, '#') + "\\n";
+    return out;
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <vector>
+
+std::string vertical(const std::vector<int>& counts) {
+    if (counts.empty()) return "";
+    int tallest = *std::max_element(counts.begin(), counts.end());
+    std::string out;
+    for (int level = tallest; level >= 1; --level) {
+        std::string row;
+        for (std::size_t i = 0; i < counts.size(); ++i) {
+            if (i > 0) row += ' ';
+            row += counts[i] >= level ? '#' : ' ';
+        }
+        while (!row.empty() && row.back() == ' ') row.pop_back();   // no spaces at the end
+        out += row + "\\n";
+    }
+    return out;
+}
+--- hint
+Find the largest count first; that is how many rows there are. Then loop \`level\` from it down to 1, building one row at a time.
+--- hint
+In each row, write a separating space before every column except the first, then \`#\` or a space. Afterwards strip the trailing spaces with \`pop_back\` while the last character is a space. If the largest count is 0, the loop never runs and the answer is \`""\` by itself.
+--- check case | The example
+vertical({3, 1, 2})
+=> "#\\n#   #\\n# # #\\n"
+--- check case | A gap in the middle and a short last column
+vertical({2, 0, 2, 1})
+=> "#   #\\n#   # #\\n"
+--- check case | Only zeros, or nothing
+vertical({0, 0}) + vertical({})
+=> ""
+--- check case | One column
+vertical({3})
+=> "#\\n#\\n#\\n"
+
++++ practice | Bars that fit the screen
+--- task
+A bar of 23,000 \`#\` does not fit on a screen. Scale the bars so the longest is exactly \`width\` characters. Write \`std::string scaled_histogram(const std::map<std::size_t, int>& counts, int width)\`, where the map goes from a word length to how many words have it. No \`main\`.
+
+- One line per length, shortest first, as in the lesson: the length right-aligned in 4 characters with \`std::setw(4)\`, then \` | \`, then the bar, then a space and the **real** count, then \`\\n\`.
+- The bar has \`count * width / largest\` \`#\`s (whole-number division), where \`largest\` is the biggest count in the map. But a length that has any words at all always gets **at least one** \`#\`.
+- Lengths with a count of 0 get no line. An empty map, or one with only zero counts, gives \`""\`. \`width\` is at least 1.
+
+With the counts \`{3: 23, 4: 13, 8: 2}\` and \`width\` 10, the bars have 10, 5 and 1 \`#\`s:
+
+\`\`\`
+   3 | ########## 23
+   4 | ##### 13
+   8 | # 2
+\`\`\`
+
+Include \`<iomanip>\` and \`<sstream>\`.
+--- starter
+#include <cstddef>
+#include <map>
+#include <string>
+
+std::string scaled_histogram(const std::map<std::size_t, int>& counts, int width) {
+    return "";
+}
+--- solution
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+
+std::string scaled_histogram(const std::map<std::size_t, int>& counts, int width) {
+    int largest = 0;
+    for (const auto& [length, n] : counts)
+        if (n > largest) largest = n;
+    std::ostringstream out;
+    for (const auto& [length, n] : counts) {
+        if (n <= 0) continue;
+        int bar = static_cast<int>(static_cast<long long>(n) * width / largest);
+        if (bar < 1) bar = 1;   // any words at all show up
+        out << std::setw(4) << length << " | " << std::string(bar, '#') << " " << n << "\\n";
+    }
+    return out.str();
+}
+--- hint
+Two passes over the map: the first finds the largest count, the second prints. Multiply before dividing, \`n * width / largest\`, or the division throws everything away.
+--- hint
+After working out the bar's length, raise it to 1 if it came out as 0. Skip any length whose count is 0, and the empty map needs no special case: nothing gets printed.
+--- check case | The example
+scaled_histogram({{3, 23}, {4, 13}, {8, 2}}, 10)
+=> "   3 | ########## 23\\n   4 | ##### 13\\n   8 | # 2\\n"
+--- check case | Small counts at full width are not stretched past it
+scaled_histogram({{1, 2}, {2, 4}}, 4)
+=> "   1 | ## 2\\n   2 | #### 4\\n"
+--- check case | Zero counts and an empty map
+scaled_histogram({{5, 0}, {6, 3}}, 3) + scaled_histogram({}, 10) + scaled_histogram({{2, 0}}, 5)
+=> "   6 | ### 3\\n"
+--- check case | Long lengths still line up in 4 characters
+scaled_histogram({{12, 1}, {345, 100}}, 20)
+=> "  12 | # 1\\n 345 | #################### 100\\n"
+
++++ practice | A column exactly as wide as it needs to be
+--- task
+The lesson right-aligned every length in 4 characters. Make the column exactly as wide as the **widest** length instead. Write \`std::string histogram(const std::vector<std::string>& words)\`. No \`main\`.
+
+- The first line is \`word lengths:\`.
+- Then one line per word length that occurs, shortest first: the length right-aligned to the width of the **largest** length (the number of digits it has), then \` | \`, then one \`#\` per word, then a space and the count. Every line ends with \`\\n\`.
+- Empty strings in the list are not words: skip them.
+- With no words at all, the whole result is \`"word lengths:\\n(none)\\n"\`.
+
+For words of lengths 3, 3 and 12, the largest length has 2 digits, so the result is \`"word lengths:\\n 3 | ## 2\\n12 | # 1\\n"\`. Include \`<iomanip>\`, \`<map>\` and \`<sstream>\`.
+--- starter
+#include <string>
+#include <vector>
+
+std::string histogram(const std::vector<std::string>& words) {
+    return "word lengths:\\n";
+}
+--- solution
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string histogram(const std::vector<std::string>& words) {
+    std::map<std::size_t, int> by_length;
+    for (const auto& w : words)
+        if (!w.empty()) by_length[w.size()]++;
+    std::ostringstream out;
+    out << "word lengths:\\n";
+    if (by_length.empty()) {
+        out << "(none)\\n";
+        return out.str();
+    }
+    // The last key is the largest length; its digit count is the column's width.
+    int width = static_cast<int>(std::to_string(by_length.rbegin()->first).size());
+    for (const auto& [length, n] : by_length) {
+        out << std::setw(width) << length << " | " << std::string(n, '#') << " " << n << "\\n";
+    }
+    return out.str();
+}
+--- hint
+Count the lengths in a \`std::map<std::size_t, int>\` as in the lesson, skipping empty strings. The map's largest key is its last one: \`by_length.rbegin()->first\`.
+--- hint
+The number of digits in a number is the size of its text: \`std::to_string(largest).size()\`. Pass that to \`std::setw\` instead of 4.
+--- check case | Two digits wide
+histogram({"cat", "dog", "extraordinary"})
+=> "word lengths:\\n 3 | ## 2\\n13 | # 1\\n"
+--- check case | One digit wide, one word
+histogram({"orbit"})
+=> "word lengths:\\n5 | # 1\\n"
+--- check case | No words at all
+histogram({}) + histogram({"", ""})
+=> "word lengths:\\n(none)\\nword lengths:\\n(none)\\n"
+--- check case | Three digits wide
+histogram({std::string(100, 'a'), "ab", "cd", "e"})
+=> "word lengths:\\n  1 | # 1\\n  2 | ## 2\\n100 | # 1\\n"
+
++++ practice | Debug: a chart of strange characters
+--- task
+**Bug report:** "The chart prints gibberish instead of bars, always 35 characters long. And the lengths are not lined up: the spaces appear after the number instead of before it."
+
+The starter's \`chart\` should print, for each word length, shortest first: the length right-aligned in 4 characters, then \` | \`, then one \`#\` per word, then a space and the count, like \`   3 | ## 2\`. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string chart(const std::vector<std::string>& words) {
+    std::map<std::size_t, int> by_length;
+    for (const auto& w : words) by_length[w.size()]++;
+    std::ostringstream out;
+    for (const auto& [length, n] : by_length) {
+        out << length << std::setw(4) << " | " << std::string('#', n) << " " << n << "\\n";
+    }
+    return out.str();
+}
+--- solution
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string chart(const std::vector<std::string>& words) {
+    std::map<std::size_t, int> by_length;
+    for (const auto& w : words) by_length[w.size()]++;
+    std::ostringstream out;
+    for (const auto& [length, n] : by_length) {
+        out << std::setw(4) << length << " | " << std::string(n, '#') << " " << n << "\\n";
+    }
+    return out.str();
+}
+--- hint
+\`std::string(n, c)\` takes the count first and the character second. What does \`std::string('#', n)\` make? The character \`'#'\` is the number 35.
+--- hint
+\`std::setw\` pads only the very next thing printed. Here the next thing after it is \`" | "\`, which is already 3 characters, so nothing seems to happen. Put it right before the length.
+--- check case | Two lengths
+chart({"sky", "sun", "blue"})
+=> "   3 | ## 2\\n   4 | # 1\\n"
+--- check case | One long word
+chart({"extraordinarily"})
+=> "  15 | # 1\\n"
+--- check case | Nothing to chart
+chart({})
+=> ""
+
++++ practice | Stretch: a latency histogram with percentiles
+--- task
+A flight computer logs how long each message took to arrive, in whole milliseconds. Write a complete program, with \`main\`, that reads the numbers from standard input (separated by spaces and line breaks; all 0 or more) and prints a report.
+
+\`\`\`
+samples: 12
+p50: 12 ms
+p90: 45 ms
+  0-  9 | #### 4
+ 10- 19 | ### 3
+\`\`\`
+
+- \`samples:\` is how many numbers there were. If there were none, print only \`samples: 0\`.
+- \`p50\` and \`p90\` are **percentiles** by the nearest-rank rule: sort the numbers, and the p-th percentile is the one at position \`ceil(p × N / 100)\`, counting positions from 1. In whole numbers that position is \`(p * N + 99) / 100\`.
+- Then a histogram in **bins** 10 ms wide: 0 to 9, 10 to 19, and so on. Print every bin from the lowest bin that has a number up to the highest, **including empty bins in between**. A bin's label is its low end and its high end, each right-aligned in 3 characters with \`std::setw(3)\`, joined by \`-\`. Then \` | \`, one \`#\` per number, a space and the count. An empty bin's line is like \` 20- 29 |  0\`, with two spaces before the 0.
+--- starter
+#include <iostream>
+
+int main() {
+    int n = 0;
+    int x;
+    while (std::cin >> x) ++n;
+    std::cout << "samples: " << n << "\\n";
+    return 0;
+}
+--- solution
+#include <algorithm>
+#include <cstddef>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<long long> ms;
+    long long x;
+    while (std::cin >> x) ms.push_back(x);
+    std::cout << "samples: " << ms.size() << "\\n";
+    if (ms.empty()) return 0;
+
+    std::sort(ms.begin(), ms.end());
+    const long long n = static_cast<long long>(ms.size());
+    for (long long p : {50LL, 90LL}) {
+        long long position = (p * n + 99) / 100;   // nearest rank, counting from 1
+        std::cout << "p" << p << ": " << ms[static_cast<std::size_t>(position - 1)] << " ms\\n";
+    }
+
+    std::map<long long, int> bins;   // bin number (ms / 10) to how many
+    for (long long v : ms) bins[v / 10]++;
+    long long first = bins.begin()->first;
+    long long last = bins.rbegin()->first;
+    for (long long b = first; b <= last; ++b) {
+        int count = bins.contains(b) ? bins[b] : 0;
+        std::cout << std::setw(3) << b * 10 << "-" << std::setw(3) << b * 10 + 9 << " | "
+                  << std::string(count, '#') << " " << count << "\\n";
+    }
+    return 0;
+}
+--- hint
+Read every number into a vector with \`while (std::cin >> x)\`; line breaks are whitespace to \`>>\`. Sort it once: the percentiles need it sorted.
+--- hint
+The position formula counts from 1, so the value is at index \`position - 1\`. For N = 12, p90's position is (90 × 12 + 99) / 100 = 11.
+--- hint
+A number's bin is \`v / 10\`. Count bins in a \`std::map\`, then loop over **every** bin number from the map's first key to its last, printing 0 for the ones that are not in it. \`std::setw(3)\` must come right before each of the two label numbers.
+--- stdin
+12 7 3 45 18
+9 31 30
+
+5 11 64 44
+--- check output | Percentiles and a histogram with empty bins
+samples: 12
+p50: 12 ms
+p90: 45 ms
+  0-  9 | #### 4
+ 10- 19 | ### 3
+ 20- 29 |  0
+ 30- 39 | ## 2
+ 40- 49 | ## 2
+ 50- 59 |  0
+ 60- 69 | # 1
+
+=== cppp-13 | Capstone: a priority task scheduler
+--- teach
+Last lesson, you finished the text-statistics tool with a word-length histogram. That was the last of the three guided projects. The **[[capstones|capstone-word]]** begin here.
+
+### How a capstone works
+
+Until now, each lesson told you which class to write, which members to give it and roughly how. A capstone does not. You get three things:
+
+- a **specification**: an exact description of what the finished code must do, but not how (the task below is one);
+- an almost empty file;
+- the checks, which test the behavior.
+
+You choose the data structures, the helper types and the algorithms. This is the part that proves you can build things on your own. The explanation still gives you every idea and every tool the job needs, each on its own small example. Putting them together is your work.
+
+### A plan that holds up on real projects
+
+Before any code, work in this order:
+
+1. **Read the spec twice** and write down its rules as a list. Note every edge case it mentions: ties, empty cases, bad input.
+2. **Work examples by hand**, especially the tricky ones. Here that means ties in priority and tasks that wait on others.
+3. **Pick data structures from the operations.** List what must be fast, then ask which tool does exactly that.
+4. **Build the simplest version that passes the small checks, then make it fast.** Some checks are big on purpose.
+
+The rest of this lesson walks through those four steps for the first capstone.
+
+### Step 1: what the scheduler does
+
+Picture a list of chores for a busy Saturday. Each chore has a **priority**, a number saying how important it is: bigger means more important. Some chores cannot start until others are done: you cannot hang the washing before you have washed it. A chore that must finish first is a **dependency**: "hang" **depends on** "wash".
+
+A **scheduler** answers one question, over and over: "what should I do next?" Its rule:
+
+- Only a task that is **ready** can be chosen: not finished yet, and every one of its dependencies finished.
+- Among the ready tasks, pick the one with the **highest priority**.
+- On a tie, pick the one that was **added first**.
+
+When a task is chosen, it counts as finished. That may make other tasks ready.
+
+This is a small version of what [[build systems and package managers|build-systems]] do: run things in priority order, but never before what they depend on.
+
+One more rule makes life easier. A task may only depend on tasks that **already exist** when it is added. So a task can never, even through a chain, wait for itself, and the tasks can never get stuck [[waiting in a circle|no-cycles]].
+
+### Step 2: an example by hand
+
+Here are four chores, added in this order (the name, its priority, and what it waits for):
+
+| added | name | priority | waits for |
+| --- | --- | --- | --- |
+| 1st | sweep | 2 | nothing |
+| 2nd | dust | 4 | nothing |
+| 3rd | mop | 7 | sweep |
+| 4th | tidy | 4 | nothing |
+
+Now ask "what next?" five times:
+
+1. Ready: sweep (2), dust (4), tidy (4). Mop waits for sweep. Dust and tidy tie at 4; dust was added first. Answer: **dust**.
+2. Ready: sweep (2), tidy (4). Answer: **tidy**.
+3. Ready: sweep (2). Answer: **sweep**. Now mop's only dependency is finished, so mop becomes ready.
+4. Ready: mop (7). Answer: **mop**.
+5. Nothing is left. The answer is "nothing", which in C++ is \`std::nullopt\` from the \`std::optional\` lesson.
+
+Notice that mop has the highest priority of all, yet comes out last. Priority only chooses **among ready tasks**. Do an example like this on paper before you write any code, and keep it: it becomes your first test.
+
+### Step 3: why the obvious way is too slow
+
+The obvious way: keep every task in a list, and on every "what next?" walk the whole list, checking each task's dependencies, and remember the best ready one.
+
+That is correct, and fine for four chores. But one check adds 100,000 tasks and then asks "what next?" 100,000 times. Each question walks through everything still waiting, so the work adds up to roughly 100,000 × 100,000 ÷ 2, which is [[about five billion steps|rescan-cost]]. That runs out of time. In the big-O language from the performance lesson, one question costs O(n), so all of them together cost O(n²).
+
+So list the operations and ask what each one must find quickly:
+
+- "Give me the highest-priority ready task" and "take it out", over and over.
+- "When a task finishes, which tasks were waiting for it?"
+- "Is there a task with this name, and where is it?"
+
+The next three steps give you one tool for each.
+
+### Tool 1: a queue that serves the biggest first
+
+Picture a hospital waiting room. Patients are not seen in the order they arrived: the most urgent is seen next, whoever came in first. When someone new arrives, they slot in according to how urgent they are.
+
+C++ has that as **\`std::priority_queue<T>\`**, from \`<queue>\`: a container that always keeps its **largest** element on top, where you can reach it. Inside, it is organized as a **[[heap|heap-shape]]**, a clever half-sorted arrangement that makes both adding and removing cost only O(log n).
+
+Its members, one at a time:
+
+\`\`\`cpp
+#include <queue>
+
+std::priority_queue<int> heights;
+heights.push(140);      // push(x): put x in
+heights.push(162);
+heights.push(151);
+\`\`\`
+
+\`push(x)\` adds an element. You do not choose where it goes; the queue places it.
+
+\`\`\`cpp
+int tallest = heights.top();   // top(): look at the largest, 162
+heights.pop();                 // pop(): remove the largest
+int next = heights.top();      // now 151
+\`\`\`
+
+\`top()\` looks at the largest without removing it. \`pop()\` removes it and gives nothing back. \`empty()\` is true when nothing is inside, and \`size()\` says how many are.
+
+**Watch out:** \`pop()\` does not hand you the element it removed. Read \`top()\` first, then \`pop()\`. Calling \`top()\` or \`pop()\` on an empty queue is undefined behavior, so check \`empty()\` first.
+
+### Tool 2: telling the queue what "largest" means
+
+For \`int\`s, "largest" is obvious. For your own struct, the queue needs to be told. It compares two elements with \`<\`, so give the struct an \`operator<\`, as you did for \`Fraction\` in the operator overloading lesson.
+
+The rule to remember: **\`a < b\` being true means "b comes out before a"**. The element that is "largest" by your \`operator<\` is the one on top.
+
+Here is a landing queue for planes circling an airport. The plane with the **least** fuel should land first, so "largest" must mean "least fuel". That flips the comparison:
+
+\`\`\`cpp
+struct Plane {
+    std::string flight;
+    int fuel;   // minutes of fuel left
+    // a < b when b is more urgent, that is, when b has less fuel
+    bool operator<(const Plane& other) const { return fuel > other.fuel; }
+};
+
+std::priority_queue<Plane> landing;
+landing.push(Plane{"AB12", 40});
+landing.push(Plane{"CD34", 15});
+landing.top().flight;   // "CD34": least fuel, lands first
+\`\`\`
+
+Read it slowly: \`fuel > other.fuel\` says "I am *smaller* than the other plane when I have *more* fuel". So the plane with less fuel is larger, and it sits on top.
+
+Your scheduler needs two levels: first priority, and on a tie, the order added. You wrote two-level comparisons in the custom comparators lesson: "if the first fields differ, decide by them; otherwise decide by the second". The same shape works inside an \`operator<\`.
+
+**Watch out:** the direction is the opposite of \`std::sort\`. A sort comparator returning true means "a goes **first**". In a priority queue, \`a < b\` returning true means "a comes out **after** b". Check each level against your hand example: which task should come out on top, and does your \`operator<\` call it the larger one?
+
+### Tool 3: counting what you wait for
+
+Checking every dependency again on every question is the slow way. The fast way uses two small records per task.
+
+Picture friends meeting before the cinema. Each friend keeps a count: "I am still waiting for 2 people." Each friend also has a list: "these people are waiting for me." When Sam arrives, Sam walks down the list and tells each person; each of them lowers their count by one. Whoever reaches 0 can go.
+
+For tasks:
+
+- each task keeps a **waiting count**: how many of its dependencies are not finished yet;
+- each task keeps a list of its **dependents**: the tasks that depend on it.
+
+When a task finishes, visit each of its dependents and lower their count by one. Any dependent whose count reaches 0 is now ready. Nobody ever rescans the whole list. This is a well-known method called [[Kahn's algorithm|kahn]].
+
+In the chores example: mop starts with a waiting count of 1, and sweep's list of dependents is \`[mop]\`. When sweep finishes, mop's count goes from 1 to 0, and mop is ready.
+
+**Watch out:** a dependency that is **already finished** when a task is added must not count. If it did, the count could never reach 0, because that dependency will never finish again, and the task would wait forever.
+
+### Tool 4: finding a task by its name
+
+Tasks are named by strings, but a number is a much handier way to point at one. A common design: keep the items in a \`std::vector\` in the order they were added, so each item's position is its number. Then keep a \`std::unordered_map\` (from the containers lesson) from name to number, to find a task by its name in about O(1).
+
+\`\`\`cpp
+std::vector<std::string> planets;
+std::unordered_map<std::string, std::size_t> number_of;
+
+number_of["Mars"] = planets.size();   // 0: its position
+planets.push_back("Mars");
+\`\`\`
+
+A number like that is cheap to copy into a queue or a list of dependents. And because it grows as items are added, the smaller number always belongs to the item added earlier.
+
+### The parts of the specification
+
+The task uses a few pieces of C++ you have met before:
+
+- \`std::optional<std::string>\` is "a string, or nothing" (the \`std::optional\` lesson); \`std::nullopt\` is the nothing.
+- \`const std::vector<std::string>& deps = {}\` is a default argument (the overloading lesson): a caller who leaves it out gets an empty list.
+- A \`const\` member function, such as \`pending() const\`, promises not to change the object (the const correctness lesson).
+
+**Watch out:** "returns false, adding nothing" means *nothing*. If \`add\` starts storing a task and then finds that its third dependency is unknown, the half-stored task is already there. Check every rule first; change things only once you know the answer is yes.
+
+### Step 4: plan, then build in stages
+
+Before you type any code, write down in plain words:
+
+1. The operations, and what each needs to find fast.
+2. The data you will keep as members, and one sentence on what each is for.
+3. How your hand example flows through those members, call by call.
+
+Then build in stages: first \`add\` without dependencies, \`next\`, \`pending\` and \`is_done\`, and run the checks. Then add dependencies. The big checks come last: if they fail on time, some operation is still rescanning.
+
+::: context capstone-word Where the word comes from
+A capstone is the flat stone laid along the top of a wall. It is the last piece to go on, it covers everything underneath, and it only sits right if the wall below was built well. Schools borrowed the word for the final project of a course: one piece of work that uses everything you learned. In engineering degrees the capstone is usually a design project with a real specification, often from a company, and students must design, build and test it themselves, which is exactly what these three lessons ask of you.
+:::
+
+::: context build-systems Schedulers everywhere
+A build system such as \`make\` (written by Stuart Feldman at Bell Labs in 1976) reads which files depend on which, and never compiles a file before the files it needs. A package manager installing software does the same with packages: a library goes in before the program that uses it. Job queues on servers pick the most important job that is able to run. Spacecraft computers schedule by priority too: many run a real-time operating system, such as VxWorks on NASA's Curiosity rover, that always gives the processor to the highest-priority task that is ready.
+:::
+
+::: context no-cycles Why there can be no circle
+Suppose task A waits for B, and B waits for A. Neither can ever start: a circle of waiting, called a **cycle**, like two people at a door each saying "after you" forever. Real build systems must detect cycles and report an error. This specification avoids the problem with one rule: a dependency must already exist when a task is added. So every arrow points from a newer task back to an older one. Following arrows always goes back in time, and you cannot go back in time and arrive where you started.
+:::
+
+::: context rescan-cost Counting the slow way
+With 100,000 tasks, the first question looks at 100,000 of them, the second at 99,999, and so on down to 1. The total is 100,000 × 100,001 ÷ 2, about 5,000,000,000 looks. A computer does very roughly a billion simple steps a second, and each look here is several steps, so that is many seconds, far over the time a check allows. The chain check is worse still if each look walks a task's dependencies. With a heap, each question costs about log₂(100,000), which is under 17 steps, so all 100,000 questions together take a few million steps: a small fraction of a second.
+:::
+
+::: context heap-shape What a heap looks like inside
+A heap is a tree where every parent is at least as large as its children. It is not fully sorted: 5 and 6 below are in different branches, in no particular order. But the largest is always at the very top.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <line x1="180" y1="30" x2="110" y2="80" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="180" y1="30" x2="250" y2="80" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="110" y1="80" x2="70" y2="135" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="110" y1="80" x2="150" y2="135" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="250" y1="80" x2="210" y2="135" stroke="#1f2a44" stroke-width="1.5"/>
+  <circle cx="180" cy="30" r="16" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="180" y="35" font-size="13" text-anchor="middle" fill="#1f2a44">9</text>
+  <circle cx="110" cy="80" r="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="110" y="85" font-size="13" text-anchor="middle" fill="#1f2a44">7</text>
+  <circle cx="250" cy="80" r="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="250" y="85" font-size="13" text-anchor="middle" fill="#1f2a44">8</text>
+  <circle cx="70" cy="135" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="70" y="140" font-size="13" text-anchor="middle" fill="#1f2a44">3</text>
+  <circle cx="150" cy="135" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="150" y="140" font-size="13" text-anchor="middle" fill="#1f2a44">5</text>
+  <circle cx="210" cy="135" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="210" y="140" font-size="13" text-anchor="middle" fill="#1f2a44">6</text>
+  <text x="215" y="34" font-size="11" fill="#b4232c">top(): the largest</text>
+  <text x="180" y="165" font-size="11" text-anchor="middle" fill="#6c7a93">each parent ≥ its children</text>
+</svg>
+\`\`\`
+
+Adding an element puts it at the bottom and lets it swap upward past smaller parents; removing the top moves the last element up and lets it sink. Either way it travels one path from top to bottom, and a tree of n elements is only about log₂(n) levels tall. J. W. J. Williams invented the binary heap in 1964, for a sorting method called heapsort. The tree is stored in a plain vector, one level after another; \`std::priority_queue\` uses a \`std::vector\` by default.
+:::
+
+::: context kahn A method from 1962
+Putting tasks in an order where everything comes after what it depends on is called a **topological sort**. In 1962 Arthur Kahn published the counting method in this lesson: give every task a count of unfinished dependencies, start with those at 0, and each time one finishes, lower its dependents' counts. It visits every task and every dependency arrow once, so the whole thing costs O(tasks + arrows). Swapping its plain "ready" list for a priority queue, as here, gives you the order a priority scheduler produces. Compilers, spreadsheets (which cell to recalculate first) and build systems all use this idea.
+
+The chores example, right before sweep finishes:
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="40" width="90" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="65" y="63" font-size="13" text-anchor="middle" fill="#1f2a44">sweep</text>
+  <rect x="240" y="40" width="100" height="36" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="290" y="63" font-size="13" text-anchor="middle" fill="#1f2a44">mop</text>
+  <line x1="110" y1="58" x2="232" y2="58" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="240,58 230,53 230,63" fill="#1f2a44"/>
+  <text x="175" y="50" font-size="11" text-anchor="middle" fill="#6c7a93">mop waits for sweep</text>
+  <text x="65" y="98" font-size="11" text-anchor="middle" fill="#1f2a44">dependents: [mop]</text>
+  <text x="290" y="98" font-size="11" text-anchor="middle" fill="#b4232c">waiting count: 1</text>
+  <text x="180" y="20" font-size="12" text-anchor="middle" fill="#1f2a44">sweep finishes: mop's count drops to 0</text>
+</svg>
+\`\`\`
+:::
+--- task
+Write \`class Scheduler\` to this specification. No \`main\`.
+
+- \`bool add(const std::string& name, int priority, const std::vector<std::string>& deps = {})\` adds a task named \`name\`, with that priority, that depends on the tasks named in \`deps\`. It returns false, and adds nothing at all, if the name is already used or any name in \`deps\` is not a task that already exists. Otherwise it returns true.
+- \`std::optional<std::string> next()\` looks at the tasks that are **ready** (not finished, and every dependency finished). It returns the name of the one with the **highest priority**, on a tie the one **added first**, and marks it finished. If no task is ready, it returns \`std::nullopt\`.
+- \`std::size_t pending() const\` returns how many tasks have been added but not yet finished.
+- \`bool is_done(const std::string& name) const\` returns true if that task has been returned by \`next()\`, and false otherwise (including for a name that was never added).
+
+\`add\` and \`next\` must be fast: well under O(n) each. The checks add 100,000 tasks, and a chain of 50,000 tasks where each depends on the one before; anything that rescans every task on every call runs out of time.
+--- starter
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+// Capstone: design and write class Scheduler to the specification.
+--- solution
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+class Scheduler {
+public:
+    bool add(const std::string& name, int priority, const std::vector<std::string>& deps = {}) {
+        if (index_.count(name)) return false;
+        for (const auto& d : deps) {
+            if (!index_.count(d)) return false;
+        }
+        std::size_t id = tasks_.size();
+        tasks_.push_back(Task{name, priority, 0, {}, false});
+        index_.emplace(name, id);
+        for (const auto& d : deps) {
+            Task& dep = tasks_[index_.find(d)->second];
+            if (!dep.done) {
+                dep.dependents.push_back(id);
+                ++tasks_[id].waiting;
+            }
+        }
+        if (tasks_[id].waiting == 0) ready_.push(Ready{priority, id});
+        ++pending_;
+        return true;
+    }
+
+    std::optional<std::string> next() {
+        if (ready_.empty()) return std::nullopt;
+        std::size_t id = ready_.top().id;
+        ready_.pop();
+        tasks_[id].done = true;
+        --pending_;
+        for (std::size_t d : tasks_[id].dependents) {
+            if (--tasks_[d].waiting == 0) ready_.push(Ready{tasks_[d].priority, d});
+        }
+        return tasks_[id].name;
+    }
+
+    std::size_t pending() const { return pending_; }
+
+    bool is_done(const std::string& name) const {
+        auto it = index_.find(name);
+        return it != index_.end() && tasks_[it->second].done;
+    }
+
+private:
+    struct Task {
+        std::string name;
+        int priority;
+        int waiting;                          // unfinished dependencies
+        std::vector<std::size_t> dependents;  // tasks waiting on this one
+        bool done;
+    };
+
+    struct Ready {
+        int priority;
+        std::size_t id;
+        // priority_queue puts the "largest" on top: higher priority, then earlier id.
+        bool operator<(const Ready& o) const { return priority != o.priority ? priority < o.priority : id > o.id; }
+    };
+
+    std::vector<Task> tasks_;
+    std::unordered_map<std::string, std::size_t> index_;
+    std::priority_queue<Ready> ready_;
+    std::size_t pending_ = 0;
+};
+--- hint
+Walk through the four tools in order. Keep the tasks in a vector (position = order added) with an \`unordered_map\` from name to position. Give each task its priority, a waiting count of unfinished dependencies, a list of its dependents, and whether it is finished.
+--- hint
+Keep only the ready tasks in a \`std::priority_queue\` of a small struct holding a priority and a position. Its \`operator<\` must make a higher priority larger, and on equal priority make the *smaller* position larger, so the earlier task sits on top.
+--- hint
+In \`add\`, check the name and every dependency before storing anything. Then count only the dependencies that are not finished, and add the new task to each of their dependents lists; if the count is 0, push it into the queue. In \`next\`, take \`top()\`, \`pop()\`, mark it finished, and lower the count of each of its dependents, pushing any that reach 0.
+--- check test | Highest priority first
+[] { Scheduler s; s.add("a", 1); s.add("b", 5); s.add("c", 3); auto x = s.next(); auto y = s.next(); auto z = s.next(); return x == "b" && y == "c" && z == "a" && s.next() == std::nullopt; }()
+--- check test | Ties go to the task added first
+[] { Scheduler s; s.add("x", 2); s.add("y", 2); s.add("z", 2); auto a = s.next(); auto b = s.next(); auto c = s.next(); return a == "x" && b == "y" && c == "z"; }()
+--- check test | A task waits for its dependencies
+[] { Scheduler s; s.add("build", 1); s.add("test", 9, {"build"}); s.add("lint", 5); auto a = s.next(); auto b = s.next(); auto c = s.next(); return a == "lint" && b == "build" && c == "test"; }()
+--- check test | Several dependencies must all finish
+[] { Scheduler s; s.add("a", 1); s.add("b", 2); s.add("ship", 100, {"a", "b"}); auto first = s.next(); bool waiting = !s.is_done("ship") && s.pending() == 2; auto second = s.next(); auto third = s.next(); return first == "b" && waiting && second == "a" && third == "ship" && s.pending() == 0; }()
+--- check test | Duplicates and unknown dependencies are refused
+[] { Scheduler s; bool a = s.add("a", 1); bool dup = s.add("a", 2); bool unknown = s.add("b", 1, {"nope"}); bool self = s.add("c", 1, {"c"}); return a && !dup && !unknown && !self && s.pending() == 1; }()
+--- check test | Depending on a finished task means ready at once
+[] { Scheduler s; s.add("a", 1); s.next(); bool added = s.add("b", 0, {"a"}); return added && s.is_done("a") && s.next() == "b" && s.is_done("b"); }()
+--- check test | 100,000 tasks come out in order
+[] { Scheduler s; for (int i = 0; i < 100000; ++i) s.add("t" + std::to_string(i), i % 1000); for (int p = 999; p >= 0; --p) for (int i = p; i < 100000; i += 1000) { auto n = s.next(); if (!n || *n != "t" + std::to_string(i)) return false; } return !s.next() && s.pending() == 0; }()
+--- check test | A chain of 50,000 dependencies
+[] { Scheduler s; s.add("c0", 0); for (int i = 1; i < 50000; ++i) s.add("c" + std::to_string(i), i, {"c" + std::to_string(i - 1)}); for (int i = 0; i < 50000; ++i) { auto n = s.next(); if (!n || *n != "c" + std::to_string(i)) return false; } return s.pending() == 0; }()
+
++++ practice | Triage in an emergency room
+--- task
+An emergency room sees the most urgent patient next, whoever arrived first. Write \`class Triage\`. No \`main\`.
+
+- \`void arrive(const std::string& name, int urgency)\`: a patient arrives. A bigger \`urgency\` is more urgent.
+- \`std::optional<std::string> next()\`: the patient to see now, who then leaves the queue: the **highest** urgency, and among equal urgencies the one who **arrived first**. With nobody waiting, \`std::nullopt\`.
+- \`std::size_t waiting() const\`: how many are waiting.
+
+Both \`arrive\` and \`next\` must be fast: the checks send 100,000 patients through. Use a \`std::priority_queue\` of a small struct with its own \`operator<\`. Include \`<queue>\`.
+--- starter
+#include <cstddef>
+#include <optional>
+#include <string>
+#include <vector>
+
+class Triage {
+public:
+    void arrive(const std::string& name, int urgency) { names_.push_back(name); }
+
+    std::optional<std::string> next() {
+        if (names_.empty()) return std::nullopt;
+        std::string first = names_.front();
+        names_.erase(names_.begin());
+        return first;
+    }
+
+    std::size_t waiting() const { return names_.size(); }
+
+private:
+    std::vector<std::string> names_;
+};
+--- solution
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+
+class Triage {
+public:
+    void arrive(const std::string& name, int urgency) {
+        queue_.push(Patient{urgency, arrivals_++, name});
+    }
+
+    std::optional<std::string> next() {
+        if (queue_.empty()) return std::nullopt;
+        std::string name = queue_.top().name;   // read top() before pop()
+        queue_.pop();
+        return name;
+    }
+
+    std::size_t waiting() const { return queue_.size(); }
+
+private:
+    struct Patient {
+        int urgency;
+        long long arrival;   // 0 for the first patient, then 1, 2, ...
+        std::string name;
+        // "Larger" comes out first: more urgent, then earlier.
+        bool operator<(const Patient& o) const {
+            if (urgency != o.urgency) return urgency < o.urgency;
+            return arrival > o.arrival;
+        }
+    };
+
+    std::priority_queue<Patient> queue_;
+    long long arrivals_ = 0;
+};
+--- hint
+Give each patient an arrival number, 0, 1, 2 and so on, from a counter in the class, so ties can be broken. Store urgency, arrival number and name in a small struct.
+--- hint
+The queue puts the "largest" on top. So in \`operator<\`, a more urgent patient must be larger (\`urgency < o.urgency\` when they differ), and on a tie the **earlier** patient must be larger, which means \`arrival > o.arrival\`.
+--- check test | The most urgent first
+[] { Triage t; t.arrive("sprain", 2); t.arrive("burn", 7); t.arrive("cough", 1); auto a = t.next(); auto b = t.next(); auto c = t.next(); return a == "burn" && b == "sprain" && c == "cough" && t.next() == std::nullopt; }()
+--- check test | Equal urgency: first come, first seen
+[] { Triage t; t.arrive("ann", 5); t.arrive("bo", 5); t.arrive("cy", 9); t.arrive("di", 5); auto a = t.next(); auto b = t.next(); auto c = t.next(); auto d = t.next(); return a == "cy" && b == "ann" && c == "bo" && d == "di"; }()
+--- check test | Waiting count, and arrivals between calls
+[] { Triage t; bool empty = t.waiting() == 0 && !t.next(); t.arrive("a", 1); t.arrive("b", 1); t.next(); t.arrive("c", 3); bool two = t.waiting() == 2; return empty && two && t.next() == "c" && t.next() == "b" && t.waiting() == 0; }()
+--- check test | 100,000 patients in order
+[] { Triage t; for (int i = 0; i < 100000; ++i) t.arrive("p" + std::to_string(i), i % 10); for (int u = 9; u >= 0; --u) for (int i = u; i < 100000; i += 10) { auto n = t.next(); if (!n || *n != "p" + std::to_string(i)) return false; } return t.waiting() == 0; }()
+
++++ practice | Merge sorted lists with a smallest-first queue
+--- task
+You have many lists of numbers, each already sorted from smallest to largest. Write \`std::vector<int> merge_sorted(const std::vector<std::vector<int>>& lists)\`, which merges them into one sorted list. No \`main\`.
+
+- Keep one entry per list in a \`std::priority_queue\`: the list's next unused number, which list it came from, and its position there. The queue must give the **smallest** number first, the opposite of its usual order, so write your struct's \`operator<\` the other way round.
+- Take the smallest entry, append its number to the answer, and push the next number from the same list, if it has one.
+- Some lists may be empty. Numbers may repeat, within a list or across lists, and every copy stays.
+
+\`merge_sorted({{1, 4, 9}, {2, 3}, {}, {4}})\` is \`{1, 2, 3, 4, 4, 9}\`. Include \`<queue>\`.
+--- starter
+#include <vector>
+
+std::vector<int> merge_sorted(const std::vector<std::vector<int>>& lists) {
+    std::vector<int> out;
+    for (const auto& list : lists)
+        for (int x : list) out.push_back(x);
+    return out;
+}
+--- solution
+#include <cstddef>
+#include <queue>
+#include <vector>
+
+struct Head {
+    int value;
+    std::size_t list;   // which list it came from
+    std::size_t pos;    // where in that list
+    // Reversed, so the smallest value is the "largest" and sits on top.
+    bool operator<(const Head& o) const { return value > o.value; }
+};
+
+std::vector<int> merge_sorted(const std::vector<std::vector<int>>& lists) {
+    std::priority_queue<Head> heads;
+    for (std::size_t i = 0; i < lists.size(); ++i)
+        if (!lists[i].empty()) heads.push(Head{lists[i][0], i, 0});
+    std::vector<int> out;
+    while (!heads.empty()) {
+        Head h = heads.top();
+        heads.pop();
+        out.push_back(h.value);
+        if (h.pos + 1 < lists[h.list].size()) heads.push(Head{lists[h.list][h.pos + 1], h.list, h.pos + 1});
+    }
+    return out;
+}
+--- hint
+Recall the landing queue from the lesson: least fuel had to come out first, so its \`operator<\` compared with \`>\`. Here the smallest number must come out first in the same way.
+--- hint
+Start by pushing the first number of every list that is not empty. Then loop while the queue is not empty: read \`top()\`, \`pop()\`, append the number, and push the next number of that list if \`pos + 1\` is still inside it.
+--- check test | The example
+merge_sorted({{1, 4, 9}, {2, 3}, {}, {4}}) == std::vector<int>{1, 2, 3, 4, 4, 9}
+--- check test | Repeats and negatives
+merge_sorted({{-5, 0, 0, 7}, {-5, 2}, {0}}) == std::vector<int>{-5, -5, 0, 0, 0, 2, 7}
+--- check test | Nothing to merge
+merge_sorted({}).empty() && merge_sorted({{}, {}}).empty() && merge_sorted({{3}}) == std::vector<int>{3}
+--- check test | A thousand lists of a thousand
+[] { std::vector<std::vector<int>> lists(1000); for (int i = 0; i < 1000; ++i) for (int j = 0; j < 1000; ++j) lists[i].push_back(j * 1000 + i); auto m = merge_sorted(lists); if (m.size() != 1000000) return false; for (int k = 0; k < 1000000; ++k) if (m[k] != k) return false; return true; }()
+--- check source | Uses a std::priority_queue
+priority_queue
+
++++ practice | An order that respects every rule
+--- task
+Kahn's algorithm, from the lesson, also answers a simpler question: in what order can things be done so that every "this before that" rule is kept? Write:
+
+\`std::optional<std::vector<std::string>> build_order(const std::vector<std::pair<std::string, std::string>>& rules)\`
+
+No \`main\`.
+
+- Each rule \`{a, b}\` means \`a\` must come before \`b\`. The things to order are every name that appears in any rule, each exactly once.
+- Whenever several names are ready (everything that must come before them is already placed), take the **alphabetically first** one.
+- If no order can keep every rule, because the rules go round in a circle (including a rule like \`{a, a}\`), return \`std::nullopt\`. You can tell: Kahn's algorithm then runs out of ready names before placing every name.
+- A rule may appear twice; that changes nothing. No rules gives an empty list.
+
+\`build_order({{"wash", "dry"}, {"dry", "fold"}, {"buy", "wash"}})\` is \`{"buy", "wash", "dry", "fold"}\`. Include \`<functional>\`, \`<map>\` and \`<queue>\`.
+--- starter
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
+
+std::optional<std::vector<std::string>> build_order(const std::vector<std::pair<std::string, std::string>>& rules) {
+    std::vector<std::string> order;
+    for (const auto& [a, b] : rules) {
+        order.push_back(a);
+        order.push_back(b);
+    }
+    return order;
+}
+--- solution
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <optional>
+#include <queue>
+#include <string>
+#include <utility>
+#include <vector>
+
+std::optional<std::vector<std::string>> build_order(const std::vector<std::pair<std::string, std::string>>& rules) {
+    std::map<std::string, int> waiting;                       // unplaced names that must come first
+    std::map<std::string, std::vector<std::string>> after;    // names that wait for this one
+    for (const auto& [a, b] : rules) {
+        waiting[a];   // make sure a is known, with 0 if it is new
+        waiting[b]++;
+        after[a].push_back(b);
+    }
+    // Smallest name on top: std::greater turns the queue around.
+    std::priority_queue<std::string, std::vector<std::string>, std::greater<std::string>> ready;
+    for (const auto& [name, count] : waiting)
+        if (count == 0) ready.push(name);
+    std::vector<std::string> order;
+    while (!ready.empty()) {
+        std::string name = ready.top();
+        ready.pop();
+        order.push_back(name);
+        for (const auto& next : after[name])
+            if (--waiting[next] == 0) ready.push(next);
+    }
+    if (order.size() != waiting.size()) return std::nullopt;   // some names never became ready: a circle
+    return order;
+}
+--- hint
+Two maps from name: how many rules still hold it back (its waiting count), and which names it holds back (its dependents). A rule \`{a, b}\` adds 1 to \`b\`'s count and puts \`b\` on \`a\`'s list. Make sure \`a\` is in the count map too, even at 0.
+--- hint
+For "alphabetically first among the ready", use a \`std::priority_queue<std::string, std::vector<std::string>, std::greater<std::string>>\`: with \`std::greater\`, the smallest string sits on top. Start it with every name whose count is 0.
+--- hint
+Place the top name, then lower the count of each name on its list, pushing any that reach 0. If the finished order is shorter than the number of names, some were stuck in a circle.
+--- check test | Laundry day
+build_order({{"wash", "dry"}, {"dry", "fold"}, {"buy", "wash"}}) == std::vector<std::string>{"buy", "wash", "dry", "fold"}
+--- check test | Ready names go in alphabetical order
+build_order({{"c", "z"}, {"a", "z"}, {"b", "y"}}) == std::vector<std::string>{"a", "b", "c", "y", "z"}
+--- check test | A circle has no order
+!build_order({{"a", "b"}, {"b", "c"}, {"c", "a"}}) && !build_order({{"x", "x"}}) && !build_order({{"p", "q"}, {"q", "p"}, {"r", "s"}})
+--- check test | Repeated rules, and no rules at all
+build_order({{"a", "b"}, {"a", "b"}}) == std::vector<std::string>{"a", "b"} && build_order({}) == std::vector<std::string>{}
+
++++ practice | A job queue where jobs can be canceled
+--- task
+A \`std::priority_queue\` cannot remove an element from the middle. A common trick is **lazy deletion**: leave a canceled job in the queue, remember that it is dead, and throw it away when it reaches the top. Write \`class JobQueue\`. No \`main\`.
+
+- \`bool add(const std::string& name, int priority)\`: adds a waiting job. Returns \`false\`, adding nothing, if a job with that name is already waiting.
+- \`bool cancel(const std::string& name)\`: the waiting job with that name will never run. Returns \`false\` if no job with that name is waiting.
+- \`std::optional<std::string> next()\`: removes and returns the waiting job with the highest priority; on a tie, the one added first. \`std::nullopt\` when no job is waiting.
+- \`std::size_t size() const\`: how many jobs are waiting.
+- A canceled name may be added again, with a new priority. It then counts as added at that moment, and its old, canceled entry must never come out.
+
+All four must be fast: the checks make 200,000 calls. Include \`<queue>\` and \`<unordered_map>\`.
+--- starter
+#include <cstddef>
+#include <optional>
+#include <string>
+
+class JobQueue {
+public:
+    bool add(const std::string& name, int priority) { return false; }
+    bool cancel(const std::string& name) { return false; }
+    std::optional<std::string> next() { return std::nullopt; }
+    std::size_t size() const { return 0; }
+};
+--- solution
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+
+class JobQueue {
+public:
+    bool add(const std::string& name, int priority) {
+        if (live_.contains(name)) return false;
+        long long ticket = next_ticket_++;
+        live_[name] = ticket;
+        queue_.push(Entry{priority, ticket, name});
+        return true;
+    }
+
+    bool cancel(const std::string& name) {
+        return live_.erase(name) == 1;   // its entry stays in the queue, but is now dead
+    }
+
+    std::optional<std::string> next() {
+        while (!queue_.empty()) {
+            Entry top = queue_.top();
+            queue_.pop();
+            auto it = live_.find(top.name);
+            // Alive only if this very entry is the name's current ticket.
+            if (it != live_.end() && it->second == top.ticket) {
+                live_.erase(it);
+                return top.name;
+            }
+        }
+        return std::nullopt;
+    }
+
+    std::size_t size() const { return live_.size(); }
+
+private:
+    struct Entry {
+        int priority;
+        long long ticket;   // order added: smaller is earlier
+        std::string name;
+        bool operator<(const Entry& o) const {
+            if (priority != o.priority) return priority < o.priority;
+            return ticket > o.ticket;
+        }
+    };
+
+    std::priority_queue<Entry> queue_;
+    std::unordered_map<std::string, long long> live_;   // waiting name -> its current ticket
+    long long next_ticket_ = 0;
+};
+--- hint
+Give every added job a ticket number from a counter. Keep an \`std::unordered_map\` from each **waiting** name to its current ticket. \`size()\` is then simply that map's size, and \`cancel\` just erases the name from it.
+--- hint
+In \`next\`, pop entries until you find a live one. An entry is live only if its name is in the map **and** the map's ticket for that name is this entry's ticket: an old entry for a name that was canceled and added again has an older ticket, so it is thrown away.
+--- check test | Highest priority first, ties in the order added
+[] { JobQueue q; q.add("a", 1); q.add("b", 5); q.add("c", 5); auto x = q.next(); auto y = q.next(); auto z = q.next(); return x == "b" && y == "c" && z == "a" && !q.next(); }()
+--- check test | Canceled jobs never come out
+[] { JobQueue q; q.add("a", 3); q.add("b", 9); q.add("c", 1); bool ok = q.cancel("b"); bool size_ok = q.size() == 2; auto x = q.next(); auto y = q.next(); return ok && size_ok && x == "a" && y == "c" && !q.next() && q.size() == 0; }()
+--- check test | Refusals: a name twice, unknown or canceled twice
+[] { JobQueue q; bool a = q.add("x", 1); bool again = q.add("x", 7); bool unknown = q.cancel("y"); bool first = q.cancel("x"); bool twice = q.cancel("x"); return a && !again && !unknown && first && !twice && q.size() == 0 && !q.next(); }()
+--- check test | Added again after a cancel: the old entry is dead
+[] { JobQueue q; q.add("x", 9); q.add("y", 5); q.cancel("x"); q.add("x", 1); auto a = q.next(); auto b = q.next(); auto c = q.next(); return a == "y" && b == "x" && !c; }()
+--- check test | A job that ran can be added again
+[] { JobQueue q; q.add("x", 2); q.next(); bool again = q.add("x", 4); return again && q.size() == 1 && q.next() == "x"; }()
+--- check test | 200,000 calls
+[] { JobQueue q; for (int i = 0; i < 100000; ++i) q.add("j" + std::to_string(i), i % 100); for (int i = 0; i < 100000; i += 2) q.cancel("j" + std::to_string(i)); if (q.size() != 50000) return false; for (int p = 99; p >= 1; p -= 2) for (int i = p; i < 100000; i += 100) { auto n = q.next(); if (!n || *n != "j" + std::to_string(i)) return false; } return !q.next(); }()
+
++++ practice | Debug: the printer that prints the wrong job
+--- task
+**Bug report:** "The office printer prints the **least** urgent job first. And when two jobs are equally urgent, it prints the newest one first instead of the one sent first."
+
+The starter's \`PrintQueue\` keeps its jobs in a \`std::priority_queue\`. \`take()\` should return the job with the highest priority, and on a tie the one sent first. Both bugs are in \`Job::operator<\`. Find them and fix them. No \`main\`.
+--- starter
+#include <optional>
+#include <queue>
+#include <string>
+
+class PrintQueue {
+public:
+    void send(const std::string& name, int priority) { jobs_.push(Job{priority, sent_++, name}); }
+
+    std::optional<std::string> take() {
+        if (jobs_.empty()) return std::nullopt;
+        std::string name = jobs_.top().name;
+        jobs_.pop();
+        return name;
+    }
+
+private:
+    struct Job {
+        int priority;
+        long long order;   // 0 for the first job sent, then 1, 2, ...
+        std::string name;
+        bool operator<(const Job& o) const {
+            if (priority != o.priority) return priority > o.priority;
+            return order < o.order;
+        }
+    };
+
+    std::priority_queue<Job> jobs_;
+    long long sent_ = 0;
+};
+--- solution
+#include <optional>
+#include <queue>
+#include <string>
+
+class PrintQueue {
+public:
+    void send(const std::string& name, int priority) { jobs_.push(Job{priority, sent_++, name}); }
+
+    std::optional<std::string> take() {
+        if (jobs_.empty()) return std::nullopt;
+        std::string name = jobs_.top().name;
+        jobs_.pop();
+        return name;
+    }
+
+private:
+    struct Job {
+        int priority;
+        long long order;   // 0 for the first job sent, then 1, 2, ...
+        std::string name;
+        // a < b means b comes out first: b is more urgent, or as urgent and sent earlier.
+        bool operator<(const Job& o) const {
+            if (priority != o.priority) return priority < o.priority;
+            return order > o.order;
+        }
+    };
+
+    std::priority_queue<Job> jobs_;
+    long long sent_ = 0;
+};
+--- hint
+Remember the rule from the lesson: \`a < b\` being true means \`b\` comes out **before** \`a\`. Read the first comparison with that in mind: which job does it make the "largest"?
+--- hint
+It is the opposite of a sort comparator. For the tie, the job sent first, with the smaller \`order\`, must be the larger one, so \`a < b\` should be true when \`a\` was sent later.
+--- check test | The most urgent job first
+[] { PrintQueue q; q.send("memo", 1); q.send("contract", 9); q.send("poster", 4); auto a = q.take(); auto b = q.take(); auto c = q.take(); return a == "contract" && b == "poster" && c == "memo"; }()
+--- check test | Equal urgency: the one sent first
+[] { PrintQueue q; q.send("a", 3); q.send("b", 3); q.send("c", 3); auto x = q.take(); auto y = q.take(); auto z = q.take(); return x == "a" && y == "b" && z == "c"; }()
+--- check test | Mixed, and an empty queue
+[] { PrintQueue q; q.send("x", 2); q.send("y", 5); q.send("z", 2); q.send("w", 5); auto a = q.take(); auto b = q.take(); auto c = q.take(); auto d = q.take(); return a == "y" && b == "w" && c == "x" && d == "z" && !q.take(); }()
+
++++ practice | Stretch: how long will the project take?
+--- task
+A project is a list of steps. Each step takes some days and can only start when every step it waits for has finished. There are enough people to work on any number of steps at once, so steps that do not wait for each other run at the same time. The project's length is the day its last step finishes: the longest chain of waiting, called the **critical path**.
+
+\`\`\`cpp
+struct Step {
+    std::string name;
+    long long days;                   // 0 or more
+    std::vector<std::string> after;   // the steps it waits for
+};
+\`\`\`
+
+Write \`std::optional<long long> project_length(const std::vector<Step>& steps)\`. No \`main\`.
+
+- A step starts on the day the last of its \`after\` steps finishes (day 0 if it waits for nothing), and finishes \`days\` later.
+- \`after\` may name steps anywhere in the list, before or after it.
+- Return \`std::nullopt\` if two steps share a name, if an \`after\` names a step that does not exist, or if steps wait for each other in a circle.
+- An empty list takes 0 days.
+- It must be fast: the checks use a chain of 100,000 steps.
+
+For \`A\` (3 days), \`B\` (2 days, after A), \`C\` (4 days, after A) and \`D\` (1 day, after B and C): A finishes on day 3, B on day 5, C on day 7, and D can only start on day 7, so the answer is 8. Include \`<queue>\` and \`<unordered_map>\`.
+--- starter
+#include <optional>
+#include <string>
+#include <vector>
+
+struct Step {
+    std::string name;
+    long long days;                   // 0 or more
+    std::vector<std::string> after;   // the steps it waits for
+};
+
+std::optional<long long> project_length(const std::vector<Step>& steps) {
+    long long total = 0;
+    for (const Step& s : steps) total += s.days;
+    return total;
+}
+--- solution
+#include <cstddef>
+#include <optional>
+#include <queue>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+struct Step {
+    std::string name;
+    long long days;                   // 0 or more
+    std::vector<std::string> after;   // the steps it waits for
+};
+
+std::optional<long long> project_length(const std::vector<Step>& steps) {
+    const std::size_t n = steps.size();
+    std::unordered_map<std::string, std::size_t> index;
+    for (std::size_t i = 0; i < n; ++i)
+        if (!index.emplace(steps[i].name, i).second) return std::nullopt;   // a name used twice
+
+    std::vector<int> waiting(n, 0);                       // unfinished steps each one waits for
+    std::vector<std::vector<std::size_t>> dependents(n);  // steps that wait for each one
+    for (std::size_t i = 0; i < n; ++i) {
+        for (const auto& name : steps[i].after) {
+            auto it = index.find(name);
+            if (it == index.end()) return std::nullopt;
+            dependents[it->second].push_back(i);
+            ++waiting[i];
+        }
+    }
+
+    std::vector<long long> start(n, 0);   // the earliest day each step can start
+    std::queue<std::size_t> ready;
+    for (std::size_t i = 0; i < n; ++i)
+        if (waiting[i] == 0) ready.push(i);
+    long long length = 0;
+    std::size_t finished = 0;
+    while (!ready.empty()) {
+        std::size_t i = ready.front();
+        ready.pop();
+        ++finished;
+        long long done = start[i] + steps[i].days;
+        if (done > length) length = done;
+        for (std::size_t d : dependents[i]) {
+            if (done > start[d]) start[d] = done;
+            if (--waiting[d] == 0) ready.push(d);
+        }
+    }
+    if (finished != n) return std::nullopt;   // some steps never became ready: a circle
+    return length;
+}
+--- hint
+This is Kahn's algorithm again, without priorities: any ready step may go next, so a plain \`std::queue\` is enough. Number the steps by their position and map each name to its number, refusing a name seen twice or an \`after\` that names nothing.
+--- hint
+Keep, for each step, the earliest day it can start, beginning at 0. When a step finishes on day \`start + days\`, push that day forward into each of its dependents: a dependent's start is the **latest** finish among the steps it waits for.
+--- hint
+The answer is the latest finish of any step. If fewer steps finish than there are in the list, the rest were stuck waiting in a circle.
+--- check test | The example: 8 days
+[] { std::vector<Step> s{{"A", 3, {}}, {"B", 2, {"A"}}, {"C", 4, {"A"}}, {"D", 1, {"B", "C"}}}; return project_length(s) == 8; }()
+--- check test | Independent steps run at the same time
+[] { std::vector<Step> s{{"X", 5, {}}, {"Y", 7, {}}, {"Z", 0, {}}}; return project_length(s) == 7 && project_length({}) == 0; }()
+--- check test | Waiting for a step listed later
+[] { std::vector<Step> s{{"ship", 1, {"test"}}, {"test", 2, {"build"}}, {"build", 3, {}}}; return project_length(s) == 6; }()
+--- check test | Circles, unknown steps and repeated names
+[] { std::vector<Step> circle{{"a", 1, {"b"}}, {"b", 1, {"a"}}}; std::vector<Step> unknown{{"a", 1, {"nope"}}}; std::vector<Step> twice{{"a", 1, {}}, {"a", 2, {}}}; std::vector<Step> self{{"a", 1, {"a"}}}; return !project_length(circle) && !project_length(unknown) && !project_length(twice) && !project_length(self); }()
+--- check test | A chain of 100,000 steps
+[] { std::vector<Step> s; for (int i = 0; i < 100000; ++i) s.push_back(Step{"s" + std::to_string(i), 2, i == 0 ? std::vector<std::string>{} : std::vector<std::string>{"s" + std::to_string(i - 1)}}); return project_length(s) == 200000; }()
+
+=== cppp-14 | Capstone: a JSON value type
+--- teach
+Last lesson, you designed a scheduler from nothing but a specification. This second capstone works the same way: a spec, an almost empty file, and the checks. This time you design a **type**: one C++ class that can hold any piece of JSON data.
+
+Use the same four steps as before: read the spec twice, work examples by hand, pick the tools from what the type must do, and build in stages.
+
+### Step 1: what JSON is
+
+Picture a paper form: a name box, a date box, a list of items, a tick box. Every program that sends data somewhere needs a form like that, written as plain text so any other program can read it.
+
+**[[JSON|json-history]]** is the most common such format. A JSON **value** is exactly one of six kinds:
+
+| kind | written as | example |
+| --- | --- | --- |
+| null | \`null\` | "no value here" |
+| boolean | \`true\` or \`false\` | \`true\` |
+| number | digits, maybe a sign, point or exponent | \`-3.5\` |
+| string | text in double quotes | \`"Kiruna"\` |
+| array | values in \`[ ]\`, separated by commas | \`[-3.5,-1,0.25]\` |
+| object | \`"key":value\` pairs in \`{ }\`, separated by commas | \`{"ok":true}\` |
+
+In an object, each \`"key":value\` pair is called a **member**, and the key is always a string. Here is one reading from a weather station, as JSON:
+
+\`\`\`
+{"note":null,"ok":true,"station":"Kiruna","temps":[-3.5,-1,0.25]}
+\`\`\`
+
+Arrays and objects hold values, and those values can be arrays and objects again, **nested** to any depth: an array of objects, each holding an array, and so on.
+
+The spec asks for a class \`Json\` that can hold **any** one JSON value, can be built up in code, and can print itself as compact JSON text, with no spaces. Printing a value as text is often called **dumping** it, hence the function name \`dump\`.
+
+### Step 2: examples by hand
+
+Before designing, decide what some small cases must print. Take a document built like this, in words: an empty object; set its member \`"id"\` to the number 12; set its member \`"tags"\` to an empty array; append the string \`"red"\` and the value \`false\` to that array.
+
+It must dump as:
+
+\`\`\`
+{"id":12,"tags":["red",false]}
+\`\`\`
+
+Notice three things you would not spot without writing it out: the number 12 has no decimal point; the keys come out in alphabetical order; and there is not a single space. Work two or three more, including an empty array, \`[]\`, and an object inside an array.
+
+### Tool 1: one type, six shapes
+
+You have met two ways to say "one of several kinds": a class hierarchy with virtual functions, and \`std::variant\` (the \`std::variant\` lesson). The six JSON kinds are fixed forever: nobody will ever add a seventh. That is a **closed** set, the textbook case for a variant. A variant member holding one of six types is the heart of this design.
+
+Five of the six kinds map onto types you know: \`bool\`, \`double\` (JSON has only one number type, so a \`double\` holds them all), \`std::string\`, and, for arrays and objects, a container. The sixth, null, needs a type whose only job is "nothing".
+
+C++ has one: **\`std::nullptr_t\`**, from \`<cstddef>\`, the [[type of nullptr|nullptr-type]]. It has exactly one value, \`nullptr\`, so it can mean nothing else.
+
+A variant made with the default constructor holds the **first** type in its list, made fresh. So the order you list the types in decides what an empty variant holds:
+
+\`\`\`cpp
+std::variant<std::nullptr_t, int> slot;   // holds nullptr: the first type
+std::variant<int, std::nullptr_t> other;  // holds the int 0
+\`\`\`
+
+### Tool 2: a type that contains itself
+
+An array is a list of JSON values. So inside the class \`Json\`, you want a \`std::vector<Json>\`, a list of the very type you are still writing.
+
+Picture folders on a computer. A folder can hold other folders, which hold more folders. The idea of "folder" contains itself. C++ allows the same:
+
+\`\`\`cpp
+struct Folder {
+    std::string name;
+    std::vector<Folder> inside;   // folders inside this folder
+};
+\`\`\`
+
+This works, even though \`Folder\` is not finished when the compiler reaches that line, because a \`std::vector\` keeps its elements [[elsewhere, on the heap|recursive-type]]. The \`Folder\` itself holds only a small handle, so its size does not depend on what is inside. The same is true of a \`std::map\` whose values are \`Folder\`.
+
+You can also give those long container types short names inside the class with \`using\`, as in the \`std::variant\` lesson: \`using Pile = std::vector<Folder>;\`.
+
+### Tool 3: behaving like a value
+
+Copy a JSON document and change the copy. The original must not change. Types that copy their whole contents like this are said to have **value semantics**: they behave like an \`int\`, not like a shared note on a fridge.
+
+You get this for free. In the rule of zero lesson, you saw that a class built only from members that manage themselves (strings, vectors, maps, variants) needs no copy code at all: the compiler's copy [[copies every member deeply|deep-copies]]. Write no destructor and no copy constructor, and copies are independent.
+
+\`\`\`cpp
+Folder a{"photos", {}};
+a.inside.push_back(Folder{"2024", {}});
+Folder b = a;                // a full, separate copy
+b.inside[0].name = "2025";   // a.inside[0].name is still "2024"
+\`\`\`
+
+### Tool 4: constructors that feel natural
+
+\`Json(3)\`, \`Json(2.5)\`, \`Json(true)\` and \`Json("hi")\` should each do the obvious thing. That takes one constructor per kind of argument, plus some care, because C++ quietly converts arguments.
+
+**The string literal trap.** You met this in the overloading lesson. A string literal such as \`"hi"\` is a \`const char*\`, not a \`std::string\`. Turning a pointer into a \`bool\` is a *built-in* conversion, which beats the class conversion to \`std::string\`:
+
+\`\`\`cpp
+struct Label {
+    Label(bool b);
+    Label(std::string s);
+};
+Label l("hi");   // calls Label(bool)! The text is lost.
+\`\`\`
+
+The cure is a constructor that takes \`const char*\` exactly: an exact match wins.
+
+**The int trap.** With constructors for \`bool\` and \`double\` but none for \`int\`, \`Json(3)\` does not compile: turning an \`int\` into a \`double\` and turning it into a \`bool\` count as [[equally good conversions|int-ambiguous]], so the call is ambiguous. A constructor taking \`int\` settles it, and can store the number as a \`double\`.
+
+**The nullptr trap.** Without a constructor for \`std::nullptr_t\`, \`nullptr\` would happily go to the \`const char*\` one, and building a \`std::string\` from a null pointer is undefined behavior.
+
+**Named constructors.** For an empty array and an empty object, use static member functions, as with \`Matrix::identity\` in the matrix project. A static function can make a fresh object, set its variant to the right kind, and return it.
+
+### Tool 5: asking and changing
+
+The questions (\`is_null\`, \`size\` and so on) use the variant tools from the \`std::variant\` lesson: \`std::holds_alternative<T>(v)\` asks "are you holding a T?", and \`std::get_if<T>(&v)\` gives a pointer to the T, or \`nullptr\`.
+
+To **switch** a variant to another kind, assign a value of that kind to it. With \`using Pile = std::vector<Folder>;\` and a variant member \`v\`, \`v = Pile{};\` makes \`v\` hold an empty list, whatever it held before.
+
+**Returning \`*this\` to chain calls.** In the rule of three lesson, \`operator=\` returned \`*this\`, the object itself, by reference, so \`a = b = c\` works. Any member function can do the same, so calls can be chained:
+
+\`\`\`cpp
+struct Recipe {
+    std::vector<std::string> steps;
+    Recipe& then(std::string step) {
+        steps.push_back(std::move(step));
+        return *this;              // the same Recipe, not a copy
+    }
+};
+Recipe r;
+r.then("boil").then("stir").then("serve");
+\`\`\`
+
+**\`operator[]\` with a string key.** A \`std::map\`'s \`[]\` finds the value for a key, or inserts a default one if the key is missing, and returns a reference you can assign through (the \`std::map\` lesson). Your \`Json\` can pass the job straight on to the map inside it, and a missing key then becomes a null value.
+
+But what if the value is a number, or an array? There is no map to pass the job to, and \`std::get_if\` gives back \`nullptr\`. Following that pointer would be undefined behavior. The spec's answer is a spare: a \`static\` local \`Json\`, which lives for the whole program, set back to null and returned whenever \`[]\` is used on the wrong kind. The caller gets a harmless null to look at or write into, and the real value never changes.
+
+**Looking without inserting.** Because \`[]\` inserts, a \`const\` object cannot use it. The spec's \`get\` answers "is there such a member?" without changing anything: it returns a **pointer** to the member, or \`nullptr\` if there is none. A pointer can say "nothing", which a reference cannot. \`find\` on a map returns an iterator, and \`&it->second\` is the address of the value it points to.
+
+### Tool 6: printing, one kind at a time
+
+Printing is a **recursive walk**: every kind knows how to print itself, and an array or object prints its children by asking each child to print itself. It is the same shape as the recursion lesson: the function calls itself on smaller pieces until it reaches the plain values.
+
+\`std::visit\` with one generic lambda and \`if constexpr\` (the \`std::variant\` lesson) gives you one branch per kind, each compiled only for its own type.
+
+A handy design is a private helper that **appends** to one string passed by reference, rather than returning a new string from every call. Returning strings means building and copying a new string at every level of nesting; appending to one shared string does not.
+
+**Commas between, not after.** Items in an array are separated by commas, with none before the first or after the last. One way: add a separator before every item except the first.
+
+\`\`\`cpp
+std::vector<int> scores = {7, 4, 9};
+std::string text;
+for (std::size_t i = 0; i < scores.size(); ++i) {
+    if (i > 0) text += ';';
+    text += std::to_string(scores[i]);
+}
+// text is "7;4;9"
+\`\`\`
+
+A \`std::map\` visits its keys in sorted order, so an object stored in a map dumps its keys sorted with no extra work.
+
+### Tool 7: escaping strings
+
+A JSON string sits between double quotes. So what if the text itself contains a \`"\`? It would end the string too early. JSON writes such characters with a backslash in front, an **escape**:
+
+| character in the text | written in JSON as |
+| --- | --- |
+| \`"\` | \`\\"\` |
+| \`\\\` | \`\\\\\` |
+| a newline | \`\\n\` |
+| a tab | \`\\t\` |
+
+The spec asks for exactly these four. The tricky part is writing them in C++ source, because C++ string literals use backslash escapes too. Each backslash you want in the *output* must be written \`\\\\\` in the *source*. For example, to append the two characters backslash and \`r\`:
+
+\`\`\`cpp
+std::string out;
+out += "\\\\r";    // appends 2 characters: a backslash, then r
+\`\`\`
+
+And in a \`char\` literal, a single backslash is \`'\\\\'\`, a newline \`'\\n'\` and a double quote \`'"'\`. A \`switch\` on each character (the \`enum class\` lesson) is a tidy way to pick the escape.
+
+**Watch out:** count the characters. \`"\\\\\\""\` in C++ source is *two* characters, a backslash and a quote. Real JSON also requires escapes for [[other control characters|escape-rules]], but this spec asks only for these four.
+
+### Tool 8: printing numbers
+
+JSON has one number type, and you store a \`double\`. But \`3\` must print as \`3\`, not \`3.000000\` and not \`3.0\`. The spec's rule has two cases.
+
+**Whole numbers, smaller than 10¹⁵ in size**, print as integers. Three tools help:
+
+- **\`std::floor(x)\`**, from \`<cmath>\`, rounds down to a whole number: \`std::floor(2.7)\` is 2, \`std::floor(-2.5)\` is -3. So \`std::floor(x) == x\` is true exactly when \`x\` is whole.
+- \`std::abs(x)\` gives the size without the sign (the lambdas lesson).
+- \`1e15\` is how C++ writes 10¹⁵: "1 times ten to the 15". Then \`static_cast<long long>\` turns the double into a whole-number type, and \`std::to_string\` makes it text.
+
+**Everything else** prints the way a \`std::ostringstream\` prints it after \`std::setprecision(15)\` (the ostringstream lesson). Without \`std::fixed\`, \`setprecision(15)\` means "at most [[15 significant digits|fifteen-digits]]", and very large or small numbers switch to e-notation on their own:
+
+\`\`\`cpp
+std::ostringstream o;
+o << std::setprecision(15) << 123456.789;   // "123456.789"
+\`\`\`
+
+and \`1e20\` comes out as \`1e+20\`.
+
+### Step 4: plan, then build in stages
+
+Write down, before any code:
+
+1. The one data member, and the six types it can hold, in the order that makes a default \`Json\` null.
+2. Each constructor, and which kind it stores.
+3. For each function in the spec, which variant tool it needs.
+4. For \`dump\`, what each of the six kinds prints, with a hand example.
+
+Then build in stages: constructors and the \`is_\` questions; \`dump\` for the four plain kinds; then arrays and objects. Run the checks after each stage.
+
+::: context json-history Where JSON came from
+JSON stands for JavaScript Object Notation: it is the way JavaScript writes objects and arrays in its own code. Douglas Crockford described it as a data format in the early 2000s and put up json.org. It was later standardized as ECMA-404 in 2013 and as RFC 8259 in 2017. Web services, configuration files and logs use it everywhere, because it is plain text and easy to read. JSON has no way to write infinity or "not a number", and it does not promise any order for an object's keys, which is why sorting them makes output the same every time.
+:::
+
+::: context nullptr-type A type with a single value
+\`bool\` has two values, \`true\` and \`false\`. \`std::nullptr_t\` has only one: \`nullptr\`. That sounds useless, but it makes it the perfect type for "no value": there is nothing to store, only the fact of which kind it is. \`nullptr\` itself arrived in C++11. Before that, C++ code used \`0\` or \`NULL\` for "no pointer", which were really whole numbers, and could accidentally pick an \`int\` overload. \`nullptr\` has its own type so that overloads can tell it apart from numbers.
+:::
+
+::: context recursive-type Why a vector of itself is allowed
+To lay out a class in memory, the compiler must know the size of every member. \`Folder\` inside \`Folder\` directly would need infinite room. But a \`std::vector<Folder>\` is usually only three pointers wide, the same whatever it holds, because the elements live in a separate block on the heap.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="20" width="130" height="50" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="85" y="40" font-size="12" text-anchor="middle" fill="#1f2a44">Folder "photos"</text>
+  <text x="85" y="58" font-size="11" text-anchor="middle" fill="#1f2a44">name + small handle</text>
+  <line x1="150" y1="45" x2="202" y2="45" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="210,45 200,40 200,50" fill="#1f2a44"/>
+  <rect x="210" y="20" width="130" height="50" rx="4" fill="#ffffff" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="275" y="40" font-size="12" text-anchor="middle" fill="#1f2a44">heap block</text>
+  <text x="275" y="58" font-size="11" text-anchor="middle" fill="#1f2a44">Folder "2024", ...</text>
+  <text x="180" y="100" font-size="11" text-anchor="middle" fill="#6c7a93">the handle is the same size, however many folders are inside</text>
+  <text x="180" y="125" font-size="11" text-anchor="middle" fill="#b4232c">so the compiler can size Folder before it is finished</text>
+</svg>
+\`\`\`
+
+Since C++17, the standard officially allows \`std::vector\` of a type that is not finished yet. For \`std::map\` it is not written into the standard, but GCC, Clang and Microsoft's library all support it, and the popular nlohmann/json library stores its objects exactly this way.
+:::
+
+::: context deep-copies What "deep" means here
+Copying a \`std::vector\` makes a new heap block and copies every element into it. If each element is itself a \`Json\` holding a vector, copying that element copies its vector too, all the way down. That is a **deep** copy. The opposite, a **shallow** copy, would copy only the handle, so two documents would share one block, and a change to one would show up in the other. The rule of zero gives you deep copies because every member already copies itself deeply.
+:::
+
+::: context int-ambiguous Why int to double is no better than int to bool
+C++ ranks conversions. An exact match is best. A **promotion** (such as \`char\` to \`int\`, or \`float\` to \`double\`) comes next. Every other built-in change, including \`int\` to \`double\` and \`int\` to \`bool\`, is a plain **conversion**, and all conversions rank the same. Two constructors that each need one conversion tie, and the compiler refuses to guess: "call is ambiguous". A constructor taking exactly \`int\` is an exact match, so it wins.
+:::
+
+::: context escape-rules The full rules for JSON strings
+Real JSON forbids every control character (the invisible codes 0 to 31, which include newline and tab) inside a string, unless escaped. Besides \`\\n\` and \`\\t\` there are \`\\r\` (carriage return), \`\\b\` (backspace), \`\\f\` (form feed) and \`\\u\` followed by four hex digits for any character at all, such as \`\\u0001\`. A forward slash may be written \`\\/\`. Libraries that produce JSON for real use handle all of these; this capstone keeps to four so you can concentrate on the design.
+:::
+
+::: context fifteen-digits Why 15 digits
+A \`double\` stores about 15 to 17 significant decimal digits. Any decimal number with at most 15 significant digits survives being stored in a \`double\` and printed back unchanged, so \`setprecision(15)\` prints \`0.1\` as \`0.1\`. Ask for 17 and you see what is really stored: \`0.10000000000000001\`. The 10¹⁵ limit for whole numbers has a similar reason: above 2⁵³, about 9 × 10¹⁵, a \`double\` can no longer hold every whole number exactly, so 10¹⁵ keeps safely below that edge.
+:::
+--- task
+Write \`class Json\` to this specification. No \`main\`.
+
+**Making values**
+
+- \`Json()\` and \`Json(std::nullptr_t)\` make null.
+- \`Json(bool)\`, \`Json(int)\`, \`Json(double)\`, \`Json(const char*)\` and \`Json(std::string)\` make a boolean, a number (both \`int\` and \`double\` are numbers), and a string (both text forms are strings).
+- \`static Json array()\` and \`static Json object()\` make an empty array and an empty object.
+
+**Asking**
+
+- \`is_null()\`, \`is_bool()\`, \`is_number()\`, \`is_string()\`, \`is_array()\`, \`is_object()\`, each \`const\` and returning \`bool\`.
+- \`std::size_t size() const\`: the number of elements of an array or members of an object, and 0 for anything else.
+
+**Changing**
+
+- \`Json& push_back(Json v)\` appends \`v\` to an array. A null value becomes an empty array first. Any other kind is left unchanged. It returns \`*this\`, so calls chain.
+- \`Json& operator[](const std::string& key)\` returns the member with that key, inserting a null member if it is missing. A null value becomes an empty object first. Any other kind (a boolean, number, string or array) is left unchanged, and the call returns a reference to a spare null value that belongs to no document. The spare is reset to null on every such call, so writing through it changes nothing.
+- \`const Json* get(const std::string& key) const\` returns a pointer to the member with that key, or \`nullptr\` if this is not an object or has no such key. It never inserts.
+
+**Printing**
+
+\`std::string dump() const\` returns compact JSON with no spaces:
+
+- \`null\`, \`true\`, \`false\`;
+- a number that is whole and smaller than 10¹⁵ in size as an integer (\`3\`, \`-7\`); any other number as a \`std::ostringstream\` prints it after \`std::setprecision(15)\` (\`-2.5\`, \`0.1\`, \`1e+20\`);
+- a string in double quotes, with \`"\`, \`\\\`, newline and tab written as \`\\"\`, \`\\\\\`, \`\\n\` and \`\\t\`;
+- an array as \`[a,b]\` and an object as \`{"k":v}\`, with the keys in sorted order.
+
+Copies must be independent: changing a copy never changes the original.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+// Capstone: design and write class Json to the specification.
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+class Json {
+public:
+    using Array = std::vector<Json>;
+    using Object = std::map<std::string, Json>;
+
+    Json() = default;
+    Json(std::nullptr_t) {}
+    Json(bool b) : value_(b) {}
+    Json(int n) : value_(static_cast<double>(n)) {}
+    Json(double d) : value_(d) {}
+    Json(const char* s) : value_(std::string(s)) {}
+    Json(std::string s) : value_(std::move(s)) {}
+
+    static Json array() {
+        Json j;
+        j.value_ = Array{};
+        return j;
+    }
+
+    static Json object() {
+        Json j;
+        j.value_ = Object{};
+        return j;
+    }
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_bool() const { return std::holds_alternative<bool>(value_); }
+    bool is_number() const { return std::holds_alternative<double>(value_); }
+    bool is_string() const { return std::holds_alternative<std::string>(value_); }
+    bool is_array() const { return std::holds_alternative<Array>(value_); }
+    bool is_object() const { return std::holds_alternative<Object>(value_); }
+
+    std::size_t size() const {
+        if (const auto* a = std::get_if<Array>(&value_)) return a->size();
+        if (const auto* o = std::get_if<Object>(&value_)) return o->size();
+        return 0;
+    }
+
+    Json& push_back(Json v) {
+        if (is_null()) value_ = Array{};
+        if (auto* a = std::get_if<Array>(&value_)) a->push_back(std::move(v));
+        return *this;
+    }
+
+    Json& operator[](const std::string& key) {
+        if (is_null()) value_ = Object{};
+        if (auto* o = std::get_if<Object>(&value_)) return (*o)[key];
+        static Json spare;          // any other kind: a throwaway null, part of no document
+        spare = Json();
+        return spare;
+    }
+
+    const Json* get(const std::string& key) const {
+        const auto* o = std::get_if<Object>(&value_);
+        if (!o) return nullptr;
+        auto it = o->find(key);
+        return it == o->end() ? nullptr : &it->second;
+    }
+
+    std::string dump() const {
+        std::string out;
+        write(out);
+        return out;
+    }
+
+private:
+    static std::string number(double d) {
+        if (std::floor(d) == d && std::abs(d) < 1e15) return std::to_string(static_cast<long long>(d));
+        std::ostringstream o;
+        o << std::setprecision(15) << d;
+        return o.str();
+    }
+
+    static void quote(std::string& out, const std::string& s) {
+        out += '"';
+        for (char c : s) {
+            switch (c) {
+                case '"': out += "\\\\\\""; break;
+                case '\\\\': out += "\\\\\\\\"; break;
+                case '\\n': out += "\\\\n"; break;
+                case '\\t': out += "\\\\t"; break;
+                default: out += c;
+            }
+        }
+        out += '"';
+    }
+
+    void write(std::string& out) const {
+        std::visit([&out](const auto& v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                out += "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                out += v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                out += number(v);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                quote(out, v);
+            } else if constexpr (std::is_same_v<T, Array>) {
+                out += '[';
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    if (i > 0) out += ',';
+                    v[i].write(out);
+                }
+                out += ']';
+            } else {
+                out += '{';
+                bool first = true;
+                for (const auto& [key, item] : v) {
+                    if (!first) out += ',';
+                    first = false;
+                    quote(out, key);
+                    out += ':';
+                    item.write(out);
+                }
+                out += '}';
+            }
+        }, value_);
+    }
+
+    std::variant<std::nullptr_t, bool, double, std::string, Array, Object> value_;
+};
+--- hint
+One member does it: a \`std::variant\` of \`std::nullptr_t\`, \`bool\`, \`double\`, \`std::string\`, \`std::vector<Json>\` and \`std::map<std::string, Json>\`, with \`std::nullptr_t\` first so a default \`Json\` is null. The rule of zero then gives you correct copies.
+--- hint
+The container functions check what the variant holds: if it holds \`std::nullptr_t\`, assign it an empty vector (or map) first, then use \`std::get_if\` to reach the container. For \`dump\`, write a private recursive \`write(std::string& out) const\` that uses \`std::visit\` with a generic lambda and \`if constexpr\` on the held type.
+--- hint
+For numbers: when \`std::floor(d) == d && std::abs(d) < 1e15\`, return \`std::to_string(static_cast<long long>(d))\`; otherwise write \`d\` into a \`std::ostringstream\` after \`std::setprecision(15)\` and return its text. For strings, loop over the characters with a \`switch\` that appends the escape for \`'"'\`, \`'\\\\'\`, \`'\\n'\` and \`'\\t'\`, and the character itself otherwise.
+--- check test | Scalars dump as JSON
+Json().dump() == "null" && Json(nullptr).dump() == "null" && Json(true).dump() == "true" && Json(false).dump() == "false" && Json(3).dump() == "3" && Json(-2.5).dump() == "-2.5" && Json(0.1).dump() == "0.1" && Json(1e20).dump() == "1e+20"
+--- check test | A string literal is a string, not a bool
+Json("hi").is_string() && Json("hi").dump() == "\\"hi\\"" && Json(std::string("x")).is_string() && Json(3).is_number() && Json(2.5).is_number() && Json(true).is_bool()
+--- check case | Strings are escaped
+Json("say \\"hi\\"\\n\\\\\\t").dump()
+=> "\\"say \\\\\\"hi\\\\\\"\\\\n\\\\\\\\\\\\t\\""
+--- check case | Building a nested document
+[] { Json doc = Json::object(); doc["name"] = "Ada"; doc["age"] = 36; doc["langs"] = Json::array(); doc["langs"].push_back("C++").push_back(true).push_back(nullptr); return doc.dump(); }()
+=> "{\\"age\\":36,\\"langs\\":[\\"C++\\",true,null],\\"name\\":\\"Ada\\"}"
+--- check test | Empty containers, and nesting them
+Json::array().dump() == "[]" && Json::object().dump() == "{}" && Json::array().push_back(Json::array()).push_back(Json::object()).dump() == "[[],{}]"
+--- check test | Null becomes an array or object on first use
+[] { Json a; a.push_back(1); a.push_back(2); Json o; o["x"] = 1.5; return a.is_array() && a.size() == 2 && a.dump() == "[1,2]" && o.is_object() && o.dump() == "{\\"x\\":1.5}"; }()
+--- check test | Copies are independent
+[] { Json a = Json::object(); a["list"] = Json::array(); Json b = a; b["list"].push_back(1); b["new"] = "yes"; return a.dump() == "{\\"list\\":[]}" && b.dump() == "{\\"list\\":[1],\\"new\\":\\"yes\\"}"; }()
+--- check test | get looks without inserting
+[] { Json doc = Json::object(); doc["k"] = 7; const Json& c = doc; const Json* k = c.get("k"); return k && k->dump() == "7" && c.get("missing") == nullptr && doc.size() == 1 && Json(5).get("k") == nullptr && Json(5).size() == 0; }()
+--- check test | A big array dumps quickly
+[] { Json a = Json::array(); for (int i = 0; i < 20000; ++i) a.push_back(i % 10); std::string d = a.dump(); return a.size() == 20000 && d.size() == 2 + 20000 + 19999 && d.substr(0, 8) == "[0,1,2,3"; }()
+--- check test | Indexing a value that is not an object changes nothing
+[] { Json n(5); n["k"] = 1; Json a = Json::array(); a.push_back(2); Json& r = a["k"]; bool fresh = r.is_null(); r = "lost"; return n.dump() == "5" && a.dump() == "[2]" && fresh && a["again"].is_null() && Json(true)["x"].is_null(); }()
+
++++ practice | A spreadsheet cell
+--- task
+A spreadsheet cell is empty, holds a number, or holds text: a closed set of three kinds. Write \`class Cell\`, with one \`std::variant\` member. No \`main\`.
+
+- \`Cell()\` and \`Cell(std::nullptr_t)\` make an empty cell.
+- \`Cell(int)\` and \`Cell(double)\` make a number; \`Cell(const char*)\` and \`Cell(std::string)\` make text. \`Cell("hi")\` must be text.
+- \`bool is_empty() const\`, \`bool is_number() const\`, \`bool is_text() const\`.
+- \`std::string show() const\`: \`""\` for an empty cell, the text itself for text, and for a number the lesson's rule: a whole number smaller than 10¹⁵ in size as an integer (\`3\`, \`-7\`), anything else as a \`std::ostringstream\` prints it after \`std::setprecision(15)\` (\`2.5\`).
+- \`double number_or(double fallback) const\`: the number, or \`fallback\` if the cell does not hold one.
+
+Include \`<cmath>\`, \`<cstddef>\`, \`<iomanip>\`, \`<sstream>\` and \`<variant>\`.
+--- starter
+#include <string>
+
+class Cell {
+public:
+    Cell() {}
+    Cell(bool b) {}
+    Cell(std::string s) {}
+
+    bool is_empty() const { return true; }
+    bool is_number() const { return false; }
+    bool is_text() const { return false; }
+    std::string show() const { return ""; }
+};
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <variant>
+
+class Cell {
+public:
+    Cell() = default;
+    Cell(std::nullptr_t) {}
+    Cell(int n) : value_(static_cast<double>(n)) {}
+    Cell(double d) : value_(d) {}
+    Cell(const char* s) : value_(std::string(s)) {}   // an exact match beats the pointer-to-bool trap
+    Cell(std::string s) : value_(std::move(s)) {}
+
+    bool is_empty() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_number() const { return std::holds_alternative<double>(value_); }
+    bool is_text() const { return std::holds_alternative<std::string>(value_); }
+
+    std::string show() const {
+        if (const auto* text = std::get_if<std::string>(&value_)) return *text;
+        if (const auto* d = std::get_if<double>(&value_)) {
+            if (std::floor(*d) == *d && std::abs(*d) < 1e15) return std::to_string(static_cast<long long>(*d));
+            std::ostringstream o;
+            o << std::setprecision(15) << *d;
+            return o.str();
+        }
+        return "";
+    }
+
+    double number_or(double fallback) const {
+        const auto* d = std::get_if<double>(&value_);
+        return d ? *d : fallback;
+    }
+
+private:
+    std::variant<std::nullptr_t, double, std::string> value_;   // nullptr_t first: a new Cell is empty
+};
+--- hint
+One member, \`std::variant<std::nullptr_t, double, std::string>\`, with \`std::nullptr_t\` first so that a default-made cell is empty. Then one constructor per kind of argument, including \`const char*\`, so a string literal does not slide into some other constructor.
+--- hint
+\`std::holds_alternative<T>(value_)\` answers the \`is_\` questions, and \`std::get_if<T>(&value_)\` gives a pointer to the value, or \`nullptr\`, which suits \`show\` and \`number_or\`.
+--- check test | The three kinds
+Cell().is_empty() && Cell(nullptr).is_empty() && Cell(3).is_number() && Cell(2.5).is_number() && Cell("hi").is_text() && Cell(std::string("x")).is_text()
+--- check test | A string literal is text, not anything else
+Cell("hi").show() == "hi" && !Cell("hi").is_number() && !Cell("hi").is_empty()
+--- check test | Showing numbers
+Cell(3).show() == "3" && Cell(-7).show() == "-7" && Cell(2.5).show() == "2.5" && Cell(0.1).show() == "0.1" && Cell(1e20).show() == "1e+20" && Cell().show() == ""
+--- check test | number_or
+Cell(4).number_or(-1) == 4.0 && Cell("4").number_or(-1) == -1.0 && Cell().number_or(0.5) == 0.5
+
++++ practice | Undo the escapes
+--- task
+\`dump\` writes a string with escapes. Now read one back. Write \`std::optional<std::string> unescape(const std::string& quoted)\`, which takes a JSON string, **with** its double quotes, and returns the text inside. No \`main\`.
+
+- \`quoted\` must start and end with \`"\`, and be at least 2 characters long.
+- Inside, \`\\"\`, \`\\\\\`, \`\\n\` and \`\\t\` (a backslash followed by one of \`"\`, \`\\\`, \`n\`, \`t\`) turn back into a double quote, a backslash, a newline and a tab.
+- Return \`std::nullopt\` if the quotes are missing, if a backslash is followed by any other character, if a backslash is the last character before the closing quote, or if a double quote appears inside without a backslash in front.
+
+So the 6 characters \`"a\\tb"\` become the 3 characters a, tab, b, and \`""\` becomes the empty string. Include \`<optional>\`.
+--- starter
+#include <optional>
+#include <string>
+
+std::optional<std::string> unescape(const std::string& quoted) {
+    return quoted.substr(1, quoted.size() - 2);
+}
+--- solution
+#include <cstddef>
+#include <optional>
+#include <string>
+
+std::optional<std::string> unescape(const std::string& quoted) {
+    if (quoted.size() < 2 || quoted.front() != '"' || quoted.back() != '"') return std::nullopt;
+    std::string out;
+    const std::size_t end = quoted.size() - 1;   // the closing quote
+    for (std::size_t i = 1; i < end; ++i) {
+        char c = quoted[i];
+        if (c == '"') return std::nullopt;   // a quote that was not escaped
+        if (c != '\\\\') {
+            out += c;
+            continue;
+        }
+        if (i + 1 >= end) return std::nullopt;   // a backslash with nothing after it
+        char next = quoted[++i];
+        switch (next) {
+            case '"': out += '"'; break;
+            case '\\\\': out += '\\\\'; break;
+            case 'n': out += '\\n'; break;
+            case 't': out += '\\t'; break;
+            default: return std::nullopt;
+        }
+    }
+    return out;
+}
+--- hint
+Check the two quotes first, then walk the characters between them. An ordinary character is copied; a backslash means "look at the next character too", so step past both.
+--- hint
+A \`switch\` on the character after the backslash picks the result, with \`default\` returning \`std::nullopt\`. Before reading that next character, make sure it is not the closing quote: \`\\"\` right at the end would swallow the quote that closes the string.
+--- check test | Plain text and the empty string
+unescape("\\"hi\\"") == std::string("hi") && unescape("\\"\\"") == std::string("")
+--- check test | The four escapes
+unescape("\\"a\\\\tb\\"") == std::string("a\\tb") && unescape("\\"say \\\\\\"hi\\\\\\"\\"") == std::string("say \\"hi\\"") && unescape("\\"C:\\\\\\\\dir\\"") == std::string("C:\\\\dir") && unescape("\\"line\\\\nnext\\"") == std::string("line\\nnext")
+--- check test | Missing quotes
+!unescape("hi") && !unescape("\\"hi") && !unescape("hi\\"") && !unescape("\\"") && !unescape("")
+--- check test | Bad escapes
+!unescape("\\"\\\\x\\"") && !unescape("\\"end\\\\\\"") && !unescape("\\"a\\"b\\"")
+
++++ practice | Lists inside lists
+--- task
+The starter declares a type that holds either a whole number or a list of more of the same, nested to any depth, like the lesson's \`Json\`, and two helpers that build one:
+
+\`\`\`cpp
+struct Nested {
+    std::variant<long long, std::vector<Nested>> value;
+};
+Nested num(long long x);                  // a number
+Nested group(std::vector<Nested> items);  // a list
+\`\`\`
+
+Write three recursive functions. No \`main\`.
+
+- \`long long sum(const Nested& n)\`: all the numbers inside added up, however deep. An empty list sums to 0.
+- \`int depth(const Nested& n)\`: a number has depth 0; a list has depth 1 more than its deepest element, and an empty list has depth 1.
+- \`std::string show(const Nested& n)\`: a number as its digits, a list as \`[\`, its elements separated by commas with no spaces, and \`]\`.
+
+For \`group({num(1), group({num(2), num(3)}), group({})})\`, \`sum\` is 6, \`depth\` is 2 and \`show\` is \`"[1,[2,3],[]]"\`.
+--- starter
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Nested {
+    std::variant<long long, std::vector<Nested>> value;
+};
+
+Nested num(long long x) { return Nested{x}; }
+Nested group(std::vector<Nested> items) { return Nested{std::move(items)}; }
+--- solution
+#include <cstddef>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+struct Nested {
+    std::variant<long long, std::vector<Nested>> value;
+};
+
+Nested num(long long x) { return Nested{x}; }
+Nested group(std::vector<Nested> items) { return Nested{std::move(items)}; }
+
+long long sum(const Nested& n) {
+    if (const auto* x = std::get_if<long long>(&n.value)) return *x;
+    long long total = 0;
+    for (const Nested& item : std::get<std::vector<Nested>>(n.value)) total += sum(item);
+    return total;
+}
+
+int depth(const Nested& n) {
+    if (std::holds_alternative<long long>(n.value)) return 0;
+    int deepest = 0;
+    for (const Nested& item : std::get<std::vector<Nested>>(n.value)) {
+        int d = depth(item);
+        if (d > deepest) deepest = d;
+    }
+    return deepest + 1;
+}
+
+std::string show(const Nested& n) {
+    if (const auto* x = std::get_if<long long>(&n.value)) return std::to_string(*x);
+    const auto& items = std::get<std::vector<Nested>>(n.value);
+    std::string out = "[";
+    for (std::size_t i = 0; i < items.size(); ++i) {
+        if (i > 0) out += ',';
+        out += show(items[i]);
+    }
+    return out + "]";
+}
+--- hint
+Each function has the same two cases. If the variant holds a number (\`std::get_if<long long>\` gives a pointer that is not \`nullptr\`), answer directly. Otherwise it holds a list: loop over its elements and call the same function on each.
+--- hint
+For \`depth\`, keep the deepest element's depth, starting at 0 so that an empty list still comes out as 1. For \`show\`, write a comma before every element except the first.
+--- check test | The example
+[] { Nested n = group({num(1), group({num(2), num(3)}), group({})}); return sum(n) == 6 && depth(n) == 2 && show(n) == "[1,[2,3],[]]"; }()
+--- check test | A lone number
+sum(num(-4)) == -4 && depth(num(-4)) == 0 && show(num(-4)) == "-4"
+--- check test | Empty lists, nested
+[] { Nested n = group({group({group({})})}); return sum(n) == 0 && depth(n) == 3 && show(n) == "[[[]]]" && depth(group({})) == 1 && show(group({})) == "[]"; }()
+--- check test | Big numbers deep down
+[] { Nested n = group({num(4000000000LL), group({group({num(5000000000LL)}), num(-1)})}); return sum(n) == 8999999999LL && depth(n) == 3 && show(n) == "[4000000000,[[5000000000],-1]]"; }()
+
++++ practice | Numbers JSON can and cannot write
+--- task
+Write \`std::string json_number(double d)\`, which prints a number the way the capstone's \`dump\` does, and also handles the numbers JSON has no way to write. No \`main\`.
+
+- JSON has no infinity and no "not a number". For those, return \`"null"\`. \`std::isfinite\` from \`<cmath>\` tells them apart.
+- A whole number smaller than 10¹⁵ in size prints as an integer: \`3\`, \`-7\`, \`999999999999999\`. Minus zero, \`-0.0\`, prints as \`0\`.
+- Anything else prints as a \`std::ostringstream\` prints it after \`std::setprecision(15)\`: \`-2.5\`, \`0.1\`, and \`1e+15\` for exactly 10¹⁵, which is not smaller than 10¹⁵.
+
+Include \`<cmath>\`, \`<iomanip>\` and \`<sstream>\`.
+--- starter
+#include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <string>
+
+std::string json_number(double d) {
+    std::ostringstream o;
+    o << std::setprecision(15) << d;
+    return o.str();
+}
+--- solution
+#include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <string>
+
+std::string json_number(double d) {
+    if (!std::isfinite(d)) return "null";   // JSON cannot write infinity or NaN
+    if (std::floor(d) == d && std::abs(d) < 1e15) return std::to_string(static_cast<long long>(d));
+    std::ostringstream o;
+    o << std::setprecision(15) << d;
+    return o.str();
+}
+--- hint
+Deal with infinity and "not a number" first, before any other test: a comparison with NaN is always false, so NaN would otherwise slip into the last branch and print as \`nan\`.
+--- hint
+Then the lesson's two cases. Converting \`-0.0\` to a \`long long\` gives plain 0, so the whole-number branch already prints it without a minus sign.
+--- check test | Whole numbers
+json_number(3) == "3" && json_number(-7) == "-7" && json_number(0) == "0" && json_number(999999999999999.0) == "999999999999999"
+--- check test | Minus zero and the 10 to the 15 edge
+json_number(-0.0) == "0" && json_number(1e15) == "1e+15" && json_number(-1e15) == "-1e+15"
+--- check test | Fractions and very small numbers
+json_number(-2.5) == "-2.5" && json_number(0.1) == "0.1" && json_number(123456.789) == "123456.789" && json_number(1e-7) == "1e-07" && json_number(1.0 / 3.0) == "0.333333333333333"
+--- check test | Infinity and not a number
+json_number(1e308 * 10) == "null" && json_number(-1e308 * 10) == "null" && json_number(std::sqrt(-1.0)) == "null"
+
++++ practice | Debug: a value that starts as false
+--- task
+**Bug report:** "\`Value().dump()\` says \`false\`, but a new value should be \`null\`. And \`Value("hi").dump()\` says \`true\` instead of \`"hi"\`."
+
+The starter's \`Value\` is a small version of the capstone's \`Json\`, holding only the four plain kinds: null, a boolean, a number and a string. A default-made \`Value\` must be null, and a string literal must make a string. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+
+class Value {
+public:
+    Value() = default;
+    Value(std::nullptr_t) : value_(nullptr) {}
+    Value(bool b) : value_(b) {}
+    Value(int n) : value_(static_cast<double>(n)) {}
+    Value(double d) : value_(d) {}
+    Value(std::string s) : value_(std::move(s)) {}
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_string() const { return std::holds_alternative<std::string>(value_); }
+
+    std::string dump() const {
+        return std::visit([](const auto& v) -> std::string {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                return "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                if (std::floor(v) == v && std::abs(v) < 1e15) return std::to_string(static_cast<long long>(v));
+                std::ostringstream o;
+                o << std::setprecision(15) << v;
+                return o.str();
+            } else {
+                return "\\"" + v + "\\"";
+            }
+        }, value_);
+    }
+
+private:
+    std::variant<bool, std::nullptr_t, double, std::string> value_;
+};
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+
+class Value {
+public:
+    Value() = default;
+    Value(std::nullptr_t) : value_(nullptr) {}
+    Value(bool b) : value_(b) {}
+    Value(int n) : value_(static_cast<double>(n)) {}
+    Value(double d) : value_(d) {}
+    Value(const char* s) : value_(std::string(s)) {}
+    Value(std::string s) : value_(std::move(s)) {}
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_string() const { return std::holds_alternative<std::string>(value_); }
+
+    std::string dump() const {
+        return std::visit([](const auto& v) -> std::string {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                return "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                return v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                if (std::floor(v) == v && std::abs(v) < 1e15) return std::to_string(static_cast<long long>(v));
+                std::ostringstream o;
+                o << std::setprecision(15) << v;
+                return o.str();
+            } else {
+                return "\\"" + v + "\\"";
+            }
+        }, value_);
+    }
+
+private:
+    std::variant<std::nullptr_t, bool, double, std::string> value_;   // first type: what a new Value holds
+};
+--- hint
+A variant made by its default constructor holds a fresh value of the **first** type in its list. Which type is first here, and what does a fresh one of it look like?
+--- hint
+A string literal is a \`const char*\`. With constructors for \`bool\` and \`std::string\` only, which one does it reach? Turning a pointer into a \`bool\` is a built-in conversion, so it wins. An exact match beats both.
+--- check test | A new value is null
+Value().is_null() && Value().dump() == "null" && Value(nullptr).dump() == "null"
+--- check test | A string literal is a string
+Value("hi").is_string() && Value("hi").dump() == "\\"hi\\"" && Value(std::string("x")).dump() == "\\"x\\""
+--- check test | Booleans and numbers still work
+Value(true).dump() == "true" && Value(false).dump() == "false" && Value(3).dump() == "3" && Value(-2.5).dump() == "-2.5"
+
++++ practice | Stretch: read JSON text back into a Json
+--- task
+The starter holds the capstone's \`Json\` class. Write the reverse of \`dump\`: \`std::optional<Json> parse_json(const std::string& text)\`, a recursive-descent parser like the Expert course's calculator. No \`main\`.
+
+The text must be exactly one JSON value, with any spaces, tabs, carriage returns or newlines allowed before, after and between the pieces:
+
+- \`null\`, \`true\`, \`false\`;
+- a **number**: an optional \`-\`, then either the single digit \`0\` or a digit from 1 to 9 followed by more digits, then optionally a \`.\` and at least one digit, then optionally \`e\` or \`E\`, an optional \`+\` or \`-\`, and at least one digit. So \`0\`, \`-12\`, \`2.5\` and \`1e+20\` are numbers, while \`01\`, \`1.\`, \`.5\`, \`+1\` and \`1e\` are not. Turn the text into a \`double\` with \`std::strtod\`;
+- a **string** in double quotes, where a backslash may only be followed by \`"\`, \`\\\`, \`n\` or \`t\`;
+- an **array**: \`[\`, values separated by commas, \`]\`; \`[]\` is empty, and \`[1,]\` is an error;
+- an **object**: \`{\`, \`"key": value\` members separated by commas, \`}\`; \`{}\` is empty. If a key appears twice, the last value wins.
+
+Return \`std::nullopt\` for anything else, including text left over after the value. Build the result with the \`Json\` class's public functions. Include \`<cstdlib>\` and \`<optional>\`.
+--- starter
+#include <cmath>
+#include <cstddef>
+#include <iomanip>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+class Json {
+public:
+    using Array = std::vector<Json>;
+    using Object = std::map<std::string, Json>;
+
+    Json() = default;
+    Json(std::nullptr_t) {}
+    Json(bool b) : value_(b) {}
+    Json(int n) : value_(static_cast<double>(n)) {}
+    Json(double d) : value_(d) {}
+    Json(const char* s) : value_(std::string(s)) {}
+    Json(std::string s) : value_(std::move(s)) {}
+
+    static Json array() {
+        Json j;
+        j.value_ = Array{};
+        return j;
+    }
+
+    static Json object() {
+        Json j;
+        j.value_ = Object{};
+        return j;
+    }
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_array() const { return std::holds_alternative<Array>(value_); }
+    bool is_object() const { return std::holds_alternative<Object>(value_); }
+
+    std::size_t size() const {
+        if (const auto* a = std::get_if<Array>(&value_)) return a->size();
+        if (const auto* o = std::get_if<Object>(&value_)) return o->size();
+        return 0;
+    }
+
+    Json& push_back(Json v) {
+        if (is_null()) value_ = Array{};
+        if (auto* a = std::get_if<Array>(&value_)) a->push_back(std::move(v));
+        return *this;
+    }
+
+    Json& operator[](const std::string& key) {
+        if (is_null()) value_ = Object{};
+        if (auto* o = std::get_if<Object>(&value_)) return (*o)[key];
+        static Json spare;          // any other kind: a throwaway null, part of no document
+        spare = Json();
+        return spare;
+    }
+
+    std::string dump() const {
+        std::string out;
+        write(out);
+        return out;
+    }
+
+private:
+    static std::string number(double d) {
+        if (std::floor(d) == d && std::abs(d) < 1e15) return std::to_string(static_cast<long long>(d));
+        std::ostringstream o;
+        o << std::setprecision(15) << d;
+        return o.str();
+    }
+
+    static void quote(std::string& out, const std::string& s) {
+        out += '"';
+        for (char c : s) {
+            switch (c) {
+                case '"': out += "\\\\\\""; break;
+                case '\\\\': out += "\\\\\\\\"; break;
+                case '\\n': out += "\\\\n"; break;
+                case '\\t': out += "\\\\t"; break;
+                default: out += c;
+            }
+        }
+        out += '"';
+    }
+
+    void write(std::string& out) const {
+        std::visit([&out](const auto& v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                out += "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                out += v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                out += number(v);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                quote(out, v);
+            } else if constexpr (std::is_same_v<T, Array>) {
+                out += '[';
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    if (i > 0) out += ',';
+                    v[i].write(out);
+                }
+                out += ']';
+            } else {
+                out += '{';
+                bool first = true;
+                for (const auto& [key, item] : v) {
+                    if (!first) out += ',';
+                    first = false;
+                    quote(out, key);
+                    out += ':';
+                    item.write(out);
+                }
+                out += '}';
+            }
+        }, value_);
+    }
+
+    std::variant<std::nullptr_t, bool, double, std::string, Array, Object> value_;
+};
+
+std::optional<Json> parse_json(const std::string& text) {
+    return std::nullopt;
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <iomanip>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
+
+class Json {
+public:
+    using Array = std::vector<Json>;
+    using Object = std::map<std::string, Json>;
+
+    Json() = default;
+    Json(std::nullptr_t) {}
+    Json(bool b) : value_(b) {}
+    Json(int n) : value_(static_cast<double>(n)) {}
+    Json(double d) : value_(d) {}
+    Json(const char* s) : value_(std::string(s)) {}
+    Json(std::string s) : value_(std::move(s)) {}
+
+    static Json array() {
+        Json j;
+        j.value_ = Array{};
+        return j;
+    }
+
+    static Json object() {
+        Json j;
+        j.value_ = Object{};
+        return j;
+    }
+
+    bool is_null() const { return std::holds_alternative<std::nullptr_t>(value_); }
+    bool is_array() const { return std::holds_alternative<Array>(value_); }
+    bool is_object() const { return std::holds_alternative<Object>(value_); }
+
+    std::size_t size() const {
+        if (const auto* a = std::get_if<Array>(&value_)) return a->size();
+        if (const auto* o = std::get_if<Object>(&value_)) return o->size();
+        return 0;
+    }
+
+    Json& push_back(Json v) {
+        if (is_null()) value_ = Array{};
+        if (auto* a = std::get_if<Array>(&value_)) a->push_back(std::move(v));
+        return *this;
+    }
+
+    Json& operator[](const std::string& key) {
+        if (is_null()) value_ = Object{};
+        if (auto* o = std::get_if<Object>(&value_)) return (*o)[key];
+        static Json spare;          // any other kind: a throwaway null, part of no document
+        spare = Json();
+        return spare;
+    }
+
+    std::string dump() const {
+        std::string out;
+        write(out);
+        return out;
+    }
+
+private:
+    static std::string number(double d) {
+        if (std::floor(d) == d && std::abs(d) < 1e15) return std::to_string(static_cast<long long>(d));
+        std::ostringstream o;
+        o << std::setprecision(15) << d;
+        return o.str();
+    }
+
+    static void quote(std::string& out, const std::string& s) {
+        out += '"';
+        for (char c : s) {
+            switch (c) {
+                case '"': out += "\\\\\\""; break;
+                case '\\\\': out += "\\\\\\\\"; break;
+                case '\\n': out += "\\\\n"; break;
+                case '\\t': out += "\\\\t"; break;
+                default: out += c;
+            }
+        }
+        out += '"';
+    }
+
+    void write(std::string& out) const {
+        std::visit([&out](const auto& v) {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, std::nullptr_t>) {
+                out += "null";
+            } else if constexpr (std::is_same_v<T, bool>) {
+                out += v ? "true" : "false";
+            } else if constexpr (std::is_same_v<T, double>) {
+                out += number(v);
+            } else if constexpr (std::is_same_v<T, std::string>) {
+                quote(out, v);
+            } else if constexpr (std::is_same_v<T, Array>) {
+                out += '[';
+                for (std::size_t i = 0; i < v.size(); ++i) {
+                    if (i > 0) out += ',';
+                    v[i].write(out);
+                }
+                out += ']';
+            } else {
+                out += '{';
+                bool first = true;
+                for (const auto& [key, item] : v) {
+                    if (!first) out += ',';
+                    first = false;
+                    quote(out, key);
+                    out += ':';
+                    item.write(out);
+                }
+                out += '}';
+            }
+        }, value_);
+    }
+
+    std::variant<std::nullptr_t, bool, double, std::string, Array, Object> value_;
+};
+
+// value := literal | number | string | array | object, one function per rule.
+struct JsonParser {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && (s[i] == ' ' || s[i] == '\\t' || s[i] == '\\n' || s[i] == '\\r')) ++i;
+    }
+
+    bool digit_at(std::size_t k) const { return k < s.size() && s[k] >= '0' && s[k] <= '9'; }
+
+    bool word(const std::string& w) {
+        if (s.compare(i, w.size(), w) != 0) return false;
+        i += w.size();
+        return true;
+    }
+
+    std::optional<Json> value() {
+        skip();
+        if (i >= s.size()) return std::nullopt;
+        char c = s[i];
+        if (c == 'n') return word("null") ? std::optional<Json>(Json(nullptr)) : std::nullopt;
+        if (c == 't') return word("true") ? std::optional<Json>(Json(true)) : std::nullopt;
+        if (c == 'f') return word("false") ? std::optional<Json>(Json(false)) : std::nullopt;
+        if (c == '"') {
+            auto str = string();
+            if (!str) return std::nullopt;
+            return Json(*str);
+        }
+        if (c == '[') return array();
+        if (c == '{') return object();
+        if (c == '-' || digit_at(i)) return number();
+        return std::nullopt;
+    }
+
+    std::optional<Json> number() {
+        std::size_t start = i;
+        if (s[i] == '-') ++i;
+        if (!digit_at(i)) return std::nullopt;
+        if (s[i] == '0') {
+            ++i;   // a lone 0: no more digits may follow
+        } else {
+            while (digit_at(i)) ++i;
+        }
+        if (i < s.size() && s[i] == '.') {
+            ++i;
+            if (!digit_at(i)) return std::nullopt;
+            while (digit_at(i)) ++i;
+        }
+        if (i < s.size() && (s[i] == 'e' || s[i] == 'E')) {
+            ++i;
+            if (i < s.size() && (s[i] == '+' || s[i] == '-')) ++i;
+            if (!digit_at(i)) return std::nullopt;
+            while (digit_at(i)) ++i;
+        }
+        return Json(std::strtod(s.substr(start, i - start).c_str(), nullptr));
+    }
+
+    std::optional<std::string> string() {
+        ++i;   // the opening quote
+        std::string out;
+        while (i < s.size() && s[i] != '"') {
+            char c = s[i++];
+            if (c != '\\\\') {
+                out += c;
+                continue;
+            }
+            if (i >= s.size()) return std::nullopt;
+            char e = s[i++];
+            if (e == '"') out += '"';
+            else if (e == '\\\\') out += '\\\\';
+            else if (e == 'n') out += '\\n';
+            else if (e == 't') out += '\\t';
+            else return std::nullopt;
+        }
+        if (i >= s.size()) return std::nullopt;   // no closing quote
+        ++i;
+        return out;
+    }
+
+    std::optional<Json> array() {
+        ++i;   // [
+        Json out = Json::array();
+        skip();
+        if (i < s.size() && s[i] == ']') {
+            ++i;
+            return out;
+        }
+        while (true) {
+            auto item = value();
+            if (!item) return std::nullopt;
+            out.push_back(*item);
+            skip();
+            if (i < s.size() && s[i] == ',') {
+                ++i;
+                continue;
+            }
+            if (i < s.size() && s[i] == ']') {
+                ++i;
+                return out;
+            }
+            return std::nullopt;
+        }
+    }
+
+    std::optional<Json> object() {
+        ++i;   // {
+        Json out = Json::object();
+        skip();
+        if (i < s.size() && s[i] == '}') {
+            ++i;
+            return out;
+        }
+        while (true) {
+            skip();
+            if (i >= s.size() || s[i] != '"') return std::nullopt;
+            auto key = string();
+            if (!key) return std::nullopt;
+            skip();
+            if (i >= s.size() || s[i] != ':') return std::nullopt;
+            ++i;
+            auto item = value();
+            if (!item) return std::nullopt;
+            out[*key] = *item;
+            skip();
+            if (i < s.size() && s[i] == ',') {
+                ++i;
+                continue;
+            }
+            if (i < s.size() && s[i] == '}') {
+                ++i;
+                return out;
+            }
+            return std::nullopt;
+        }
+    }
+};
+
+std::optional<Json> parse_json(const std::string& text) {
+    JsonParser p{text};
+    auto v = p.value();
+    p.skip();
+    if (!v || p.i != text.size()) return std::nullopt;   // nothing may be left over
+    return v;
+}
+--- hint
+Write one function per kind of value, inside a small parser struct that holds the text and a position, as in the Expert course. \`value\` skips whitespace, looks at one character, and hands over: \`n\`, \`t\`, \`f\` to a word check, \`"\` to \`string\`, \`[\` to \`array\`, \`{\` to \`object\`, and \`-\` or a digit to \`number\`.
+--- hint
+\`array\` and \`object\` loop: read a value (or a \`"key"\`, a \`:\` and a value), skip whitespace, then expect either \`,\` (go round again) or the closing bracket (done); anything else is an error. Check for the closing bracket straight after the opening one to allow \`[]\` and \`{}\`. Because a comma always leads to another value, \`[1,]\` fails by itself.
+--- hint
+For a number, check its shape step by step with the position, exactly as the spec lists it, and only then give that piece of text to \`std::strtod\`. At the very end, skip whitespace and fail unless the position has reached the end of the text.
+--- check test | Scalars
+parse_json("null")->dump() == "null" && parse_json(" true ")->dump() == "true" && parse_json("false")->dump() == "false" && parse_json("-12")->dump() == "-12" && parse_json("2.5e2")->dump() == "250" && parse_json("0.125")->dump() == "0.125" && parse_json("1E+20")->dump() == "1e+20"
+--- check test | A document round trip, keys sorted
+parse_json("{\\"b\\": [1, 2.5, true, null], \\"a\\": \\"x\\\\ny\\"}")->dump() == "{\\"a\\":\\"x\\\\ny\\",\\"b\\":[1,2.5,true,null]}"
+--- check test | Empty and nested containers, across lines
+parse_json("[]")->dump() == "[]" && parse_json(" { } ")->dump() == "{}" && parse_json("[[],\\n {\\"k\\": [ {} ]}\\t]")->dump() == "[[],{\\"k\\":[{}]}]"
+--- check test | The last duplicate key wins
+parse_json("{\\"k\\": 1, \\"k\\": 2}")->dump() == "{\\"k\\":2}"
+--- check test | Broken containers
+!parse_json("[1,]") && !parse_json("[1 2]") && !parse_json("{\\"a\\" 1}") && !parse_json("{\\"a\\":}") && !parse_json("{a:1}") && !parse_json("[") && !parse_json("{\\"a\\":1,}")
+--- check test | Bad numbers, words and strings
+!parse_json("01") && !parse_json("1.") && !parse_json(".5") && !parse_json("+1") && !parse_json("1e") && !parse_json("tru") && !parse_json("nul") && !parse_json("\\"open") && !parse_json("\\"bad \\\\x escape\\"")
+--- check test | Nothing, or something left over
+!parse_json("") && !parse_json("   ") && !parse_json("1 2") && !parse_json("[] []") && !parse_json("nullx")
+
+=== cppp-15 | Capstone: an expression evaluator with variables
+--- teach
+Last lesson, you designed a type that holds any JSON value. This is the third and final capstone, and the last lesson of all the C++ courses. You will grow the calculator from the end of the Expert course into a tiny programming language.
+
+### Step 1: what you are building
+
+Picture a calculator with memory buttons, but where you can give each memory a name. You type a line, it answers, and it remembers what you told it:
+
+\`\`\`
+> growth = 0.05
+0.05
+> periods = 10
+10
+> 1000 * (1 + growth) ^ periods
+1628.894626777442
+\`\`\`
+
+A program that reads lines of a language and carries them out straight away is an **[[interpreter|repl]]**. Yours understands two kinds of line:
+
+- an **assignment**, \`name = expression\`: work out the expression, store it under that name, and give back the value;
+- a plain **expression**: work it out and give back the value.
+
+A **variable** is a name with a stored value, and it stays stored for every later line. Names follow the usual rule: a letter or \`_\` first, then any letters, digits or \`_\`. So \`_rate2\` and \`periods\` are names, and \`2x\` is not.
+
+Expressions can contain numbers (\`3\`, \`2.5\`), variable names, \`+ - * /\`, brackets, unary minus, and one new operator, \`^\`, **power**: \`2 ^ 3\` means 2 × 2 × 2, which is 8. Spaces are allowed anywhere between the pieces.
+
+Any error gives back \`std::nullopt\`. The errors are: bad syntax, input left over at the end, an unknown variable, division by zero, and a result that is not a finite number.
+
+### Step 2: examples by hand
+
+Work these out on paper before designing anything. Each line runs after the ones above it:
+
+| line | result | why |
+| --- | --- | --- |
+| \`side = 3\` | 3 | stores \`side\` |
+| \`side * side + 1\` | 10 | \`*\` before \`+\` |
+| \`half = side / 2\` | 1.5 | stores \`half\` |
+| \`side = side + 1\` | 4 | uses the old \`side\` (3), then stores 4 |
+| \`area = edge * 2\` | error | \`edge\` is unknown, so \`area\` is not stored |
+| \`4 / (side - 4)\` | error | division by zero |
+| \`side 2\` | error | \`2\` is left over |
+
+The spec's trickiest cases involve \`^\`. Work these four and keep them, because Step 4 needs them:
+
+- \`2 ^ 3 ^ 2\` is **512**. A row of powers groups from the **right**: \`2 ^ (3 ^ 2)\` = \`2 ^ 9\`. So \`^\` is **right-associative**, unlike \`+ - * /\`.
+- \`-2 ^ 2\` is **-4**. The power happens first, then the minus: \`-(2 ^ 2)\`. So \`^\` binds tighter than a unary minus on its left.
+- \`2 ^ -1\` is **0.5**. A minus on the **right** of \`^\` belongs to the exponent: 2 to the power -1, which is 1/2.
+- \`(-2) ^ 2\` is **4**. Brackets make the minus part of the base.
+
+The rule "power binds tighter than minus on its left" is the [[same as in mathematics|minus-power]].
+
+### Step 3: the tools
+
+You already have almost everything. The tokenizer lesson cut text into pieces and turned digits into a \`double\` with \`std::strtod\`. The recursive-descent lesson turned a grammar into one function per rule, each returning \`std::optional<double>\`, with a \`while\` loop for left-associative operators and a check that no input is left over. Reread both before you start.
+
+What is new is below, one piece at a time.
+
+**Power in C++.** C++ has no \`^\` for powers (in C++, \`^\` means something unrelated, on bits). Use **\`std::pow(a, b)\`** from \`<cmath>\`, which gives a to the power b as a \`double\`:
+
+\`\`\`cpp
+double kb = std::pow(2.0, 10.0);    // 1024
+double root = std::pow(9.0, 0.5);   // 3: a power of one half is a square root
+\`\`\`
+
+**Is the answer a real number?** Some results are not ordinary numbers at all. A power of a negative number with a fractional exponent has no real answer, and a huge result overflows. A \`double\` then holds [["not a number" or infinity|nan-inf]]. **\`std::isfinite(x)\`**, from \`<cmath>\`, is true only for an ordinary, finite number:
+
+\`\`\`cpp
+std::isfinite(std::pow(-27.0, 1.0 / 3.0));   // false: not a number
+std::isfinite(std::pow(10.0, 400.0));        // false: infinity
+std::isfinite(0.125);                        // true
+\`\`\`
+
+**Recognizing a name.** \`std::isalpha(c)\` is true for a letter, and \`std::isalnum(c)\` for a letter or a digit, both from \`<cctype>\` (the containers lesson). As always with these, turn the \`char\` into an \`unsigned char\` first:
+
+\`\`\`cpp
+char c = 'q';
+bool letter = std::isalpha(static_cast<unsigned char>(c));   // true
+\`\`\`
+
+Neither counts \`_\`, so check for it yourself with \`c == '_'\`.
+
+**One more grammar symbol.** In the calculator's grammar, \`( … )*\` meant "zero or more times". A **\`?\`** after brackets means **"zero or one time"**: the part is optional. So \`A ('!' B)?\` reads "an A, and then maybe a \`!\` followed by a B".
+
+### Step 4: the design decisions
+
+These are yours. Here is what to weigh for each.
+
+**Tokenize first, or parse characters directly?** Both work.
+
+- A separate tokenizer, as in the Expert course, turns the line into a list of tokens first. The parser then only ever looks at whole tokens, which keeps it simpler.
+- Parsing characters directly means the parser reads the text itself. It needs two small helpers: one that skips spaces, and one that says "if the next character, after any spaces, is this one, step past it and say yes". Numbers and names are read on the spot. Everything stays in one place.
+
+Choose one and be consistent.
+
+**Where does \`^\` go in the grammar?** From lowest precedence to highest, your levels are: \`+ -\`, then \`* /\`, then unary minus, then \`^\`, then the smallest pieces (a number, a name, or an expression in brackets). Two rules capture all four \`^\` cases from Step 2:
+
+\`\`\`
+unary := '-' unary | power
+power := primary ('^' unary)?
+\`\`\`
+
+Read aloud: a **unary** is a minus followed by another unary, or else a power. A **power** is a primary, maybe followed by \`^\` and a unary.
+
+Work through why, using your four cases. Here is the first, \`2 ^ 3 ^ 2\`:
+
+1. \`power\` reads the primary \`2\`, sees \`^\`, and reads a \`unary\` for the exponent.
+2. That \`unary\` sees no minus, so it reads a \`power\`. That \`power\` reads \`3\`, sees \`^\`, and reads a \`unary\`: \`2\`. It gives back 3 ^ 2 = 9.
+3. The first \`power\` gives back 2 ^ 9 = 512.
+
+The exponent is read by a rule that can itself contain another \`^\`, so the right-hand power is worked out first: [[recursing on the right|right-assoc]] gives right associativity, where the \`while\` loop of the Expert course gave left. Now trace \`-2 ^ 2\` and \`2 ^ -1\` yourself: which function sees each minus?
+
+The rules above \`unary\` (for \`+ -\` and \`* /\`) keep the loop shape from the Expert course; the \`* /\` rule now calls \`unary\` where it used to call \`factor\`.
+
+**How do you tell an assignment from an expression?** A line is an assignment when it starts with a name followed by \`=\` (spaces allowed around them). Anything else is an expression. So: remember where the line starts; skip spaces; if a name starts there, read it; skip spaces; if the next character is \`=\`, parse the rest of the line as the expression. If not, go back to the remembered start and parse the **whole** line as an expression, since \`side * side\` starts with a name too.
+
+Some lines look close to an assignment and must fail: \`side == 3\` (the text after the \`=\` starts with another \`=\`, which is bad syntax), \`= 3\` (no name) and \`1x = 3\` (\`1\` is not a name, so this is an expression with \`x = 3\` left over).
+
+**Failure must not leave a mess.** If the right-hand side of \`name = …\` fails, the variable keeps its old value, or stays undefined. So evaluate the expression completely, and store only once you know it succeeded. This is an [[all-or-nothing rule|all-or-nothing]], the same one as the scheduler's \`add\`. It also makes \`side = side + 1\` work: the right side is worked out using the old value, and only then is the new one stored.
+
+**Where do the variables live?** A \`std::map<std::string, double>\` from name to value suits it. The parser needs to read it. As in the Expert course's \`Parser\`, a small helper struct can hold the text, the current position and a \`const\` reference to the variables, made fresh for each line.
+
+**Keep the evaluator separate from any printing**, as you did with the bank's statements. \`run\` returns a value; whoever calls it decides what to show. That is why the task asks for no \`main\`: the checks are the caller.
+
+### Watch out
+
+- **Division by zero** does not stop a \`double\`: it quietly gives infinity. Check the right-hand side of \`/\` yourself, before dividing, as in the Expert course.
+- **Leftover input** is an error, not something to ignore: \`1)\` and \`2 3\` must fail.
+- **A number needs digits after its point.** \`3.\` is an error in this spec. Check the shape of the number yourself before calling \`std::strtod\`, which would happily accept \`3.\`.
+- **Store last.** A calculator that writes the variable as soon as it sees \`x =\` fails the "a failed line changes nothing" check.
+
+### Plan, then build in stages
+
+Write the full grammar on paper first, one line per level, from \`+ -\` down to the primary. Then build in this order, running the checks after each stage:
+
+1. Numbers, brackets and \`+ - * /\`, with no variables yet: the Expert course's calculator, reading your chosen way.
+2. Unary minus and \`^\`, checked against your four hand examples.
+3. Variable names in expressions, then assignment in \`run\`, then \`get\`.
+4. The errors: go down the list in the spec and make sure each one gives \`std::nullopt\`.
+
+### Where you can go from here
+
+That is the end of the C++ courses. You started with \`Hello, main()\` and have now built containers, a hash map, a bank, a JSON type, and a small language of your own. Some directions from here:
+
+- **Grow this interpreter.** Add functions such as \`sqrt(x)\`, comparisons, then \`if\` and loops, and it becomes a real programming language. Robert Nystrom's book *Crafting Interpreters*, free to read at craftinginterpreters.com, walks through exactly that.
+- **Learn the tools professionals use every day.** A debugger such as \`gdb\`, the compiler's sanitizers (\`-fsanitize=address,undefined\`, which catch memory errors and undefined behavior as they happen), a build tool such as CMake, and a unit-testing library such as GoogleTest. Compiler Explorer, at godbolt.org, shows you the machine code your C++ turns into.
+- **Learn what these courses left out.** The biggest is **concurrency**: several things running at once, with \`std::thread\`, \`std::mutex\` and \`std::atomic\`. Coroutines and modules, from C++20, come after that.
+- **Read real code.** The nlohmann/json library is a full-sized version of last lesson's capstone. The {fmt} library became \`std::format\` in C++20.
+- **Head for flight software.** NASA's [[F Prime framework|fprime]] is open-source C++ that flew on the Ingenuity Mars helicopter. Aerospace C++ is written under strict [[coding standards|coding-standards]]; reading one shows how everything you learned is used when failure is not an option.
+- **Keep a reference open.** cppreference.com documents every part of the language and library, and Bjarne Stroustrup's *A Tour of C++* is a short book by the language's creator that covers modern C++ from end to end.
+
+Pick one, and build something with it. That is how every engineer you will work with got good.
+
+::: context repl Read, evaluate, print, repeat
+A prompt that reads a line, evaluates it, prints the result and waits for the next is called a **REPL**, for read–eval–print loop. The name comes from the Lisp language of the 1960s, where the whole loop was one line of code. Python, JavaScript in a browser console, and your terminal shell all work this way.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 120" font-family="Inter, Arial, sans-serif">
+  <rect x="20" y="40" width="80" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="60" y="63" font-size="12" text-anchor="middle" fill="#1f2a44">read</text>
+  <rect x="140" y="40" width="80" height="36" rx="4" fill="#f2b880" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="180" y="63" font-size="12" text-anchor="middle" fill="#1f2a44">evaluate</text>
+  <rect x="260" y="40" width="80" height="36" rx="4" fill="#8fb8f0" stroke="#1f2a44" stroke-width="1.5"/>
+  <text x="300" y="63" font-size="12" text-anchor="middle" fill="#1f2a44">print</text>
+  <line x1="100" y1="58" x2="132" y2="58" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="140,58 130,53 130,63" fill="#1f2a44"/>
+  <line x1="220" y1="58" x2="252" y2="58" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="260,58 250,53 250,63" fill="#1f2a44"/>
+  <path d="M300 76 L300 100 L60 100 L60 84" fill="none" stroke="#1f2a44" stroke-width="1.5"/>
+  <polygon points="60,76 55,86 65,86" fill="#1f2a44"/>
+  <text x="180" y="114" font-size="11" text-anchor="middle" fill="#6c7a93">loop: wait for the next line</text>
+  <text x="180" y="28" font-size="11" text-anchor="middle" fill="#b4232c">your run() is this box</text>
+</svg>
+\`\`\`
+
+Your \`Calculator\` is the middle box. A \`main\` that reads lines with \`std::getline\` and prints each result would complete the loop.
+:::
+
+::: context minus-power Why -2 squared is -4
+In mathematics, −2² means −(2²), which is −4: the power belongs to the 2, and the minus is applied afterwards. If you want the square of −2, you write (−2)². Most programming languages that have a power operator, including Python with \`**\`, follow the mathematicians. Spreadsheets are a famous exception: in Excel, \`=-2^2\` gives 4, because Excel applies a leading minus before the power. That difference has caused real errors in spreadsheets, which is why this spec pins the rule down with a check.
+:::
+
+::: context nan-inf Not a number, and infinity
+The way computers store \`double\`s, a standard called IEEE 754 (first published in 1985), sets aside special patterns for results that are not ordinary numbers. **Infinity** comes from overflow, such as 10 to the power 400, or from dividing a non-zero number by zero. **NaN**, "not a number", comes from questions with no answer, such as 0 / 0 or the square root of a negative number. NaN is strange: it is not even equal to itself, so \`x == x\` is false when \`x\` is NaN. That is why you test with \`std::isfinite\` rather than comparing.
+:::
+
+::: context right-assoc The shape of 2 ^ 3 ^ 2
+The tree a parser builds shows what gets worked out first: the lower an operator sits, the earlier it runs. With the exponent read by a rule that recurses, the second \`^\` ends up under the first one's right side.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <line x1="150" y1="30" x2="90" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="150" y1="30" x2="210" y2="85" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="210" y1="85" x2="165" y2="140" stroke="#1f2a44" stroke-width="1.5"/>
+  <line x1="210" y1="85" x2="255" y2="140" stroke="#1f2a44" stroke-width="1.5"/>
+  <circle cx="150" cy="30" r="16" fill="#8fb8f0" stroke="#1f2a44"/>
+  <text x="150" y="35" font-size="14" text-anchor="middle" fill="#1f2a44">^</text>
+  <circle cx="90" cy="85" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="90" y="90" font-size="13" text-anchor="middle" fill="#1f2a44">2</text>
+  <circle cx="210" cy="85" r="16" fill="#f2b880" stroke="#1f2a44"/>
+  <text x="210" y="90" font-size="14" text-anchor="middle" fill="#1f2a44">^</text>
+  <circle cx="165" cy="140" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="165" y="145" font-size="13" text-anchor="middle" fill="#1f2a44">3</text>
+  <circle cx="255" cy="140" r="16" fill="#ffffff" stroke="#1f2a44"/>
+  <text x="255" y="145" font-size="13" text-anchor="middle" fill="#1f2a44">2</text>
+  <text x="232" y="80" font-size="11" fill="#b4232c">3 ^ 2 = 9 first</text>
+  <text x="180" y="34" font-size="11" fill="#1f2a44">then 2 ^ 9 = 512</text>
+</svg>
+\`\`\`
+
+The Expert course's \`while\` loop builds the mirror image for \`8 - 3 - 2\`: the first \`-\` sits lower, on the left, so \`8 - 3\` is done first.
+:::
+
+::: context all-or-nothing All or nothing
+Databases call this property **atomicity**: a change either happens completely or not at all, never halfway. A bank transfer that took money from one account but crashed before adding it to the other would be a disaster, so the database keeps both changes together as one **transaction**. The same habit, "work everything out first, then commit the result in one step", keeps your calculator's variables, the scheduler's tasks and much bigger systems in a sensible state when something fails.
+:::
+
+::: context fprime Flight software you can read
+F Prime (written F´) is a framework for flight software, developed at NASA's Jet Propulsion Laboratory and released as open source. It is written in C++. It flew on Ingenuity, the small helicopter that made the first powered, controlled flight on another planet, on Mars in April 2021. A program in F Prime is built from components that pass messages to each other, with commands, telemetry and events, and much of the code is generated from models. Its code is on GitHub (nasa/fprime), with tutorials, so you can read and build real flight software yourself.
+:::
+
+::: context coding-standards Rules for C++ that must not fail
+Safety-critical C++ is written under rule books that forbid the risky parts of the language. The JSF AV C++ Coding Standards, written by Lockheed Martin for the F-35 fighter jet, is one; MISRA C++, from the car industry, is another widely used one. Typical rules in the JSF standard: no memory allocation after start-up, no exceptions, and no recursion (so stack use can be proved). NASA's "Power of 10" rules add that every loop must have a fixed upper bound. Your recursive parser would need rewriting under such rules, which is a good exercise in itself.
+:::
+--- task
+Write \`class Calculator\` to this specification. No \`main\`.
+
+- \`std::optional<double> run(const std::string& line)\`:
+  - if the line is an assignment, \`name = expression\`, evaluate the expression, store the value in the variable \`name\`, and return the value;
+  - otherwise, evaluate the whole line as an expression and return its value;
+  - on any error, return \`std::nullopt\`. A line that fails changes no variable.
+- \`std::optional<double> get(const std::string& name) const\` returns the variable's value, or \`std::nullopt\` if there is no variable with that name.
+
+**Expressions** contain numbers (\`3\`, \`2.5\`: digits, then optionally a point followed by at least one digit), variable names (a letter or \`_\`, then letters, digits or \`_\`), \`+ - * /\`, \`^\` (power), brackets and unary minus, with spaces allowed anywhere between them.
+
+**Precedence**, from lowest: \`+ -\`, then \`* /\`, then unary minus, then \`^\`. \`+ - * /\` group from the left. \`^\` groups from the right, and its exponent may start with a unary minus: \`2 ^ 3 ^ 2\` is 512, \`-2 ^ 2\` is -4, and \`2 ^ -1\` is 0.5.
+
+**Errors**: bad syntax or input left over, an unknown variable, division by zero, or a result that is not a finite number.
+--- starter
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+
+// Capstone: design and write class Calculator to the specification.
+--- solution
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+
+class Calculator {
+public:
+    std::optional<double> run(const std::string& line) {
+        std::size_t i = 0;
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+        const std::size_t start = i;
+        if (i < line.size() && name_start(line[i])) {
+            while (i < line.size() && name_char(line[i])) ++i;
+            std::string name = line.substr(start, i - start);
+            while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+            if (i < line.size() && line[i] == '=') {
+                auto value = Parser{line, i + 1, vars_}.parse();
+                if (value) vars_[name] = *value;
+                return value;
+            }
+        }
+        return Parser{line, start, vars_}.parse();
+    }
+
+    std::optional<double> get(const std::string& name) const {
+        auto it = vars_.find(name);
+        if (it == vars_.end()) return std::nullopt;
+        return it->second;
+    }
+
+private:
+    static bool name_start(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
+    static bool name_char(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
+
+    // expr := term (('+'|'-') term)*    term := unary (('*'|'/') unary)*
+    // unary := '-' unary | power        power := primary ('^' unary)?
+    // primary := number | name | '(' expr ')'
+    struct Parser {
+        const std::string& s;
+        std::size_t i;
+        const std::map<std::string, double>& vars;
+
+        std::optional<double> parse() {
+            auto v = expr();
+            skip();
+            if (!v || i != s.size() || !std::isfinite(*v)) return std::nullopt;
+            return v;
+        }
+
+        void skip() {
+            while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+        }
+
+        bool eat(char c) {
+            skip();
+            if (i < s.size() && s[i] == c) {
+                ++i;
+                return true;
+            }
+            return false;
+        }
+
+        std::optional<double> expr() {
+            auto left = term();
+            while (left) {
+                if (eat('+')) {
+                    auto right = term();
+                    if (!right) return std::nullopt;
+                    *left += *right;
+                } else if (eat('-')) {
+                    auto right = term();
+                    if (!right) return std::nullopt;
+                    *left -= *right;
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        std::optional<double> term() {
+            auto left = unary();
+            while (left) {
+                if (eat('*')) {
+                    auto right = unary();
+                    if (!right) return std::nullopt;
+                    *left *= *right;
+                } else if (eat('/')) {
+                    auto right = unary();
+                    if (!right || *right == 0) return std::nullopt;
+                    *left /= *right;
+                } else {
+                    break;
+                }
+            }
+            return left;
+        }
+
+        std::optional<double> unary() {
+            if (eat('-')) {
+                auto v = unary();
+                if (!v) return std::nullopt;
+                return -*v;
+            }
+            return power();
+        }
+
+        std::optional<double> power() {
+            auto base = primary();
+            if (!base) return std::nullopt;
+            if (eat('^')) {
+                auto exponent = unary();
+                if (!exponent) return std::nullopt;
+                return std::pow(*base, *exponent);
+            }
+            return base;
+        }
+
+        std::optional<double> primary() {
+            skip();
+            if (i >= s.size()) return std::nullopt;
+            if (eat('(')) {
+                auto v = expr();
+                if (!v || !eat(')')) return std::nullopt;
+                return v;
+            }
+            if (std::isdigit(static_cast<unsigned char>(s[i]))) {
+                std::size_t start = i;
+                while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+                if (i < s.size() && s[i] == '.') {
+                    ++i;
+                    if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+                    while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+                }
+                return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+            }
+            if (name_start(s[i])) {
+                std::size_t start = i;
+                while (i < s.size() && name_char(s[i])) ++i;
+                auto it = vars.find(s.substr(start, i - start));
+                if (it == vars.end()) return std::nullopt;
+                return it->second;
+            }
+            return std::nullopt;
+        }
+    };
+
+    std::map<std::string, double> vars_;
+};
+--- hint
+Follow the grammar: write a small parser (a struct holding the text, a position and a \`const\` reference to the variables) with one function per level: expression, term, unary, power, primary. Each returns \`std::optional<double>\`.
+--- hint
+\`power := primary ('^' unary)?\` and \`unary := '-' unary | power\` give right associativity, \`-2 ^ 2 = -4\` and \`2 ^ -1 = 0.5\`. \`term\` loops over \`* /\` calling \`unary\`; \`expr\` loops over \`+ -\` calling \`term\`. After the top-level expression, skip spaces, and fail if anything is left or the value is not \`std::isfinite\`.
+--- hint
+In \`run\`, skip spaces, remember that position, and try to read a name, then skip spaces again. If the next character is \`=\`, parse the rest of the line as the expression; otherwise parse the whole line from the remembered position. Store the value in the map only after the parse succeeds.
+--- check test | Arithmetic with precedence
+[] { Calculator c; auto a = c.run("1 + 2 * 3"); auto b = c.run("(1 + 2) * 3"); auto d = c.run("8 - 3 - 2"); auto e = c.run("7 / 2"); return a == 7.0 && b == 9.0 && d == 3.0 && e == 3.5; }()
+--- check test | Assign, then use
+[] { Calculator c; auto x = c.run("x = 4"); auto y = c.run("x * x + 1"); return x == 4.0 && y == 17.0 && c.get("x") == 4.0 && c.get("y") == std::nullopt; }()
+--- check test | A variable can update itself
+[] { Calculator c; c.run("total = 0"); for (int i = 1; i <= 10000; ++i) c.run("total = total + 1"); return c.get("total") == 10000.0; }()
+--- check test | Power: right-associative, and unary minus
+[] { Calculator c; auto a = c.run("2 ^ 3 ^ 2"); auto b = c.run("-2 ^ 2"); auto d = c.run("2 ^ -1"); auto e = c.run("(-2) ^ 2"); return a == 512.0 && b == -4.0 && d == 0.5 && e == 4.0; }()
+--- check test | Names with digits and underscores
+[] { Calculator c; c.run("_rate2 = 0.5"); c.run("years = 10"); auto v = c.run("  years*_rate2  "); return v == 5.0; }()
+--- check test | Unknown variables and division by zero
+[] { Calculator c; c.run("x = 1"); return !c.run("y + 1") && !c.run("x / 0") && !c.run("x / (x - 1)") && !c.run("(0 - 8) ^ 0.5"); }()
+--- check test | A failed line changes nothing
+[] { Calculator c; c.run("x = 5"); auto bad = c.run("x = 1 / 0"); auto bad2 = c.run("z = w + 1"); return !bad && !bad2 && c.get("x") == 5.0 && !c.get("z"); }()
+--- check test | Syntax errors
+[] { Calculator c; c.run("x = 1"); return !c.run("") && !c.run("1 +") && !c.run("(1") && !c.run("1)") && !c.run("2 3") && !c.run("1x = 3") && !c.run("= 3") && !c.run("x == 3") && !c.run("3.") && !c.run("x ="); }()
+
++++ practice | Add and subtract, with named values
+--- task
+Start small: an expression with only \`+\` and \`-\`. Write \`std::optional<long long> sum_expr(const std::string& s, const std::map<std::string, long long>& vars)\`. No \`main\`.
+
+- The expression is one or more **terms** with \`+\` or \`-\` between them. A term is a whole number (one or more digits) or a variable name (a letter or \`_\`, then letters, digits or \`_\`), whose value is looked up in \`vars\`.
+- Spaces are allowed anywhere between the pieces. There is no unary minus: \`-3\` on its own is an error.
+- \`+\` and \`-\` work from the left: \`10 - 3 - 2\` is 5.
+- Return \`std::nullopt\` for an unknown variable, for bad syntax (\`""\`, \`"1 +"\`, \`"+ 1"\`), and for anything left over (\`"1 2"\`).
+
+With \`x\` = 10, \`sum_expr("1 + 2 - x", vars)\` is -7. Include \`<cctype>\`, \`<cstdlib>\` and \`<optional>\`.
+--- starter
+#include <map>
+#include <optional>
+#include <string>
+
+std::optional<long long> sum_expr(const std::string& s, const std::map<std::string, long long>& vars) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <string>
+
+struct SumParser {
+    const std::string& s;
+    const std::map<std::string, long long>& vars;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    std::optional<long long> term() {
+        skip();
+        if (i >= s.size()) return std::nullopt;
+        std::size_t start = i;
+        if (std::isdigit(static_cast<unsigned char>(s[i]))) {
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+            return std::strtoll(s.substr(start, i - start).c_str(), nullptr, 10);
+        }
+        if (std::isalpha(static_cast<unsigned char>(s[i])) || s[i] == '_') {
+            while (i < s.size() && (std::isalnum(static_cast<unsigned char>(s[i])) || s[i] == '_')) ++i;
+            auto it = vars.find(s.substr(start, i - start));
+            if (it == vars.end()) return std::nullopt;
+            return it->second;
+        }
+        return std::nullopt;
+    }
+
+    // expr := term (('+' | '-') term)*
+    std::optional<long long> expr() {
+        auto total = term();
+        if (!total) return std::nullopt;
+        while (true) {
+            skip();
+            if (i >= s.size() || (s[i] != '+' && s[i] != '-')) break;
+            char op = s[i++];
+            auto next = term();
+            if (!next) return std::nullopt;
+            *total = op == '+' ? *total + *next : *total - *next;
+        }
+        return total;
+    }
+};
+
+std::optional<long long> sum_expr(const std::string& s, const std::map<std::string, long long>& vars) {
+    SumParser p{s, vars};
+    auto v = p.expr();
+    p.skip();
+    if (!v || p.i != s.size()) return std::nullopt;   // something left over
+    return v;
+}
+--- hint
+Two grammar rules are enough: \`expr := term (('+' | '-') term)*\`, and a term is a number or a name. Put them in a small struct holding the text, the variables and a position, as in the Expert course.
+--- hint
+\`term\` skips spaces, then looks at one character: a digit starts a number, and a letter or \`_\` starts a name. Anything else is an error. A number's digits can be turned into a \`long long\` with \`std::strtoll(text.c_str(), nullptr, 10)\`.
+--- hint
+After the whole expression, skip spaces once more and check that the position has reached the end of the text; otherwise something is left over.
+--- check test | Numbers and variables
+[] { std::map<std::string, long long> v{{"x", 10}, {"_y2", 4}}; return sum_expr("1 + 2 - x", v) == -7 && sum_expr("x+_y2", v) == 14 && sum_expr("  42  ", v) == 42; }()
+--- check test | Minus works from the left
+[] { std::map<std::string, long long> v; return sum_expr("10 - 3 - 2", v) == 5 && sum_expr("1 - 2 + 3", v) == 2; }()
+--- check test | Unknown variables
+[] { std::map<std::string, long long> v{{"x", 1}}; return !sum_expr("x + y", v) && !sum_expr("X", v); }()
+--- check test | Bad syntax and leftovers
+[] { std::map<std::string, long long> v{{"x", 1}}; return !sum_expr("", v) && !sum_expr("1 +", v) && !sum_expr("+ 1", v) && !sum_expr("-3", v) && !sum_expr("1 2", v) && !sum_expr("x x", v) && !sum_expr("1 * 2", v); }()
+
++++ practice | Show where the brackets go
+--- task
+Precedence and grouping are easiest to see by writing in every bracket. Write \`std::optional<std::string> parenthesize(const std::string& s)\`, which parses \`s\` with the capstone's grammar and prints it back fully bracketed. No \`main\`.
+
+- Expressions contain whole numbers (digits only), \`+ - * /\`, \`^\`, unary minus and brackets, with spaces allowed between the pieces. There are no variables.
+- Precedence, from lowest: \`+ -\`, then \`* /\`, then unary minus, then \`^\`. \`+ - * /\` group from the left, and \`^\` from the right, with a possible unary minus on its exponent: the capstone's rules exactly.
+- Output: a number as its digits; every binary operation as \`(left op right)\`, with one space on each side of the operator; every unary minus as \`(-operand)\`. Brackets written in the input disappear, except as they change the grouping.
+- Return \`std::nullopt\` for bad syntax or anything left over.
+
+\`parenthesize("1 + 2 * 3")\` is \`"(1 + (2 * 3))"\`, \`parenthesize("2 ^ 3 ^ 2")\` is \`"(2 ^ (3 ^ 2))"\`, and \`parenthesize("-2 ^ 2")\` is \`"(-(2 ^ 2))"\`. Include \`<cctype>\` and \`<optional>\`.
+--- starter
+#include <optional>
+#include <string>
+
+std::optional<std::string> parenthesize(const std::string& s) {
+    return "(" + s + ")";
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <optional>
+#include <string>
+
+// expr := term (('+'|'-') term)*    term := unary (('*'|'/') unary)*
+// unary := '-' unary | power        power := primary ('^' unary)?
+// primary := number | '(' expr ')'
+struct Bracketer {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<std::string> expr() {
+        auto left = term();
+        while (left) {
+            char op = eat('+') ? '+' : eat('-') ? '-' : 0;
+            if (!op) break;
+            auto right = term();
+            if (!right) return std::nullopt;
+            left = "(" + *left + " " + op + " " + *right + ")";
+        }
+        return left;
+    }
+
+    std::optional<std::string> term() {
+        auto left = unary();
+        while (left) {
+            char op = eat('*') ? '*' : eat('/') ? '/' : 0;
+            if (!op) break;
+            auto right = unary();
+            if (!right) return std::nullopt;
+            left = "(" + *left + " " + op + " " + *right + ")";
+        }
+        return left;
+    }
+
+    std::optional<std::string> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return "(-" + *v + ")";
+        }
+        return power();
+    }
+
+    std::optional<std::string> power() {
+        auto base = primary();
+        if (!base) return std::nullopt;
+        if (eat('^')) {
+            auto exponent = unary();   // recursing on the right: right-associative
+            if (!exponent) return std::nullopt;
+            return "(" + *base + " ^ " + *exponent + ")";
+        }
+        return base;
+    }
+
+    std::optional<std::string> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        std::size_t start = i;
+        while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        if (i == start) return std::nullopt;
+        return s.substr(start, i - start);
+    }
+};
+
+std::optional<std::string> parenthesize(const std::string& s) {
+    Bracketer b{s};
+    auto v = b.expr();
+    b.skip();
+    if (!v || b.i != s.size()) return std::nullopt;
+    return v;
+}
+--- hint
+Take the capstone's parser shape, one function per grammar level, but make every function return \`std::optional<std::string>\` instead of a number. Where the calculator would compute \`left + right\`, build the text \`"(" + left + " + " + right + ")"\` instead.
+--- hint
+The grouping comes out of the grammar by itself: the \`while\` loops in \`expr\` and \`term\` wrap from the left, and \`power\` reading its exponent with \`unary\` wraps from the right. A bracketed expression in \`primary\` simply returns the inner text.
+--- check test | Precedence
+parenthesize("1 + 2 * 3") == std::string("(1 + (2 * 3))") && parenthesize("(1 + 2) * 3") == std::string("((1 + 2) * 3)") && parenthesize("7") == std::string("7")
+--- check test | Left to right for + - * /
+parenthesize("8 - 3 - 2") == std::string("((8 - 3) - 2)") && parenthesize("8 / 4 * 2") == std::string("((8 / 4) * 2)")
+--- check test | Power groups from the right and binds tighter than minus
+parenthesize("2 ^ 3 ^ 2") == std::string("(2 ^ (3 ^ 2))") && parenthesize("-2 ^ 2") == std::string("(-(2 ^ 2))") && parenthesize("2 ^ -1") == std::string("(2 ^ (-1))") && parenthesize("(-2) ^ 2") == std::string("((-2) ^ 2)")
+--- check test | Unary minus twice, and brackets that change nothing
+parenthesize("--4") == std::string("(-(-4))") && parenthesize("((5))") == std::string("5") && parenthesize(" 1*-2 ") == std::string("(1 * (-2))")
+--- check test | Bad syntax
+!parenthesize("") && !parenthesize("1 +") && !parenthesize("(1") && !parenthesize("1)") && !parenthesize("2 3") && !parenthesize("^ 2")
+
++++ practice | Run a whole script, or nothing
+--- task
+A script is several lines of assignments, run one after the other, like a series of calculator lines. Write \`std::optional<std::map<std::string, double>> run_script(const std::string& script)\`, which returns every variable's final value. No \`main\`.
+
+- Each line that is not blank must be an assignment: \`name = expression\`. Blank lines (empty, or only spaces) are skipped.
+- Expressions contain numbers (digits, then optionally a point and at least one digit), variable names (a letter or \`_\`, then letters, digits or \`_\`), \`+ - * /\`, brackets and unary minus, with the usual precedence and spaces anywhere between. There is no \`^\` here.
+- A line may use any variable assigned on an earlier line, including itself: \`n = n + 1\`.
+- If **any** line fails, whether it is not an assignment, has bad syntax or leftovers, uses an unknown variable or divides by zero, the whole script fails: return \`std::nullopt\`.
+
+\`run_script("r = 2\\narea = 3.5 * r * r\\nr = r + 1")\` gives \`{"area": 14, "r": 3}\`. Include \`<cctype>\`, \`<cstdlib>\` and \`<sstream>\`.
+--- starter
+#include <map>
+#include <optional>
+#include <string>
+
+std::optional<std::map<std::string, double>> run_script(const std::string& script) {
+    return std::map<std::string, double>{};
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+
+bool name_start(char c) { return std::isalpha(static_cast<unsigned char>(c)) || c == '_'; }
+bool name_char(char c) { return std::isalnum(static_cast<unsigned char>(c)) || c == '_'; }
+
+// expr := term (('+'|'-') term)*    term := unary (('*'|'/') unary)*
+// unary := '-' unary | primary      primary := number | name | '(' expr ')'
+struct Parser {
+    const std::string& s;
+    std::size_t i;
+    const std::map<std::string, double>& vars;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<double> parse() {
+        auto v = expr();
+        skip();
+        if (!v || i != s.size()) return std::nullopt;
+        return v;
+    }
+
+    std::optional<double> expr() {
+        auto left = term();
+        while (left) {
+            if (eat('+')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left += *right;
+            } else if (eat('-')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left -= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = unary();
+        while (left) {
+            if (eat('*')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left *= *right;
+            } else if (eat('/')) {
+                auto right = unary();
+                if (!right || *right == 0) return std::nullopt;
+                *left /= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return -*v;
+        }
+        return primary();
+    }
+
+    std::optional<double> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        if (i >= s.size()) return std::nullopt;
+        std::size_t start = i;
+        if (std::isdigit(static_cast<unsigned char>(s[i]))) {
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+            if (i < s.size() && s[i] == '.') {
+                ++i;
+                if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+                while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+            }
+            return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+        }
+        if (name_start(s[i])) {
+            while (i < s.size() && name_char(s[i])) ++i;
+            auto it = vars.find(s.substr(start, i - start));
+            if (it == vars.end()) return std::nullopt;
+            return it->second;
+        }
+        return std::nullopt;
+    }
+};
+
+std::optional<std::map<std::string, double>> run_script(const std::string& script) {
+    std::map<std::string, double> vars;
+    std::istringstream lines(script);
+    std::string line;
+    while (std::getline(lines, line)) {
+        std::size_t i = 0;
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+        if (i == line.size()) continue;   // a blank line
+        if (!name_start(line[i])) return std::nullopt;
+        std::size_t start = i;
+        while (i < line.size() && name_char(line[i])) ++i;
+        std::string name = line.substr(start, i - start);
+        while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i;
+        if (i >= line.size() || line[i] != '=') return std::nullopt;   // not an assignment
+        auto value = Parser{line, i + 1, vars}.parse();
+        if (!value) return std::nullopt;   // one bad line spoils the whole script
+        vars[name] = *value;
+    }
+    return vars;
+}
+--- hint
+Reuse the capstone's design: a parser struct holding one line, a position and a \`const\` reference to the variables, with one function per grammar level. Without \`^\`, \`unary\` simply calls \`primary\`.
+--- hint
+Read the script with \`std::getline\` over a \`std::istringstream\`. For each line: skip spaces, and if nothing is left, move on. Otherwise read a name, skip spaces, and insist on \`=\`; then parse the rest of the line from just after the \`=\`.
+--- hint
+Store each value only after its line has parsed completely, and return \`std::nullopt\` the moment any line fails. The variables map can then be returned as the answer.
+--- check test | Assignments that use earlier ones
+[] { auto v = run_script("r = 2\\narea = 3.5 * r * r\\nr = r + 1"); return v && v->size() == 2 && v->at("area") == 14.0 && v->at("r") == 3.0; }()
+--- check test | Precedence, brackets and unary minus
+[] { auto v = run_script("a = 1 + 2 * 3\\nb = (1 + 2) * 3\\nc = -a - -b\\nd = 7 / 2"); return v && v->at("a") == 7.0 && v->at("b") == 9.0 && v->at("c") == 2.0 && v->at("d") == 3.5; }()
+--- check test | Blank lines are skipped; an empty script is fine
+[] { auto v = run_script("\\n  x = 1\\n\\n   \\ny=x*10\\n"); auto e = run_script(""); return v && v->at("y") == 10.0 && e && e->empty(); }()
+--- check test | One bad line spoils the script
+!run_script("x = 1\\ny = z + 1") && !run_script("x = 1\\nx / 0") && !run_script("x = 1\\ny = x / (x - 1)") && !run_script("x = 1\\n3 = x") && !run_script("x = (1 + 2")
+--- check test | Syntax that looks close to right
+!run_script("x == 3") && !run_script("x = 3.") && !run_script("x = 1 2") && !run_script("= 4") && !run_script("x =")
+
++++ practice | Is this text exactly a number?
+--- task
+\`std::strtod\` is generous: it reads \`" 12abc"\` as 12 and ignores the rest. A careful program checks the shape of a number itself first. Write \`std::optional<double> read_number(const std::string& s)\`, which accepts \`s\` only if the **whole** text is one number of this shape. No \`main\`.
+
+1. optionally a \`-\`;
+2. one or more digits;
+3. optionally a \`.\` followed by **one or more** digits;
+4. optionally an exponent: \`e\` or \`E\`, then optionally \`+\` or \`-\`, then one or more digits.
+
+Nothing else is allowed: no spaces, no \`+\` at the front, no hex. The value must also be **finite**: \`"1e400"\` is too big for a \`double\` and gives \`std::nullopt\`, like every text of the wrong shape. So \`"-1.5e+2"\` is -150, while \`".5"\`, \`"5."\`, \`"1e"\`, \`"+1"\`, \`" 1"\` and \`"0x10"\` are all \`std::nullopt\`. Include \`<cmath>\`, \`<cstdlib>\` and \`<optional>\`.
+--- starter
+#include <cstdlib>
+#include <optional>
+#include <string>
+
+std::optional<double> read_number(const std::string& s) {
+    if (s.empty()) return std::nullopt;
+    return std::strtod(s.c_str(), nullptr);
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <optional>
+#include <string>
+
+std::optional<double> read_number(const std::string& s) {
+    std::size_t i = 0;
+    auto digits = [&]() {   // step over a run of digits; how many were there?
+        std::size_t start = i;
+        while (i < s.size() && s[i] >= '0' && s[i] <= '9') ++i;
+        return i - start;
+    };
+    if (i < s.size() && s[i] == '-') ++i;
+    if (digits() == 0) return std::nullopt;
+    if (i < s.size() && s[i] == '.') {
+        ++i;
+        if (digits() == 0) return std::nullopt;
+    }
+    if (i < s.size() && (s[i] == 'e' || s[i] == 'E')) {
+        ++i;
+        if (i < s.size() && (s[i] == '+' || s[i] == '-')) ++i;
+        if (digits() == 0) return std::nullopt;
+    }
+    if (i != s.size()) return std::nullopt;   // something else follows
+    double v = std::strtod(s.c_str(), nullptr);
+    if (!std::isfinite(v)) return std::nullopt;
+    return v;
+}
+--- hint
+Walk the text once with a position, checking each part of the shape in order. A small helper (a lambda capturing the position by reference works well) that steps over a run of digits and says how many it saw makes every "one or more digits" rule one line.
+--- hint
+After the optional parts, the position must be at the very end of the text. Only then call \`std::strtod\`, and finally refuse a result that \`std::isfinite\` says is not an ordinary number.
+--- check test | Plain numbers
+read_number("3") == 3.0 && read_number("-0") == 0.0 && read_number("2.5") == 2.5 && read_number("-12.75") == -12.75 && read_number("007") == 7.0
+--- check test | Exponents
+read_number("1e3") == 1000.0 && read_number("1E-2") == 0.01 && read_number("-1.5e+2") == -150.0 && read_number("5e0") == 5.0
+--- check test | Missing digits
+!read_number("") && !read_number("-") && !read_number(".5") && !read_number("5.") && !read_number("1e") && !read_number("1e+") && !read_number("-.5")
+--- check test | Characters that do not belong
+!read_number("+1") && !read_number("--1") && !read_number("1.2.3") && !read_number(" 1") && !read_number("1 ") && !read_number("0x10") && !read_number("inf") && !read_number("nan") && !read_number("12abc")
+--- check test | Too big to be finite
+!read_number("1e400") && !read_number("-1e400") && read_number("1e300") == 1e300
+
++++ practice | Debug: a power that groups the wrong way
+--- task
+**Bug report:** "\`2 ^ 3 ^ 2\` gives 64 instead of 512, and \`2 ^ -1\` is refused although it should be 0.5. Also, \`1 / (1 / 0)\` gives 0, but anything that divides by zero should be an error."
+
+The starter's \`evaluate\` is the capstone's parser without variables: numbers, \`+ - * /\`, \`^\`, unary minus and brackets, with the capstone's precedence and error rules. Find the two bugs and fix them. No \`main\`.
+--- starter
+#include <cctype>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <optional>
+#include <string>
+
+struct Calc {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<double> expr() {
+        auto left = term();
+        while (left) {
+            if (eat('+')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left += *right;
+            } else if (eat('-')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left -= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = unary();
+        while (left) {
+            if (eat('*')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left *= *right;
+            } else if (eat('/')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left /= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return -*v;
+        }
+        return power();
+    }
+
+    std::optional<double> power() {
+        auto base = primary();
+        while (base && eat('^')) {
+            auto exponent = primary();
+            if (!exponent) return std::nullopt;
+            base = std::pow(*base, *exponent);
+        }
+        return base;
+    }
+
+    std::optional<double> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        std::size_t start = i;
+        while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        if (i == start) return std::nullopt;
+        if (i < s.size() && s[i] == '.') {
+            ++i;
+            if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        }
+        return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+    }
+};
+
+std::optional<double> evaluate(const std::string& line) {
+    Calc c{line};
+    auto v = c.expr();
+    c.skip();
+    if (!v || c.i != line.size() || !std::isfinite(*v)) return std::nullopt;
+    return v;
+}
+--- solution
+#include <cctype>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <optional>
+#include <string>
+
+struct Calc {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<double> expr() {
+        auto left = term();
+        while (left) {
+            if (eat('+')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left += *right;
+            } else if (eat('-')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left -= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = unary();
+        while (left) {
+            if (eat('*')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left *= *right;
+            } else if (eat('/')) {
+                auto right = unary();
+                if (!right || *right == 0) return std::nullopt;   // check before dividing
+                *left /= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return -*v;
+        }
+        return power();
+    }
+
+    // power := primary ('^' unary)?  The exponent is read by unary, which can
+    // hold another power, so the right-hand ^ is worked out first.
+    std::optional<double> power() {
+        auto base = primary();
+        if (!base) return std::nullopt;
+        if (eat('^')) {
+            auto exponent = unary();
+            if (!exponent) return std::nullopt;
+            return std::pow(*base, *exponent);
+        }
+        return base;
+    }
+
+    std::optional<double> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        std::size_t start = i;
+        while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        if (i == start) return std::nullopt;
+        if (i < s.size() && s[i] == '.') {
+            ++i;
+            if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        }
+        return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+    }
+};
+
+std::optional<double> evaluate(const std::string& line) {
+    Calc c{line};
+    auto v = c.expr();
+    c.skip();
+    if (!v || c.i != line.size() || !std::isfinite(*v)) return std::nullopt;
+    return v;
+}
+--- hint
+\`power\` uses the \`while\` loop shape of \`expr\` and \`term\`, which groups from the left: it works out \`2 ^ 3\` first. The capstone's grammar is \`power := primary ('^' unary)?\`: at most one \`^\`, and the exponent read by \`unary\`, which can itself hold another power and a leading minus.
+--- hint
+Dividing by zero does not stop a \`double\`: \`1 / 0\` is infinity. The final \`std::isfinite\` catches that on its own, but \`1 / infinity\` is a perfectly finite 0. Check the right-hand side of \`/\` before dividing, as the capstone does.
+--- check test | Power groups from the right
+evaluate("2 ^ 3 ^ 2") == 512.0 && evaluate("2 ^ 2 ^ 3") == 256.0 && evaluate("(2 ^ 3) ^ 2") == 64.0
+--- check test | A minus on the exponent
+evaluate("2 ^ -1") == 0.5 && evaluate("-2 ^ 2") == -4.0 && evaluate("(-2) ^ 2") == 4.0 && evaluate("10 ^ -2") == 0.01
+--- check test | Any division by zero is an error
+!evaluate("1 / 0") && !evaluate("1 / (1 / 0)") && !evaluate("0 / 0") && !evaluate("5 / (2 - 2)")
+--- check test | Everything else still works
+evaluate("1 + 2 * 3") == 7.0 && evaluate("8 - 3 - 2") == 3.0 && evaluate("7 / 2") == 3.5 && !evaluate("2 3") && !evaluate("(1")
+
++++ practice | Stretch: a calculator with functions
+--- task
+Give the calculator functions. Write \`std::optional<double> evaluate(const std::string& s)\`. No \`main\`.
+
+- Everything from the capstone except variables: numbers (digits, then optionally a point and at least one digit), \`+ - * /\`, \`^\`, unary minus and brackets, with the capstone's precedence, grouping and errors (bad syntax, leftovers, division by zero, a result that is not finite).
+- A **function call** is a name (letters only), then \`(\`, one or more arguments separated by commas, and \`)\`. Each argument is a full expression. Spaces are allowed between the pieces. A call is a primary, like a number: \`-sqrt(4) ^ 2\` is -4.
+- The functions: \`sqrt(x)\` and \`abs(x)\` take exactly one argument; \`min(...)\` and \`max(...)\` take one or more.
+- Errors, besides the capstone's: an unknown function name, the wrong number of arguments (\`sqrt(1, 2)\`, \`abs()\`, \`max()\`), a name without brackets (there are no variables), and \`sqrt\` of a negative number.
+
+\`evaluate("sqrt(16) + abs(-3)")\` is 7, and \`evaluate("2 * max(1, min(3, 2))")\` is 4. Include \`<cctype>\`, \`<cmath>\`, \`<cstdlib>\` and \`<vector>\`.
+--- starter
+#include <optional>
+#include <string>
+
+std::optional<double> evaluate(const std::string& s) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <vector>
+
+// expr := term (('+'|'-') term)*    term := unary (('*'|'/') unary)*
+// unary := '-' unary | power        power := primary ('^' unary)?
+// primary := number | call | '(' expr ')'
+// call := name '(' expr (',' expr)* ')'
+struct FnCalc {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<double> expr() {
+        auto left = term();
+        while (left) {
+            if (eat('+')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left += *right;
+            } else if (eat('-')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left -= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = unary();
+        while (left) {
+            if (eat('*')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left *= *right;
+            } else if (eat('/')) {
+                auto right = unary();
+                if (!right || *right == 0) return std::nullopt;
+                *left /= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return -*v;
+        }
+        return power();
+    }
+
+    std::optional<double> power() {
+        auto base = primary();
+        if (!base) return std::nullopt;
+        if (eat('^')) {
+            auto exponent = unary();
+            if (!exponent) return std::nullopt;
+            return std::pow(*base, *exponent);
+        }
+        return base;
+    }
+
+    std::optional<double> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        if (i >= s.size()) return std::nullopt;
+        std::size_t start = i;
+        if (std::isdigit(static_cast<unsigned char>(s[i]))) {
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+            if (i < s.size() && s[i] == '.') {
+                ++i;
+                if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+                while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+            }
+            return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+        }
+        if (std::isalpha(static_cast<unsigned char>(s[i]))) {
+            while (i < s.size() && std::isalpha(static_cast<unsigned char>(s[i]))) ++i;
+            return call(s.substr(start, i - start));
+        }
+        return std::nullopt;
+    }
+
+    std::optional<double> call(const std::string& name) {
+        if (!eat('(')) return std::nullopt;   // a name on its own: there are no variables
+        std::vector<double> args;
+        do {
+            auto a = expr();
+            if (!a) return std::nullopt;
+            args.push_back(*a);
+        } while (eat(','));
+        if (!eat(')')) return std::nullopt;
+
+        if (name == "sqrt" || name == "abs") {
+            if (args.size() != 1) return std::nullopt;
+            if (name == "abs") return std::abs(args[0]);
+            if (args[0] < 0) return std::nullopt;
+            return std::sqrt(args[0]);
+        }
+        if (name == "min" || name == "max") {
+            double best = args[0];
+            for (double a : args) {
+                if (name == "min" && a < best) best = a;
+                if (name == "max" && a > best) best = a;
+            }
+            return best;
+        }
+        return std::nullopt;   // no such function
+    }
+};
+
+std::optional<double> evaluate(const std::string& s) {
+    FnCalc c{s};
+    auto v = c.expr();
+    c.skip();
+    if (!v || c.i != s.size() || !std::isfinite(*v)) return std::nullopt;
+    return v;
+}
+--- hint
+Start from the capstone's parser without variables. The only new grammar is in \`primary\`: a letter starts a name, and a name must be followed by \`(\`. Write a separate \`call\` function for what comes after the name.
+--- hint
+In \`call\`, read one argument with \`expr()\`, then keep reading more while \`eat(',')\` succeeds, then insist on \`)\`. A \`do … while\` loop fits: at least one argument, then more after each comma. \`abs()\` and \`max()\` then fail by themselves, because \`expr\` cannot read an empty argument.
+--- hint
+Only after the arguments are read, check the name and the argument count, and compute: \`std::sqrt\`, \`std::abs\`, or a loop for \`min\` and \`max\`. Anything unknown is \`std::nullopt\`.
+--- check test | One-argument functions
+evaluate("sqrt(16) + abs(-3)") == 7.0 && evaluate("abs(2 - 10) / 4") == 2.0 && evaluate("sqrt (2.25)") == 1.5
+--- check test | min and max with any number of arguments, nested
+evaluate("max(1, 2 ^ 3, -4)") == 8.0 && evaluate("min(5)") == 5.0 && evaluate("2 * max(1, min(3, 2))") == 4.0 && evaluate("min(-1, -7, 0)") == -7.0
+--- check test | A call is a primary
+evaluate("-sqrt(4) ^ 2") == -4.0 && evaluate("2 ^ abs(-3)") == 8.0 && evaluate("(max(1, 2))") == 2.0
+--- check test | Wrong names and wrong argument counts
+!evaluate("foo(1)") && !evaluate("sqrt(1, 2)") && !evaluate("abs()") && !evaluate("max()") && !evaluate("min(1,)") && !evaluate("sqrt 4") && !evaluate("x + 1")
+--- check test | The capstone's errors still apply
+!evaluate("sqrt(-1)") && !evaluate("1 / (2 - max(1, 2))") && !evaluate("max(1, 2") && !evaluate("abs(1) 2") && !evaluate("")
+
+=== cppp-gate | C++ projects: mastery gate
+--- teach
+This gate covers the whole course: matrices stored row by row, operations that can fail returning \`std::optional\`, elimination and fast powers; money in whole cents, account classes that keep their rules, ownership with \`std::unique_ptr\` and all-or-nothing operations with a log; reading and measuring text; and the three capstones' tools: priority queues and Kahn's algorithm, variants, escaping, and recursive-descent parsing. Every problem is new and most mix two or more lessons, with no hints. The questions at the end check that you understand why the code works. To get ready, redo from memory the practice problems of the lessons that felt hardest, and time yourself: about ten minutes a problem.
+--- gate
+pass 7
+questions 9
+minutes 111
+
++++ problem | Sums of any rectangle, instantly
+--- task
+The starter holds a \`Matrix\` like the one from the matrix project. Write \`class RegionSums\`, which answers "what do the elements of this rectangle add up to?" in constant time, however big the rectangle. No \`main\`.
+
+- \`explicit RegionSums(const Matrix& m)\` does all the preparation, in time proportional to the number of elements.
+- \`std::optional<double> sum(std::size_t r1, std::size_t c1, std::size_t r2, std::size_t c2) const\` returns the sum of every element \`(r, c)\` with \`r1 <= r <= r2\` and \`c1 <= c <= c2\`. It returns \`std::nullopt\` if \`r1 > r2\`, if \`c1 > c2\`, or if \`r2\` or \`c2\` is outside the matrix.
+- Each call to \`sum\` must take constant time: the checks ask a million questions about a 500 × 500 matrix.
+
+For \`Matrix{{1, 2, 3}, {4, 5, 6}}\`, \`sum(0, 1, 1, 2)\` is 2 + 3 + 5 + 6 = 16.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+--- solution
+#include <cstddef>
+#include <initializer_list>
+#include <optional>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+class RegionSums {
+public:
+    // prefix_ has one extra row and column of zeros: prefix(r, c) is the sum of
+    // every element above and to the left of (r, c), not including row r or column c.
+    explicit RegionSums(const Matrix& m)
+        : rows_(m.rows()), cols_(m.cols()), prefix_((m.rows() + 1) * (m.cols() + 1), 0.0) {
+        for (std::size_t r = 0; r < rows_; ++r)
+            for (std::size_t c = 0; c < cols_; ++c)
+                at(r + 1, c + 1) = m(r, c) + at(r, c + 1) + at(r + 1, c) - at(r, c);
+    }
+
+    std::optional<double> sum(std::size_t r1, std::size_t c1, std::size_t r2, std::size_t c2) const {
+        if (r1 > r2 || c1 > c2 || r2 >= rows_ || c2 >= cols_) return std::nullopt;
+        return at(r2 + 1, c2 + 1) - at(r1, c2 + 1) - at(r2 + 1, c1) + at(r1, c1);
+    }
+
+private:
+    double& at(std::size_t r, std::size_t c) { return prefix_[r * (cols_ + 1) + c]; }
+    double at(std::size_t r, std::size_t c) const { return prefix_[r * (cols_ + 1) + c]; }
+
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> prefix_;
+};
+--- check test | The example, and a single element
+[] { RegionSums s(Matrix{{1, 2, 3}, {4, 5, 6}}); return s.sum(0, 1, 1, 2) == 16.0 && s.sum(1, 0, 1, 0) == 4.0 && s.sum(0, 0, 1, 2) == 21.0; }()
+--- check test | Negative values, and rows or columns alone
+[] { RegionSums s(Matrix{{-1, 2, -3}, {4, -5, 6}, {-7, 8, -9}}); return s.sum(0, 0, 2, 2) == -5.0 && s.sum(1, 0, 1, 2) == 5.0 && s.sum(0, 2, 2, 2) == -6.0; }()
+--- check test | Rectangles that do not exist
+[] { RegionSums s(Matrix{{1, 2}, {3, 4}}); return !s.sum(1, 0, 0, 1) && !s.sum(0, 1, 1, 0) && !s.sum(0, 0, 2, 1) && !s.sum(0, 0, 1, 2) && !RegionSums(Matrix(0, 0)).sum(0, 0, 0, 0); }()
+--- check test | A million questions about a 500 x 500 matrix
+[] { Matrix m(500, 500); for (std::size_t r = 0; r < 500; ++r) for (std::size_t c = 0; c < 500; ++c) m(r, c) = static_cast<double>(r + c); RegionSums s(m); for (std::size_t q = 0; q < 1000000; ++q) { std::size_t r1 = q % 250, r2 = r1 + q % 249, c1 = (q / 3) % 250, c2 = c1 + (q / 7) % 250; double h = static_cast<double>(r2 - r1 + 1), w = static_cast<double>(c2 - c1 + 1); double want = w * (static_cast<double>(r1 + r2) * h / 2) + h * (static_cast<double>(c1 + c2) * w / 2); auto got = s.sum(r1, c1, r2, c2); if (!got || *got != want) return false; } return true; }()
+
++++ problem | A knight dialing phone numbers
+--- task
+A chess knight stands on a phone keypad and dials a number by hopping. The keypad is:
+
+\`\`\`
+1 2 3
+4 5 6
+7 8 9
+  0
+\`\`\`
+
+A knight moves in an L shape, which on this keypad allows exactly these hops: from 0 to 4 or 6; from 1 to 6 or 8; from 2 to 7 or 9; from 3 to 4 or 8; from 4 to 0, 3 or 9; from 5 nowhere; from 6 to 0, 1 or 7; from 7 to 2 or 6; from 8 to 1 or 3; from 9 to 2 or 4.
+
+Write \`long long knight_numbers(unsigned long long n)\`: how many different sequences of exactly \`n\` digits the knight can dial, starting on any key (so a sequence may start with 0), where each next digit is one hop from the one before. Return the count **modulo 1,000,000,007**. No \`main\`.
+
+- \`n\` = 1 gives 10 (any single key), \`n\` = 2 gives 20, \`n\` = 3 gives 46. \`n\` = 0 gives 0.
+- \`n\` can be as large as 10¹⁸, so the answer must take about log₂ n steps.
+--- starter
+long long knight_numbers(unsigned long long n) {
+    return 0;
+}
+--- solution
+#include <cstddef>
+#include <vector>
+
+using Grid = std::vector<std::vector<long long>>;
+
+const long long kMod = 1000000007;
+
+Grid times(const Grid& x, const Grid& y) {
+    std::size_t n = x.size();
+    Grid out(n, std::vector<long long>(n, 0));
+    for (std::size_t i = 0; i < n; ++i)
+        for (std::size_t t = 0; t < n; ++t)
+            for (std::size_t j = 0; j < n; ++j) out[i][j] = (out[i][j] + x[i][t] * y[t][j]) % kMod;
+    return out;
+}
+
+long long knight_numbers(unsigned long long n) {
+    if (n == 0) return 0;
+    const std::vector<std::vector<int>> hops = {{4, 6}, {6, 8}, {7, 9}, {4, 8}, {0, 3, 9}, {}, {0, 1, 7}, {2, 6}, {1, 3}, {2, 4}};
+    Grid base(10, std::vector<long long>(10, 0));   // base[a][b] is 1 when the knight can hop from a to b
+    for (int a = 0; a < 10; ++a)
+        for (int b : hops[a]) base[a][b] = 1;
+    Grid result(10, std::vector<long long>(10, 0));
+    for (int i = 0; i < 10; ++i) result[i][i] = 1;
+    unsigned long long k = n - 1;   // a number of n digits takes n - 1 hops
+    while (k > 0) {
+        if (k & 1) result = times(result, base);
+        k >>= 1;
+        if (k > 0) base = times(base, base);
+    }
+    long long total = 0;   // every start key, every end key
+    for (const auto& row : result)
+        for (long long x : row) total = (total + x) % kMod;
+    return total;
+}
+--- check test | Short numbers
+knight_numbers(1) == 10 && knight_numbers(2) == 20 && knight_numbers(3) == 46 && knight_numbers(4) == 104 && knight_numbers(7) == 1256
+--- check test | No digits
+knight_numbers(0) == 0
+--- check test | Long numbers, modulo 1,000,000,007
+knight_numbers(5000) == 406880451 && knight_numbers(1000000000000000000ULL) == 805313014
+
++++ problem | A ledger that can reverse a payment
+--- task
+Write \`class Ledger\`, a small bank that keeps balances in cents and can **reverse** an account's latest operation, the way a bank reverses a payment made by mistake. No \`main\`.
+
+- \`int open()\`: opens an account with a balance of 0 and returns its id: 1, 2, 3, … in order.
+- \`bool deposit(int id, long long cents)\`, \`bool withdraw(int id, long long cents)\` and \`bool transfer(int from, int to, long long cents)\`, with the bank project's rules: the ids must exist, the amount must be positive, no account ever goes below 0, and a transfer needs two different accounts and is all or nothing. A refused call returns \`false\` and changes nothing.
+- Only **successful** operations are remembered.
+- \`bool reverse_last(int id)\` finds the most recent remembered operation that involves account \`id\` (a deposit to it, a withdrawal from it, or a transfer from or to it), reverses it and forgets it: a deposit is taken back out, a withdrawal put back, a transfer moved back. If reversing it would take an account below 0, because that money has been spent since, it returns \`false\`, changes nothing, and the operation stays remembered. With no such operation, it returns \`false\`.
+- \`std::optional<long long> balance(int id) const\`: the balance, or \`std::nullopt\` for an unknown id.
+
+For example, after a deposit of 500 into account 1, a transfer of 500 from 1 to 2 and a withdrawal of 400 from 2, \`reverse_last(1)\` is refused (account 2 holds only 100), but \`reverse_last(2)\` puts the 400 back.
+--- starter
+#include <optional>
+
+class Ledger {
+public:
+    int open() { return 1; }
+    bool deposit(int id, long long cents) { return false; }
+    bool withdraw(int id, long long cents) { return false; }
+    bool transfer(int from, int to, long long cents) { return false; }
+    bool reverse_last(int id) { return false; }
+    std::optional<long long> balance(int id) const { return std::nullopt; }
+};
+--- solution
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+class Ledger {
+public:
+    int open() {
+        balances_.push_back(0);
+        return static_cast<int>(balances_.size());
+    }
+
+    bool deposit(int id, long long cents) {
+        if (!known(id) || cents <= 0) return false;
+        money(id) += cents;
+        done_.push_back(Move{0, id, cents});
+        return true;
+    }
+
+    bool withdraw(int id, long long cents) {
+        if (!known(id) || cents <= 0 || cents > money(id)) return false;
+        money(id) -= cents;
+        done_.push_back(Move{id, 0, cents});
+        return true;
+    }
+
+    bool transfer(int from, int to, long long cents) {
+        if (from == to || !known(from) || !known(to) || cents <= 0 || cents > money(from)) return false;
+        money(from) -= cents;
+        money(to) += cents;
+        done_.push_back(Move{from, to, cents});
+        return true;
+    }
+
+    bool reverse_last(int id) {
+        if (!known(id)) return false;
+        for (std::size_t k = done_.size(); k > 0; --k) {
+            const Move m = done_[k - 1];
+            if (m.from != id && m.to != id) continue;
+            // Reversing sends the money from \`to\` back to \`from\`; 0 means outside the bank.
+            if (m.to != 0 && money(m.to) < m.cents) return false;
+            if (m.to != 0) money(m.to) -= m.cents;
+            if (m.from != 0) money(m.from) += m.cents;
+            done_.erase(done_.begin() + static_cast<std::ptrdiff_t>(k - 1));
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<long long> balance(int id) const {
+        if (!known(id)) return std::nullopt;
+        return balances_[static_cast<std::size_t>(id - 1)];
+    }
+
+private:
+    struct Move {
+        int from;   // 0: the money came from outside (a deposit)
+        int to;     // 0: the money left the bank (a withdrawal)
+        long long cents;
+    };
+
+    bool known(int id) const { return id >= 1 && static_cast<std::size_t>(id) <= balances_.size(); }
+    long long& money(int id) { return balances_[static_cast<std::size_t>(id - 1)]; }
+
+    std::vector<long long> balances_;   // account id - 1 -> balance
+    std::vector<Move> done_;            // successful operations, oldest first
+};
+--- check test | Reverse a withdrawal, then the deposit
+[] { Ledger l; int a = l.open(); l.deposit(a, 1000); l.withdraw(a, 300); bool r1 = l.reverse_last(a); bool mid = l.balance(a) == 1000; bool r2 = l.reverse_last(a); return r1 && mid && r2 && l.balance(a) == 0 && !l.reverse_last(a); }()
+--- check test | Reverse a transfer from the receiving side
+[] { Ledger l; int a = l.open(); int b = l.open(); l.deposit(a, 500); l.transfer(a, b, 200); bool r = l.reverse_last(b); return a == 1 && b == 2 && r && l.balance(a) == 500 && l.balance(b) == 0; }()
+--- check test | Money spent since: refused, and still remembered
+[] { Ledger l; int a = l.open(); int b = l.open(); int c = l.open(); l.deposit(a, 500); l.transfer(a, b, 500); l.deposit(c, 50); l.withdraw(b, 400); bool blocked = !l.reverse_last(a) && l.balance(a) == 0 && l.balance(b) == 100; bool back = l.reverse_last(b) && l.balance(b) == 500; bool again = l.reverse_last(a) && l.balance(a) == 500 && l.balance(b) == 0; bool other = l.reverse_last(c) && l.balance(c) == 0; return blocked && back && again && other; }()
+--- check test | Only the account's own operations
+[] { Ledger l; int a = l.open(); int b = l.open(); l.deposit(a, 100); l.deposit(b, 70); bool r = l.reverse_last(a); return r && l.balance(a) == 0 && l.balance(b) == 70 && !l.reverse_last(a); }()
+--- check test | Refused calls are not remembered
+[] { Ledger l; int a = l.open(); int b = l.open(); l.deposit(a, 100); bool w = l.withdraw(a, 500); bool t = l.transfer(a, a, 10); bool d = l.deposit(9, 10); bool z = l.deposit(b, 0); bool r = l.reverse_last(a); return !w && !t && !d && !z && r && l.balance(a) == 0 && !l.reverse_last(a) && !l.reverse_last(b); }()
+--- check test | Unknown accounts
+[] { Ledger l; l.open(); return !l.balance(0) && !l.balance(2) && l.balance(1) == 0 && !l.transfer(1, 2, 5) && !l.withdraw(-1, 5) && !l.reverse_last(7) && !l.reverse_last(0); }()
+
++++ problem | Fee plans for a payment processor
+--- task
+The starter declares an interface, \`class Plan\`, with a pure virtual \`long long fee(long long amount) const\`: the fee, in cents, for a payment of \`amount\` cents. Write three plans deriving from it, and a processor that owns them. No \`main\`.
+
+- \`FlatPlan(long long fee)\`: the same fee whatever the amount.
+- \`PercentPlan(int rate_bp, long long min_fee, long long max_fee)\`: \`amount * rate_bp / 10000\`, **rounded up** to a whole cent, then raised to \`min_fee\` if it is below that, and lowered to \`max_fee\` if it is above that.
+- \`TieredPlan(long long threshold, long long low_fee, long long high_fee)\`: \`low_fee\` for amounts below \`threshold\`, \`high_fee\` for amounts of \`threshold\` or more.
+- \`class Processor\` owns its plans in a \`std::map<std::string, std::unique_ptr<Plan>>\`:
+  - \`bool add_plan(const std::string& name, std::unique_ptr<Plan> plan)\`: \`false\` if the name is taken or \`plan\` is empty.
+  - \`std::optional<long long> charge(const std::string& name, long long amount)\`: \`std::nullopt\` for an unknown plan or an amount that is not positive. Otherwise it returns the plan's fee and adds it to the running total.
+  - \`long long total() const\`: every fee charged so far. \`std::size_t plans() const\`: how many plans it owns.
+
+A \`PercentPlan(250, 30, 1000)\` charges 30 on 1000 (25 is raised to the minimum), 38 on 1500 (37.5 rounds up) and 1000 on 100000.
+--- starter
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+
+class Plan {
+public:
+    virtual ~Plan() = default;
+    virtual long long fee(long long amount) const = 0;
+};
+--- solution
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+class Plan {
+public:
+    virtual ~Plan() = default;
+    virtual long long fee(long long amount) const = 0;
+};
+
+class FlatPlan : public Plan {
+public:
+    explicit FlatPlan(long long fee) : fee_(fee) {}
+    long long fee(long long) const override { return fee_; }
+private:
+    long long fee_;
+};
+
+class PercentPlan : public Plan {
+public:
+    PercentPlan(int rate_bp, long long min_fee, long long max_fee)
+        : rate_bp_(rate_bp), min_fee_(min_fee), max_fee_(max_fee) {}
+    long long fee(long long amount) const override {
+        long long f = (amount * rate_bp_ + 9999) / 10000;   // rounded up
+        if (f < min_fee_) f = min_fee_;
+        if (f > max_fee_) f = max_fee_;
+        return f;
+    }
+private:
+    int rate_bp_;
+    long long min_fee_;
+    long long max_fee_;
+};
+
+class TieredPlan : public Plan {
+public:
+    TieredPlan(long long threshold, long long low_fee, long long high_fee)
+        : threshold_(threshold), low_fee_(low_fee), high_fee_(high_fee) {}
+    long long fee(long long amount) const override { return amount < threshold_ ? low_fee_ : high_fee_; }
+private:
+    long long threshold_;
+    long long low_fee_;
+    long long high_fee_;
+};
+
+class Processor {
+public:
+    bool add_plan(const std::string& name, std::unique_ptr<Plan> plan) {
+        if (!plan || plans_.contains(name)) return false;
+        plans_[name] = std::move(plan);
+        return true;
+    }
+
+    std::optional<long long> charge(const std::string& name, long long amount) {
+        auto it = plans_.find(name);
+        if (it == plans_.end() || amount <= 0) return std::nullopt;
+        long long f = it->second->fee(amount);   // the real plan's fee, through the base pointer
+        total_ += f;
+        return f;
+    }
+
+    long long total() const { return total_; }
+    std::size_t plans() const { return plans_.size(); }
+
+private:
+    std::map<std::string, std::unique_ptr<Plan>> plans_;
+    long long total_ = 0;
+};
+--- check test | Each plan's fee
+FlatPlan(50).fee(1) == 50 && FlatPlan(50).fee(999999) == 50 && TieredPlan(10000, 25, 99).fee(9999) == 25 && TieredPlan(10000, 25, 99).fee(10000) == 99
+--- check test | Percent: rounded up, then clamped
+PercentPlan(250, 30, 1000).fee(1000) == 30 && PercentPlan(250, 30, 1000).fee(1500) == 38 && PercentPlan(250, 30, 1000).fee(2000) == 50 && PercentPlan(250, 30, 1000).fee(100000) == 1000
+--- check test | The processor charges through the right plan
+[] { Processor p; p.add_plan("flat", std::make_unique<FlatPlan>(50)); p.add_plan("pct", std::make_unique<PercentPlan>(100, 0, 500)); auto a = p.charge("flat", 1234); auto b = p.charge("pct", 1234); return a == 50 && b == 13 && p.total() == 63 && p.plans() == 2; }()
+--- check test | Refusals charge nothing
+[] { Processor p; p.add_plan("flat", std::make_unique<FlatPlan>(50)); bool dup = p.add_plan("flat", std::make_unique<FlatPlan>(1)); bool empty = p.add_plan("none", nullptr); auto u = p.charge("gold", 100); auto z = p.charge("flat", 0); auto n = p.charge("flat", -5); return !dup && !empty && !u && !z && !n && p.total() == 0 && p.plans() == 1 && p.charge("flat", 1) == 50; }()
+--- check test | Plans are called through the base class
+[] { std::unique_ptr<Plan> p = std::make_unique<TieredPlan>(500, 1, 2); const Plan& r = *p; return r.fee(499) == 1 && r.fee(500) == 2; }()
+
++++ problem | Where each word appears
+--- task
+A **concordance** lists, for every word of a text, the lines it appears on. Write \`std::string concordance(const std::string& text)\`. No \`main\`.
+
+- Lines are numbered from 1, as \`std::getline\` reads them.
+- Words are normalized as in the text-statistics project: characters that are not letters or digits are trimmed from both ends, the rest is lowercased, and pieces that become empty are skipped.
+- One output line per word, in alphabetical order: the word, \`: \`, then the numbers of the lines it appears on, in increasing order, each number **once** even if the word appears several times on that line, separated by \`, \`. Every output line ends with \`\\n\`.
+- A text with no words gives \`""\`.
+
+For \`"The river.\\nA RIVER, a boat\\n\\nthe boat, the river"\` the result is \`"a: 2\\nboat: 2, 4\\nriver: 1, 2, 4\\nthe: 1, 4\\n"\`.
+--- starter
+#include <string>
+
+std::string concordance(const std::string& text) {
+    return "";
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::string normalize(const std::string& raw) {
+    std::size_t a = 0;
+    std::size_t b = raw.size();
+    while (a < b && !std::isalnum(static_cast<unsigned char>(raw[a]))) ++a;
+    while (b > a && !std::isalnum(static_cast<unsigned char>(raw[b - 1]))) --b;
+    std::string w = raw.substr(a, b - a);
+    for (char& c : w) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return w;
+}
+
+std::string concordance(const std::string& text) {
+    std::map<std::string, std::vector<int>> where;
+    std::istringstream input(text);
+    std::string line;
+    int number = 0;
+    while (std::getline(input, line)) {
+        ++number;
+        std::istringstream in(line);
+        std::string raw;
+        while (in >> raw) {
+            std::string w = normalize(raw);
+            if (w.empty()) continue;
+            std::vector<int>& lines = where[w];
+            if (lines.empty() || lines.back() != number) lines.push_back(number);   // once per line
+        }
+    }
+    std::ostringstream out;
+    for (const auto& [word, lines] : where) {
+        out << word << ": ";
+        for (std::size_t i = 0; i < lines.size(); ++i) {
+            if (i > 0) out << ", ";
+            out << lines[i];
+        }
+        out << "\\n";
+    }
+    return out.str();
+}
+--- check case | The example
+concordance("The river.\\nA RIVER, a boat\\n\\nthe boat, the river")
+=> "a: 2\\nboat: 2, 4\\nriver: 1, 2, 4\\nthe: 1, 4\\n"
+--- check case | Repeats on one line count once
+concordance("go go GO!\\nstop -- go")
+=> "go: 1, 2\\nstop: 2\\n"
+--- check case | No words at all
+concordance("") + concordance("-- ...\\n\\n!!")
+=> ""
+--- check case | Digits are words too
+concordance("Apollo 11\\n(11) launches\\nApollo.")
+=> "11: 1, 2\\napollo: 1, 3\\nlaunches: 2\\n"
+
++++ problem | Justify a paragraph
+--- task
+Write \`std::vector<std::string> justify(const std::string& text, std::size_t width)\`, which lays out the words of \`text\` in lines of exactly \`width\` characters, like a newspaper column. No \`main\`.
+
+- The words are the whitespace-separated pieces of \`text\`, exactly as written: no normalizing.
+- Fill each line **greedily**: as many words as fit with one space between each pair, without going over \`width\`.
+- Every line except the last is **fully justified**: the spaces between its words are widened so the line is exactly \`width\` long. When they cannot all be the same, the gaps on the left get one more space than those on the right.
+- A line with a single word, and the last line, are **left-aligned**: single spaces between words, then spaces on the right up to \`width\`.
+- A word longer than \`width\` goes on a line of its own, whole and unpadded.
+- A text with no words gives an empty list.
+
+\`justify("This is an example of text justification.", 16)\` is \`{"This    is    an", "example  of text", "justification.  "}\`.
+--- starter
+#include <cstddef>
+#include <string>
+#include <vector>
+
+std::vector<std::string> justify(const std::string& text, std::size_t width) {
+    return {text};
+}
+--- solution
+#include <cstddef>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::vector<std::string> justify(const std::string& text, std::size_t width) {
+    std::vector<std::string> words;
+    std::istringstream in(text);
+    std::string w;
+    while (in >> w) words.push_back(w);
+
+    std::vector<std::string> lines;
+    std::size_t i = 0;
+    while (i < words.size()) {
+        // Take words [i, j) while they fit with single spaces.
+        std::size_t j = i + 1;
+        std::size_t used = words[i].size();
+        while (j < words.size() && used + 1 + words[j].size() <= width) {
+            used += 1 + words[j].size();
+            ++j;
+        }
+        std::size_t gaps = j - i - 1;
+        std::string line;
+        if (j == words.size() || gaps == 0) {
+            for (std::size_t k = i; k < j; ++k) {
+                if (k > i) line += ' ';
+                line += words[k];
+            }
+            if (line.size() < width) line += std::string(width - line.size(), ' ');
+        } else {
+            std::size_t letters = used - gaps;   // used counted one space per gap
+            std::size_t spaces = width - letters;
+            std::size_t each = spaces / gaps;
+            std::size_t extra = spaces % gaps;   // the leftmost gaps get one more
+            for (std::size_t k = i; k < j; ++k) {
+                line += words[k];
+                if (k + 1 < j) line += std::string(each + (k - i < extra ? 1 : 0), ' ');
+            }
+        }
+        lines.push_back(line);
+        i = j;
+    }
+    return lines;
+}
+--- check test | The example
+justify("This is an example of text justification.", 16) == std::vector<std::string>{"This    is    an", "example  of text", "justification.  "}
+--- check test | A lone long word, and uneven gaps
+justify("What must be acknowledgment shall be", 16) == std::vector<std::string>{"What   must   be", "acknowledgment  ", "shall be        "}
+--- check test | Words longer than the width
+justify("a verylongwordhere b", 5) == std::vector<std::string>{"a    ", "verylongwordhere", "b    "}
+--- check test | Exactly full, and nothing at all
+justify("ab cd", 5) == std::vector<std::string>{"ab cd"} && justify("   ", 10).empty() && justify("", 3).empty()
+--- check test | Extra spaces go to the left gaps
+justify("a b c d e", 8) == std::vector<std::string>{"a  b c d", "e       "}
+
++++ problem | How many meeting rooms?
+--- task
+Write \`int rooms_needed(const std::vector<std::pair<int, int>>& meetings)\`: the smallest number of rooms that can hold every meeting, if two meetings in the same room must not overlap. No \`main\`.
+
+- Each meeting is \`{start, end}\` with \`start < end\`. It uses its room from \`start\` up to, but not including, \`end\`: a meeting that ends at 10 frees its room for one that starts at 10.
+- No meetings need 0 rooms.
+- It must be fast: the checks schedule 100,000 meetings, so anything that compares every meeting with every other runs out of time.
+
+\`rooms_needed({{0, 30}, {5, 10}, {15, 20}})\` is 2.
+--- starter
+#include <utility>
+#include <vector>
+
+int rooms_needed(const std::vector<std::pair<int, int>>& meetings) {
+    return static_cast<int>(meetings.size());
+}
+--- solution
+#include <algorithm>
+#include <functional>
+#include <queue>
+#include <utility>
+#include <vector>
+
+int rooms_needed(const std::vector<std::pair<int, int>>& meetings) {
+    std::vector<std::pair<int, int>> sorted = meetings;
+    std::sort(sorted.begin(), sorted.end());   // by start time
+    // The end times of the rooms in use, earliest on top.
+    std::priority_queue<int, std::vector<int>, std::greater<int>> ends;
+    for (const auto& [start, end] : sorted) {
+        if (!ends.empty() && ends.top() <= start) ends.pop();   // that room is free again
+        ends.push(end);
+    }
+    return static_cast<int>(ends.size());
+}
+--- check test | Overlaps and gaps
+rooms_needed({{0, 30}, {5, 10}, {15, 20}}) == 2 && rooms_needed({{7, 10}, {2, 4}}) == 1
+--- check test | Back to back needs one room
+rooms_needed({{1, 5}, {5, 9}, {9, 12}}) == 1 && rooms_needed({{9, 12}, {1, 5}, {5, 9}}) == 1
+--- check test | The same meeting three times, and none at all
+rooms_needed({{3, 4}, {3, 4}, {3, 4}}) == 3 && rooms_needed({}) == 0
+--- check test | 100,000 meetings
+[] { std::vector<std::pair<int, int>> m; for (int i = 0; i < 100000; ++i) m.push_back({i, i + 1000}); return rooms_needed(m) == 1000; }()
+
++++ problem | Read a settings file
+--- task
+A settings file holds lines like \`window.width = 640\`. Write:
+
+\`std::optional<std::map<std::string, Setting>> parse_config(const std::string& text)\`
+
+where the starter declares \`using Setting = std::variant<bool, double, std::string>;\`. No \`main\`.
+
+- Lines that are blank (empty or only spaces), and lines whose first non-space character is \`#\`, are skipped.
+- Every other line is \`key = value\`, with spaces allowed at the start, around the \`=\` and at the end. A key starts with a letter, then letters, digits, \`_\` or \`.\`.
+- A value is exactly one of: \`true\` or \`false\` (a \`bool\`); a number, meaning an optional \`-\`, one or more digits, and optionally a \`.\` followed by one or more digits (a \`double\`); or a string in double quotes, where a backslash may only be followed by \`"\`, \`\\\`, \`n\` or \`t\` (a \`std::string\`, with the escapes turned into their characters). Nothing but spaces may follow the value.
+- If a key appears twice, the later value wins.
+- If **any** line breaks these rules, the whole file is refused: return \`std::nullopt\`.
+--- starter
+#include <map>
+#include <optional>
+#include <string>
+#include <variant>
+
+using Setting = std::variant<bool, double, std::string>;
+
+std::optional<std::map<std::string, Setting>> parse_config(const std::string& text) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cstddef>
+#include <cstdlib>
+#include <map>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <variant>
+
+using Setting = std::variant<bool, double, std::string>;
+
+bool is_digit(char c) { return c >= '0' && c <= '9'; }
+
+// Reads one value starting at line[i]; afterwards i is just past it.
+std::optional<Setting> read_value(const std::string& line, std::size_t& i) {
+    if (line.compare(i, 4, "true") == 0) {
+        i += 4;
+        return Setting{true};
+    }
+    if (line.compare(i, 5, "false") == 0) {
+        i += 5;
+        return Setting{false};
+    }
+    if (i < line.size() && line[i] == '"') {
+        std::string out;
+        ++i;
+        while (i < line.size() && line[i] != '"') {
+            char c = line[i++];
+            if (c != '\\\\') {
+                out += c;
+                continue;
+            }
+            if (i >= line.size()) return std::nullopt;
+            char e = line[i++];
+            if (e == '"') out += '"';
+            else if (e == '\\\\') out += '\\\\';
+            else if (e == 'n') out += '\\n';
+            else if (e == 't') out += '\\t';
+            else return std::nullopt;
+        }
+        if (i >= line.size()) return std::nullopt;   // no closing quote
+        ++i;
+        return Setting{out};
+    }
+    std::size_t start = i;
+    if (i < line.size() && line[i] == '-') ++i;
+    std::size_t first_digit = i;
+    while (i < line.size() && is_digit(line[i])) ++i;
+    if (i == first_digit) return std::nullopt;
+    if (i < line.size() && line[i] == '.') {
+        ++i;
+        std::size_t after_point = i;
+        while (i < line.size() && is_digit(line[i])) ++i;
+        if (i == after_point) return std::nullopt;
+    }
+    return Setting{std::strtod(line.substr(start, i - start).c_str(), nullptr)};
+}
+
+std::optional<std::map<std::string, Setting>> parse_config(const std::string& text) {
+    std::map<std::string, Setting> settings;
+    std::istringstream input(text);
+    std::string line;
+    while (std::getline(input, line)) {
+        std::size_t i = 0;
+        auto skip = [&]() { while (i < line.size() && std::isspace(static_cast<unsigned char>(line[i]))) ++i; };
+        skip();
+        if (i == line.size() || line[i] == '#') continue;
+        if (!std::isalpha(static_cast<unsigned char>(line[i]))) return std::nullopt;
+        std::size_t start = i;
+        while (i < line.size() && (std::isalnum(static_cast<unsigned char>(line[i])) || line[i] == '_' || line[i] == '.')) ++i;
+        std::string key = line.substr(start, i - start);
+        skip();
+        if (i >= line.size() || line[i] != '=') return std::nullopt;
+        ++i;
+        skip();
+        auto value = read_value(line, i);
+        if (!value) return std::nullopt;
+        skip();
+        if (i != line.size()) return std::nullopt;   // something after the value
+        settings[key] = *value;
+    }
+    return settings;
+}
+--- check test | All three kinds
+[] { auto c = parse_config("window.width = 640\\nfullscreen=false\\ntitle = \\"Mission \\\\\\"Alpha\\\\\\"\\"\\ngain = -0.25"); return c && c->size() == 4 && std::get<double>(c->at("window.width")) == 640.0 && std::get<bool>(c->at("fullscreen")) == false && std::get<std::string>(c->at("title")) == "Mission \\"Alpha\\"" && std::get<double>(c->at("gain")) == -0.25; }()
+--- check test | Comments, blank lines and spaces
+[] { auto c = parse_config("# settings\\n\\n   # indented comment\\n  log_level_2 = 3   \\n\\t\\nname=\\"a\\\\tb\\"\\n"); return c && c->size() == 2 && std::get<double>(c->at("log_level_2")) == 3.0 && std::get<std::string>(c->at("name")) == "a\\tb"; }()
+--- check test | The later value wins, and an empty file is fine
+[] { auto c = parse_config("x = 1\\nx = true"); auto e = parse_config(""); return c && c->size() == 1 && std::get<bool>(c->at("x")) && e && e->empty(); }()
+--- check test | One bad line refuses the whole file
+!parse_config("a = 1\\nb = ") && !parse_config("a = 1\\nb 2") && !parse_config("1a = 2") && !parse_config("a = 1.") && !parse_config("a = .5") && !parse_config("a = yes")
+--- check test | Bad strings and leftovers
+!parse_config("a = \\"open") && !parse_config("a = \\"bad \\\\x\\"") && !parse_config("a = true false") && !parse_config("a = 1 # note") && !parse_config("a = trueish")
+
++++ problem | Is the equation true?
+--- task
+Write \`std::optional<bool> check(const std::string& s)\`, which reads a comparison between two expressions and says whether it is true. No \`main\`.
+
+- \`s\` is \`left op right\`. \`op\` is one of \`=\`, \`!=\`, \`<\`, \`<=\`, \`>\`, \`>=\`. \`left\` and \`right\` are expressions with numbers (digits, then optionally a point and at least one digit), \`+ - * /\`, brackets and unary minus, with the usual precedence (\`* /\` before \`+ -\`, left to right) and spaces anywhere between the pieces. There is no \`^\` and there are no variables.
+- Because \`double\`s round, two values count as **equal** when they differ by at most \`1e-9\`. So \`=\` is true when they are equal, \`!=\` when they are not, \`<\` when \`left\` is smaller and they are not equal, \`<=\` when \`left\` is smaller or they are equal, and \`>\` and \`>=\` the same way round.
+- Return \`std::nullopt\` for bad syntax, a missing comparison, more than one comparison, anything left over, or a division by zero.
+
+\`check("2 * (3 + 4) = 14")\` is \`true\`, and \`check("0.1 + 0.2 = 0.3")\` is \`true\` as well.
+--- starter
+#include <optional>
+#include <string>
+
+std::optional<bool> check(const std::string& s) {
+    return std::nullopt;
+}
+--- solution
+#include <cctype>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <optional>
+#include <string>
+
+// expr := term (('+'|'-') term)*   term := unary (('*'|'/') unary)*
+// unary := '-' unary | primary     primary := number | '(' expr ')'
+struct Arith {
+    const std::string& s;
+    std::size_t i = 0;
+
+    void skip() {
+        while (i < s.size() && std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+    }
+
+    bool eat(char c) {
+        skip();
+        if (i < s.size() && s[i] == c) {
+            ++i;
+            return true;
+        }
+        return false;
+    }
+
+    std::optional<double> expr() {
+        auto left = term();
+        while (left) {
+            if (eat('+')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left += *right;
+            } else if (eat('-')) {
+                auto right = term();
+                if (!right) return std::nullopt;
+                *left -= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> term() {
+        auto left = unary();
+        while (left) {
+            if (eat('*')) {
+                auto right = unary();
+                if (!right) return std::nullopt;
+                *left *= *right;
+            } else if (eat('/')) {
+                auto right = unary();
+                if (!right || *right == 0) return std::nullopt;
+                *left /= *right;
+            } else {
+                break;
+            }
+        }
+        return left;
+    }
+
+    std::optional<double> unary() {
+        if (eat('-')) {
+            auto v = unary();
+            if (!v) return std::nullopt;
+            return -*v;
+        }
+        return primary();
+    }
+
+    std::optional<double> primary() {
+        if (eat('(')) {
+            auto v = expr();
+            if (!v || !eat(')')) return std::nullopt;
+            return v;
+        }
+        skip();
+        std::size_t start = i;
+        while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        if (i == start) return std::nullopt;
+        if (i < s.size() && s[i] == '.') {
+            ++i;
+            if (i >= s.size() || !std::isdigit(static_cast<unsigned char>(s[i]))) return std::nullopt;
+            while (i < s.size() && std::isdigit(static_cast<unsigned char>(s[i]))) ++i;
+        }
+        return std::strtod(s.substr(start, i - start).c_str(), nullptr);
+    }
+
+    // The comparison operator: the two-character ones must be tried first.
+    std::string op() {
+        skip();
+        for (const std::string o : {"<=", ">=", "!=", "<", ">", "="}) {
+            if (s.compare(i, o.size(), o) == 0) {
+                i += o.size();
+                return o;
+            }
+        }
+        return "";
+    }
+};
+
+std::optional<bool> check(const std::string& s) {
+    Arith p{s};
+    auto left = p.expr();
+    if (!left) return std::nullopt;
+    std::string o = p.op();
+    if (o.empty()) return std::nullopt;
+    auto right = p.expr();
+    p.skip();
+    if (!right || p.i != s.size()) return std::nullopt;
+    bool equal = std::abs(*left - *right) <= 1e-9;
+    if (o == "=") return equal;
+    if (o == "!=") return !equal;
+    if (o == "<") return !equal && *left < *right;
+    if (o == "<=") return equal || *left < *right;
+    if (o == ">") return !equal && *left > *right;
+    return equal || *left > *right;
+}
+--- check test | True and false equations
+check("2 * (3 + 4) = 14") == true && check("1 + 1 = 3") == false && check("-(2 - 5) = 3") == true
+--- check test | Rounding does not break equality
+check("0.1 + 0.2 = 0.3") == true && check("1 / 3 * 3 = 1") == true && check("5 != 5.0000000001") == false && check("5 != 5.001") == true
+--- check test | The other comparisons
+check("1 < 2") == true && check("1 < 1") == false && check("1 <= 1") == true && check("3 >= 4") == false && check("4 > 3.5") == true && check("2 > 2") == false
+--- check test | Bad syntax, missing or extra comparisons
+!check("1 + 2") && !check("1 < 2 < 3") && !check("1 = ") && !check("= 1") && !check("1 == 1") && !check("(1 = 1)") && !check("1 = 1 2")
+--- check test | Division by zero on either side
+!check("1 / 0 = 1") && !check("1 = 2 / (1 - 1)")
+
++++ problem | The rank of a matrix
+--- task
+The **rank** of a matrix is how many of its rows are truly independent: how many pivots Gaussian elimination finds. The starter holds a \`Matrix\`. Write \`int matrix_rank(const Matrix& m)\`, for a matrix of **any** shape. No \`main\`.
+
+Eliminate on a copy of the data, with partial pivoting, keeping a current row that starts at 0:
+
+1. Go through the columns from left to right, while the current row is still inside the matrix.
+2. In each column, look from the current row down for the value with the largest absolute value. If it is below \`1e-9\`, this column has no pivot: go on to the next column, keeping the same current row.
+3. Otherwise swap that row up to the current row, subtract multiples of it from every row below so that their values in this column become 0, and move the current row down by one.
+
+The rank is the number of pivots found. A matrix with no elements, or only zeros, has rank 0. \`matrix_rank(Matrix{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}})\` is 2.
+--- starter
+#include <cstddef>
+#include <initializer_list>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+int matrix_rank(const Matrix& m) {
+    return static_cast<int>(m.rows() < m.cols() ? m.rows() : m.cols());
+}
+--- solution
+#include <cmath>
+#include <cstddef>
+#include <initializer_list>
+#include <utility>
+#include <vector>
+
+class Matrix {
+public:
+    Matrix(std::size_t rows, std::size_t cols, double fill = 0.0)
+        : rows_(rows), cols_(cols), data_(rows * cols, fill) {}
+
+    Matrix(std::initializer_list<std::initializer_list<double>> rows)
+        : rows_(rows.size()), cols_(rows.size() ? rows.begin()->size() : 0) {
+        data_.reserve(rows_ * cols_);
+        for (const auto& row : rows) {
+            for (double x : row) data_.push_back(x);
+        }
+    }
+
+    static Matrix identity(std::size_t n) {
+        Matrix m(n, n);
+        for (std::size_t i = 0; i < n; ++i) m(i, i) = 1.0;
+        return m;
+    }
+
+    std::size_t rows() const { return rows_; }
+    std::size_t cols() const { return cols_; }
+
+    double& operator()(std::size_t r, std::size_t c) { return data_[r * cols_ + c]; }
+    double operator()(std::size_t r, std::size_t c) const { return data_[r * cols_ + c]; }
+
+private:
+    std::size_t rows_;
+    std::size_t cols_;
+    std::vector<double> data_;
+};
+
+int matrix_rank(const Matrix& m) {
+    Matrix a = m;   // eliminate on a copy
+    std::size_t row = 0;
+    for (std::size_t col = 0; col < a.cols() && row < a.rows(); ++col) {
+        std::size_t pivot = row;
+        for (std::size_t r = row + 1; r < a.rows(); ++r)
+            if (std::abs(a(r, col)) > std::abs(a(pivot, col))) pivot = r;
+        if (std::abs(a(pivot, col)) < 1e-9) continue;   // no pivot here: same row, next column
+        for (std::size_t c = 0; c < a.cols(); ++c) std::swap(a(pivot, c), a(row, c));
+        for (std::size_t r = row + 1; r < a.rows(); ++r) {
+            double f = a(r, col) / a(row, col);
+            for (std::size_t c = col; c < a.cols(); ++c) a(r, c) -= f * a(row, c);
+        }
+        ++row;
+    }
+    return static_cast<int>(row);
+}
+--- check test | Square matrices
+matrix_rank(Matrix::identity(3)) == 3 && matrix_rank(Matrix{{1, 2}, {2, 4}}) == 1 && matrix_rank(Matrix{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}}) == 2
+--- check test | Wide and tall matrices
+matrix_rank(Matrix{{1, 2, 3}, {2, 4, 7}}) == 2 && matrix_rank(Matrix{{1, 2}, {2, 4}, {3, 6}}) == 1 && matrix_rank(Matrix{{1, 0, 0, 0}}) == 1
+--- check test | A column with no pivot is skipped
+matrix_rank(Matrix{{0, 1}, {0, 2}}) == 1 && matrix_rank(Matrix{{0, 1, 2}, {0, 0, 3}}) == 2 && matrix_rank(Matrix{{0, 0, 5}, {0, 0, 1}, {0, 0, 0}}) == 1
+--- check test | Zeros and nothing at all
+matrix_rank(Matrix(2, 2)) == 0 && matrix_rank(Matrix(0, 0)) == 0 && matrix_rank(Matrix(3, 0)) == 0
+
++++ question | Where an element lives
+--- ask
+A 3 × 4 matrix is stored in one vector, row by row, like the course's \`Matrix\`. At which index of the vector is the element in row 2, column 1 (both counting from 0)?
+--- answer
+9
+--- why
+Row-major means index \`r * cols + c\`: skip 2 whole rows of 4 elements each, then step 1 more. 2 × 4 + 1 = 9. Multiplying by the number of rows instead, 2 × 3 + 1 = 7, is the classic mistake, and on a square matrix it would give the right answer by luck.
+
++++ question | The cost of a fast power
+--- ask
+\`power(m, k)\` raises an n × n matrix to the power \`k\` by squaring. Roughly how many matrix multiplications does it make?
+--- choice
+About k, one for each factor of m.
+--- choice correct
+About 2 log₂ k: each round halves k, and makes at most two multiplications.
+--- choice
+About k / 2, because each squaring counts twice.
+--- choice
+About n³, the cost of one multiplication.
+--- why
+The loop looks at one binary digit of \`k\` per round and halves \`k\` each time, so it runs about log₂ k times, with at most one squaring and one multiplication into the result. A billion needs about 30 rounds. Each multiplication itself costs O(n³), so the whole power is O(n³ log k), far better than the O(n³ k) of multiplying k times.
+
++++ question | A print function with a side effect
+--- ask
+This \`operator<<\` prints a matrix with two decimals:
+
+\`\`\`cpp
+std::ostream& operator<<(std::ostream& out, const Matrix& m) {
+    out << std::fixed << std::setprecision(2);
+    for (std::size_t r = 0; r < m.rows(); ++r) {
+        for (std::size_t c = 0; c < m.cols(); ++c) out << (c ? " " : "") << m(r, c);
+        out << "\\n";
+    }
+    return out;
+}
+\`\`\`
+
+What is wrong with it?
+--- choice
+It should take \`out\` by value, so the caller's stream is protected.
+--- choice correct
+\`std::fixed\` and \`std::setprecision\` stay on the caller's stream, so every number the program prints afterwards gets two decimals too.
+--- choice
+\`setprecision(2)\` without \`std::fixed\` would be needed to get two decimals.
+--- choice
+It must not return \`out\`, because that makes a copy of the stream.
+--- why
+Most stream settings stick until someone changes them back, and \`out\` is the caller's own stream, often \`std::cout\`. After \`std::cout << m << 2.5;\` the \`2.5\` prints as \`2.50\`. Formatting on a local \`std::ostringstream\` and sending its \`.str()\` to \`out\` leaves the caller's stream untouched. Streams cannot be copied at all, and returning the reference is what makes chaining work.
+
++++ question | Why cents in a long long
+--- ask
+Why does the bank store money as a whole number of cents in a \`long long\`, rather than as dollars in a \`double\`?
+--- choice
+A \`long long\` uses less memory than a \`double\`, and banks store billions of balances.
+--- choice correct
+A \`double\` cannot hold most decimal fractions such as 0.10 exactly, so sums drift by tiny amounts; whole cents add up exactly.
+--- choice
+A \`double\` cannot hold negative numbers, and balances can be negative.
+--- choice
+Printing a \`double\` always shows many decimal places, which looks wrong on a statement.
+--- why
+A \`double\` counts in binary, and 0.1 is not a finite sum of halves, quarters and eighths, so \`0.1 + 0.2 == 0.3\` is false. Over millions of operations those tiny errors turn into money that appears or disappears. Integer cents are exact, and a \`long long\` holds amounts far beyond any real balance. Both types are 8 bytes, and both hold negatives.
+
++++ question | The override that is not one
+--- ask
+What does this print?
+
+\`\`\`cpp
+#include <iostream>
+#include <string>
+
+class Account {
+public:
+    virtual ~Account() = default;
+    virtual std::string kind() const { return "basic"; }
+};
+
+class Savings : public Account {
+public:
+    std::string kind() { return "savings"; }
+};
+
+int main() {
+    Savings s;
+    const Account& a = s;
+    std::cout << a.kind() << "\\n";
+}
+\`\`\`
+--- answer
+basic
+--- why
+\`Savings::kind\` is missing the \`const\`, so its signature differs from the base's and it does not override anything: it is a new function that only hides the old one. A call through an \`Account\` reference reaches \`Account::kind\`, which prints \`basic\`. Writing \`override\` would have turned the silent mistake into a compile error.
+
++++ question | Why the bank stores pointers
+--- ask
+Why does the bank keep its accounts as \`std::unique_ptr<Account>\` in a map, instead of \`Account\` objects in a \`std::map<int, Account>\`?
+--- choice
+Because a \`std::map\` cannot hold objects of a class that has virtual functions.
+--- choice
+Because pointers make looking an account up faster than looking up an object.
+--- choice correct
+Storing a \`SavingsAccount\` in a slot made for an \`Account\` copies only the \`Account\` part, so it forgets its type and its own rules; a pointer points at the whole object of its real type.
+--- choice
+Because \`unique_ptr\` lets several parts of the program own the same account.
+--- why
+That loss is object slicing. Each slot of a container of \`Account\` is exactly the size of an \`Account\`, so the savings account's extra members and its overrides are cut off, and every \`withdraw\` would follow the basic rule. Owning pointers keep each account whole and still delete it when the bank goes away. \`unique_ptr\` means exactly one owner; that is \`shared_ptr\`'s job otherwise.
+
++++ question | A transfer in the wrong order
+--- ask
+A transfer is written as: check both ids, then \`b->deposit(cents)\`, then \`return a->withdraw(cents);\`. What happens when account \`a\` does not have enough money?
+--- choice
+Nothing changes, because \`withdraw\` refuses and the function returns \`false\`.
+--- choice
+The program crashes, because \`withdraw\` is called on an account that is too poor.
+--- choice correct
+The deposit into \`b\` has already happened, so money appears from nowhere while the transfer reports \`false\`.
+--- choice
+Account \`a\` goes negative, because the deposit already committed the transfer.
+--- why
+A transfer must be all or nothing: every step that can fail runs first, and only steps that cannot fail come after. The withdrawal is the step that can say no, so it goes first, and the deposit follows only once it has succeeded. In this order, a refusal leaves \`b\` richer and the bank's total wrong.
+
++++ question | Which comes out first
+--- ask
+What does this print?
+
+\`\`\`cpp
+#include <iostream>
+#include <queue>
+#include <string>
+
+struct Job {
+    int priority;
+    std::string name;
+    bool operator<(const Job& o) const { return priority > o.priority; }
+};
+
+int main() {
+    std::priority_queue<Job> q;
+    q.push({5, "print"});
+    q.push({1, "email"});
+    q.push({9, "backup"});
+    std::cout << q.top().name << "\\n";
+}
+\`\`\`
+--- answer
+email
+--- why
+A \`std::priority_queue\` keeps its "largest" element on top, as decided by \`operator<\`. Here \`a < b\` is true when \`a\` has the **higher** priority, so the job with the smallest priority number counts as the largest. The top is the priority-1 job, \`email\`. It is the landing-queue trick from the scheduler capstone: flipping the comparison turns the queue into smallest-first.
+
++++ question | Rescanning every time
+--- ask
+A scheduler answers each "what next?" by walking through every waiting task to find the best ready one. With n tasks, what does answering all n questions cost?
+--- choice
+O(n), because each task is looked at once.
+--- choice
+O(n log n), because the best task is found by comparing.
+--- choice correct
+O(n²): each question walks through up to n tasks, and there are n questions.
+--- choice
+O(log n), because the waiting list gets shorter each time.
+--- why
+The list only shrinks by one per question, so the walks cost about n + (n − 1) + … + 1, which is n(n + 1)/2, or O(n²): five billion looks for 100,000 tasks. A heap finds and removes the best in O(log n), and waiting counts with dependents lists mean no task is ever rescanned, so the whole run is O(n log n) plus one visit per dependency.
+
++++ question | A string literal meets two constructors
+--- ask
+What does this print?
+
+\`\`\`cpp
+#include <iostream>
+#include <string>
+
+struct Label {
+    Label(bool) { std::cout << "bool\\n"; }
+    Label(std::string) { std::cout << "string\\n"; }
+};
+
+int main() {
+    Label l("hi");
+}
+\`\`\`
+--- answer
+bool
+--- why
+\`"hi"\` is a \`const char*\`, not a \`std::string\`. Turning a pointer into a \`bool\` is a built-in conversion, while making a \`std::string\` from it is a conversion through a class constructor, and C++ prefers the built-in one. So \`Label(bool)\` wins and the text is lost. A constructor taking \`const char*\` exactly would be an exact match and beat both: the fix the JSON capstone needed.
+
++++ question | A power written with a loop
+--- ask
+A calculator parses powers with the same \`while\` loop shape it uses for \`+\` and \`-\`:
+
+\`\`\`cpp
+std::optional<double> power() {
+    auto base = primary();
+    while (base && eat('^')) {
+        auto exponent = primary();
+        if (!exponent) return std::nullopt;
+        base = std::pow(*base, *exponent);
+    }
+    return base;
+}
+\`\`\`
+
+What does it give for \`2 ^ 3 ^ 2\`?
+--- answer
+64
+--- why
+The loop combines from the left: first 2 ^ 3 = 8, then 8 ^ 2 = 64. That is right for \`-\` and \`/\`, but powers group from the right, where \`2 ^ (3 ^ 2)\` = 2 ^ 9 = 512. The capstone's grammar, \`power := primary ('^' unary)?\`, reads the exponent with a rule that can itself contain another \`^\`, so the right-hand power is worked out first. Reading the exponent with \`unary\` also lets \`2 ^ -1\` work.
+`;export{e as default};

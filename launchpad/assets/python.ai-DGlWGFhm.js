@@ -1,0 +1,12060 @@
+var e=`@track python
+@level specialty
+@course python-ai
+@title Python · AI from scratch
+@name AI from scratch: neural networks and a tiny language model
+@blurb Build every piece of a modern language model yourself, in plain Python: gradient descent, an autograd engine, neural networks and optimizers, softmax and cross-entropy, a tokenizer, attention and a transformer block. Then debug them the way model developers do: gradient checks, loss curves, overflow and data leakage.
+
+=== ai-01 | Vectors, matrices and shapes
+--- teach
+You have finished the Python ladder, from \`print\` all the way to parsers and capstone projects. This course puts all of it to work on one question: how do neural networks and language models actually work inside? You will answer it by building every piece yourself, in plain Python: gradients, an engine that works them out for you, layers, optimizers, softmax, a tokenizer, attention and a transformer block. It is the machinery that people who build and train models work on every day.
+
+### Why build it yourself?
+
+Real projects use libraries such as [[PyTorch or JAX|pytorch-jax]]. Those libraries do exactly what you will write here, only on huge tables of numbers and on fast hardware. When a training run goes wrong (the loss explodes, the model learns nothing, a gradient is quietly wrong), the people who can fix it are the ones who know what the library does underneath.
+
+So in this course nothing is magic. You use only the standard library. A list of numbers stands in for a vector, and a list of lists stands in for a matrix. Each lesson ends by naming the PyTorch piece it matches, so you will recognise it later. You never need PyTorch to pass.
+
+### Two habits for the whole course
+
+- **Randomness is always seeded.** \`random.Random(0)\` makes a random number generator with its own **[[seed|seeds]]**, a starting number that fixes the whole sequence it produces. Every run then gives the same numbers. Training code at AI labs does the same, so an experiment can be repeated exactly.
+- **Floats are compared with a [[tolerance|float-tolerance]]**, never with \`==\`. You saw why in the expert course's floating-point lesson: \`0.1 + 0.2\` is not exactly \`0.3\`.
+
+### A vector is a list of numbers
+
+Picture a shopping basket: 2 apples, 0 pears and 3 lemons. Write the amounts in a fixed order and you get a list: \`[2, 0, 3]\`. That is a **vector**: a list of numbers, where each position means something.
+
+In a model, a vector might be one input example (the pixels of an image), one word's meaning, or one neuron's weights.
+
+### The dot product
+
+The shop has a price list in the same order: apples 0.5, pears 0.8, lemons 0.3. Your bill is each amount times its price, all added up. That sum is the **dot product**: multiply two vectors of the same length position by position, then add the results.
+
+\`\`\`python
+basket = [2, 0, 3]
+prices = [0.5, 0.8, 0.3]
+bill = sum(n * p for n, p in zip(basket, prices))
+print(round(bill, 2))      # 2*0.5 + 0*0.8 + 3*0.3 = 1.9
+\`\`\`
+
+\`zip\` walks the two lists in step, handing over one pair at a time. The generator multiplies each pair, and \`sum\` adds the products.
+
+Almost everything in a neural network is dot products. A neuron is a dot product of its weights with its input, plus one extra number. Attention (lesson 13) scores how well two words match with a dot product. A big dot product means the two vectors [[point the same way|dot-direction]].
+
+### A matrix is a table of numbers
+
+A **matrix** is a table: a list of rows, all the same length. Its **shape** is the pair \`(rows, columns)\`, always rows first.
+
+\`\`\`python
+table = [[1, 2, 3],
+         [4, 5, 6]]
+print(len(table), len(table[0]))      # 2 3: two rows, three columns
+\`\`\`
+
+### Matrix times vector
+
+Now picture two shops, each with its own price list for the same three items. Put each shop's prices in a row and you have a matrix with shape \`(2, 3)\`. One basket of three items gives one bill per shop: dot the basket with each row.
+
+\`\`\`python
+shops = [[0.5, 0.8, 0.3],      # shop A's prices
+         [0.4, 1.0, 0.2]]      # shop B's prices
+basket = [2, 0, 3]
+bills = [sum(p * n for p, n in zip(row, basket)) for row in shops]
+print([round(b, 2) for b in bills])   # [1.9, 1.4]
+\`\`\`
+
+A \`(2, 3)\` matrix times a vector of length 3 gave a vector of length 2. That is exactly what one layer of a network does: it turns 3 inputs into 2 outputs. The row length has to match the vector's length, or the question makes no sense.
+
+### Matrix times matrix
+
+Several customers, each with a basket, make a second matrix: one column per customer. Multiplying the price matrix by the basket matrix gives a table of bills, one for every shop and customer.
+
+The rule: a \`(m, n)\` matrix times a \`(n, p)\` matrix gives a \`(m, p)\` matrix. Read \`(m, n)\` as "m rows, n columns". The entry in row \`i\`, column \`j\` of the answer is row \`i\` of the first matrix dotted with **column** \`j\` of the second.
+
+The two inner sizes must match, because a row of the first is dotted with a column of the second, and those must be the same length:
+
+- \`(2, 3)\` times \`(3, 4)\` works and gives \`(2, 4)\`: the inner 3s match, the outer 2 and 4 are left.
+- \`(2, 3)\` times \`(2, 3)\` does not work: a row has 3 numbers but a column has only 2.
+
+Mathematicians write the product as \`A @ B\`, and so does Python: \`@\` is the matrix-multiply operator in NumPy and PyTorch. Most of the arithmetic a model ever does is this one operation, which is why [[GPUs|gpus]] are built around it.
+
+### Getting the columns: transpose
+
+Rows are easy to reach in a list of lists. Columns are not. So you **transpose** first: swap rows and columns, so the old columns become rows.
+
+\`zip(*m)\` does it in one step. The \`*\` [[spreads the rows out|star-unpacking]] as separate arguments, so \`zip\` receives every row and walks them in step: first the first number of every row, then the second of every row, and so on.
+
+\`\`\`python
+grid = [[7, 8],
+        [9, 10],
+        [11, 12]]
+print([list(col) for col in zip(*grid)])      # [[7, 9, 11], [8, 10, 12]]
+\`\`\`
+
+A \`(3, 2)\` matrix became a \`(2, 3)\` matrix.
+
+### Shapes are where most bugs hide
+
+People who build models check shapes all the time, because a wrong shape usually means a wrong idea. Plain Python has a trap here: \`zip\` stops at the end of the **shorter** list, without a word.
+
+\`\`\`python
+short = [1, 2]
+long = [10, 20, 30]
+print(sum(x * y for x, y in zip(short, long)))    # 50: no error, a meaningless answer
+\`\`\`
+
+A vector of length 2 dotted with a vector of length 3 is a mistake, yet Python handed back a number. PyTorch refuses instead, with an error like \`mat1 and mat2 shapes cannot be multiplied (2x3 and 2x3)\`. Your functions should refuse too: check the lengths, and raise \`ValueError\` when the shapes do not fit. A loud error points straight at the bug. A silent wrong answer can hide in a model for weeks, and real libraries have [[their own silent shape bugs|shape-bugs]].
+
+**Watch out:** a **ragged** matrix, whose rows have different lengths, is not a matrix at all. \`len(m[0])\` reports only the first row's length, so check every row before you trust it.
+
+In PyTorch: a \`torch.tensor\` holds the numbers, \`.shape\` gives its shape, \`a @ b\` multiplies, and \`.T\` transposes.
+
+::: context pytorch-jax Libraries that do this at scale
+**PyTorch** (from Meta) and **JAX** (from Google) are the two Python libraries most AI labs train their models with. Both store numbers in a **tensor**: a grid of numbers with any number of dimensions (a vector is a 1-D tensor, a matrix a 2-D one). Both run on graphics cards and can work out gradients automatically. You will build a tiny version of that automatic gradient engine yourself in lessons 4 and 5, so when you meet the real thing it will feel familiar rather than magic.
+:::
+
+::: context seeds What a seed is
+A computer's "random" numbers come from a formula. You give it a starting number, the **seed**, and it produces a long sequence that looks random but is completely fixed by that seed. \`random.Random(0)\` and \`random.Random(0)\` give the same sequence; \`random.Random(1)\` gives a different one. Labs record the seed of every training run, because "it worked once and I cannot get it back" is a nightmare when a run costs thousands of dollars. Each \`random.Random(...)\` object keeps its own state, so two of them never disturb each other.
+:::
+
+::: context float-tolerance Why == fails on floats
+A float stores most decimals only approximately, so two calculations that should agree often differ in the last few digits. Instead of \`a == b\`, ask whether they are close: \`abs(a - b) < 1e-9\`, or \`math.isclose(a, b)\`. Read \`1e-9\` as "one times ten to the minus nine", a billionth. In this course the checks use tolerances like that everywhere, and in lesson 6 you will use a relative version to decide whether a gradient is right.
+:::
+
+::: context dot-direction The angle hiding in a dot product
+A vector can be drawn as an arrow. The dot product of two arrows equals the length of the first, times the length of the second, times the cosine of the angle between them. The cosine is 1 when the arrows point the same way, 0 when they are at right angles, and -1 when they point in opposite directions. Divide the dot product by both lengths and only that cosine is left. It is called **cosine similarity**, and search engines and language models use it to find texts with similar meaning.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150" font-family="Inter, Arial, sans-serif">
+  <line x1="40" y1="120" x2="160" y2="40" stroke="#1d6fd1" stroke-width="3"/>
+  <polygon points="160,40 148,42 155,52" fill="#1d6fd1"/>
+  <line x1="40" y1="120" x2="175" y2="70" stroke="#1d6fd1" stroke-width="3"/>
+  <polygon points="175,70 163,68 166,80" fill="#1d6fd1"/>
+  <text x="100" y="140" font-size="12" text-anchor="middle" fill="#1f2a44">same way: big dot</text>
+  <line x1="230" y1="120" x2="230" y2="40" stroke="#b4232c" stroke-width="3"/>
+  <polygon points="230,40 224,52 236,52" fill="#b4232c"/>
+  <line x1="230" y1="120" x2="320" y2="120" stroke="#b4232c" stroke-width="3"/>
+  <polygon points="320,120 308,114 308,126" fill="#b4232c"/>
+  <text x="275" y="140" font-size="12" text-anchor="middle" fill="#1f2a44">right angle: dot 0</text>
+</svg>
+\`\`\`
+:::
+
+::: context star-unpacking The star spreads a list out
+You met this in the intermediate course: in a call, \`*\` in front of a list hands over its items as separate arguments. With \`grid = [[7, 8], [9, 10], [11, 12]]\`, writing \`zip(*grid)\` is the same as writing \`zip([7, 8], [9, 10], [11, 12])\`. \`zip\` then takes the first item of each list, \`(7, 9, 11)\`, then the second of each, \`(8, 10, 12)\`. Those are the columns. Without the star, \`zip(grid)\` would see one argument and hand back each row wrapped in a tuple, which is not what you want.
+:::
+
+::: context gpus Why GPUs love matrix products
+A graphics card (GPU) was first built to colour millions of screen pixels at once, the same small sum repeated everywhere. A matrix product is the same kind of work: thousands of independent dot products. Modern AI chips have special units that do nothing but multiply small blocks of matrices, and the biggest ones manage hundreds of trillions of arithmetic operations per second. When people speak of the "compute" a model took to train, they mostly mean matrix products.
+:::
+
+::: context shape-bugs Silent shape bugs in real code
+NumPy and PyTorch have a rule called **broadcasting**: when two shapes differ, they sometimes stretch one to fit instead of complaining. Adding a tensor of shape \`(3,)\` to one of shape \`(3, 1)\` quietly gives a \`(3, 3)\` result. That is handy when you meant it and a nasty bug when you did not: the loss is computed over nine numbers instead of three, the code runs, and training is subtly wrong. Experienced engineers print shapes, write them in comments next to each line, and add checks that fail loudly.
+:::
+--- task
+Write these five functions, using lists only (no libraries):
+
+- \`shape(m)\` returns the pair \`(rows, columns)\` for a matrix. An empty matrix \`[]\` has shape \`(0, 0)\`. If the rows have different lengths, raise \`ValueError\`.
+- \`dot(a, b)\` returns the dot product of two vectors. If their lengths differ, raise \`ValueError\`. \`dot([], [])\` is \`0\`.
+- \`matvec(m, v)\` returns the matrix times the vector, as a list with one number per row. Raise \`ValueError\` if a row's length does not match the vector's length.
+- \`transpose(m)\` returns a new matrix with rows and columns swapped.
+- \`matmul(a, b)\` returns the product matrix. Raise \`ValueError\` if the number of columns of \`a\` is not the number of rows of \`b\`.
+
+None of them may change the lists they are given.
+--- starter
+def shape(m):
+    pass
+
+
+def dot(a, b):
+    # zip stops at the shorter list: this quietly accepts mismatched vectors.
+    return sum(x * y for x, y in zip(a, b))
+
+
+def matvec(m, v):
+    pass
+
+
+def transpose(m):
+    pass
+
+
+def matmul(a, b):
+    pass
+--- solution
+def shape(m):
+    if not m:
+        return (0, 0)
+    cols = len(m[0])
+    for row in m:
+        if len(row) != cols:
+            raise ValueError("ragged matrix: rows have different lengths")
+    return (len(m), cols)
+
+
+def dot(a, b):
+    if len(a) != len(b):
+        raise ValueError(f"dot: lengths {len(a)} and {len(b)} differ")
+    return sum(x * y for x, y in zip(a, b))
+
+
+def matvec(m, v):
+    return [dot(row, v) for row in m]
+
+
+def transpose(m):
+    return [list(col) for col in zip(*m)]
+
+
+def matmul(a, b):
+    rows_a, cols_a = shape(a)
+    rows_b, cols_b = shape(b)
+    if cols_a != rows_b:
+        raise ValueError(f"matmul: ({rows_a}, {cols_a}) @ ({rows_b}, {cols_b}) do not fit")
+    columns = transpose(b)
+    return [[dot(row, col) for col in columns] for row in a]
+--- hint
+Start with \`dot\`: compare the two lengths first, and raise \`ValueError\` before you ever reach \`zip\`. Then \`matvec\` can call \`dot\` once per row, and the check comes for free.
+--- hint
+\`matmul\` needs one dot product for each pair of (row of \`a\`, column of \`b\`). The columns of \`b\` are the rows of \`transpose(b)\`.
+--- hint
+Inside \`matmul\`, call \`shape\` on both matrices first. Compare \`a\`'s column count with \`b\`'s row count, and only then build the rows of the answer with a comprehension.
+--- check case | dot multiplies pairwise and adds
+dot([1, 2, 3], [4, 5, 6])
+=> 32
+--- check case | dot of empty vectors is 0
+dot([], [])
+=> 0
+--- check test | dot refuses vectors of different lengths
+raises(ValueError, lambda: dot([1, 2], [1, 2, 3])) and raises(ValueError, lambda: dot([1, 2, 3], [1]))
+--- check case | shape of a 2 x 3 matrix
+shape([[1, 2, 3], [4, 5, 6]])
+=> (2, 3)
+--- check test | shape of an empty matrix, and a ragged one raises
+shape([]) == (0, 0) and shape([[7]]) == (1, 1) and raises(ValueError, lambda: shape([[1, 2], [3]]))
+--- check case | matvec: a (3, 2) matrix times a length-2 vector
+matvec([[1, 2], [3, 4], [5, 6]], [1, -1])
+=> [-1, -1, -1]
+--- check test | matvec refuses a vector of the wrong length
+raises(ValueError, lambda: matvec([[1, 2], [3, 4]], [1, 2, 3]))
+--- check case | transpose swaps rows and columns
+transpose([[1, 2, 3], [4, 5, 6]])
+=> [[1, 4], [2, 5], [3, 6]]
+--- check case | matmul of two 2 x 2 matrices
+matmul([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+=> [[19, 22], [43, 50]]
+--- check case | matmul: (2, 3) @ (3, 1) gives (2, 1)
+matmul([[1, 0, 2], [0, 1, 1]], [[3], [4], [5]])
+=> [[13], [9]]
+--- check test | matmul refuses shapes that do not fit, even when zip would not notice
+raises(ValueError, lambda: matmul([[1, 2, 3], [4, 5, 6]], [[1, 2, 3], [4, 5, 6]])) and raises(ValueError, lambda: matmul([[1, 2]], [[1], [2], [3]]))
+--- check test | matmul by the identity changes nothing, and inputs are not modified
+(lambda a: matmul(a, [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) == a and a == [[2, 3, 4], [5, 6, 7]])([[2, 3, 4], [5, 6, 7]])
+
++++ practice | Do two vectors point the same way?
+--- task
+Write \`cosine_similarity(a, b)\`. It returns the dot product of \`a\` and \`b\` divided by the length of \`a\` and by the length of \`b\`. The **length** of a vector is the square root of its dot product with itself: the length of \`[3, 4]\` is \`math.sqrt(9 + 16)\`, which is \`5.0\`.
+
+The answer is about \`1.0\` when the vectors point the same way, \`0.0\` at right angles and \`-1.0\` when they point in opposite directions.
+
+- If the two vectors have different lengths (numbers of entries), raise \`ValueError\`.
+- If either vector is empty or all zeros, its length is 0 and the division makes no sense: raise \`ValueError\`.
+--- starter
+import math
+
+
+def cosine_similarity(a, b):
+    return sum(x * y for x, y in zip(a, b))
+--- solution
+import math
+
+
+def cosine_similarity(a, b):
+    if len(a) != len(b):
+        raise ValueError(f"lengths {len(a)} and {len(b)} differ")
+    size_a = math.sqrt(sum(x * x for x in a))
+    size_b = math.sqrt(sum(y * y for y in b))
+    if size_a == 0 or size_b == 0:
+        raise ValueError("a vector of length 0 has no direction")
+    return sum(x * y for x, y in zip(a, b)) / (size_a * size_b)
+--- hint
+Work out three numbers: the dot product, the length of \`a\` and the length of \`b\`. The answer is the first divided by the other two multiplied together.
+--- hint
+Do both checks before dividing. An empty vector and an all-zero vector both have length \`0\`, so one test covers both.
+--- check test | Same direction gives 1, whatever the lengths
+abs(cosine_similarity([1.0, 2.0, 2.0], [2.0, 4.0, 4.0]) - 1.0) < 1e-12 and abs(cosine_similarity([3, 4], [6, 8]) - 1.0) < 1e-12
+--- check test | Right angles give 0, opposite directions give -1
+abs(cosine_similarity([1, 0], [0, 5])) < 1e-12 and abs(cosine_similarity([1, -2], [-3, 6]) + 1.0) < 1e-12
+--- check test | A value in between: [1, 0] and [1, 1] give 1 / sqrt(2)
+abs(cosine_similarity([1, 0], [1, 1]) - 0.7071067811865475) < 1e-12
+--- check test | Different lengths raise ValueError
+raises(ValueError, lambda: cosine_similarity([1, 2], [1, 2, 3]))
+--- check test | An all-zero or empty vector raises ValueError
+raises(ValueError, lambda: cosine_similarity([0, 0], [1, 2])) and raises(ValueError, lambda: cosine_similarity([3, 1], [0.0, 0.0])) and raises(ValueError, lambda: cosine_similarity([], []))
+
++++ practice | Will these shapes multiply?
+--- task
+Write \`chain_shape(shapes)\`. It takes a list of matrix shapes, each a pair \`(rows, columns)\`, and returns the shape of their product multiplied left to right: \`A @ B @ C …\`.
+
+For example, \`chain_shape([(2, 3), (3, 4), (4, 1)])\` returns \`(2, 1)\`.
+
+- If two neighbours do not fit (the first one's columns differ from the next one's rows), raise \`ValueError\`.
+- A list with one shape returns that shape.
+- An empty list has no product: raise \`ValueError\`.
+
+Work only with the shapes. No matrices are involved.
+--- starter
+def chain_shape(shapes):
+    return (shapes[0][0], shapes[-1][1])
+--- solution
+def chain_shape(shapes):
+    if not shapes:
+        raise ValueError("no shapes to multiply")
+    rows, cols = shapes[0]
+    for next_rows, next_cols in shapes[1:]:
+        if cols != next_rows:
+            raise ValueError(f"({rows}, {cols}) @ ({next_rows}, {next_cols}) do not fit")
+        cols = next_cols
+    return (rows, cols)
+--- hint
+Keep the shape of the product so far. Its rows never change: they are the first matrix's rows. Each new matrix replaces the columns.
+--- hint
+Before you step past a matrix, compare the current column count with its row count, and raise \`ValueError\` if they differ.
+--- check case | Three matrices
+chain_shape([(2, 3), (3, 4), (4, 1)])
+=> (2, 1)
+--- check case | One matrix
+chain_shape([(5, 7)])
+=> (5, 7)
+--- check case | A row, a column, then a row again
+chain_shape([(1, 3), (3, 1), (1, 3)])
+=> (1, 3)
+--- check test | A mismatch anywhere raises ValueError, even at the end
+raises(ValueError, lambda: chain_shape([(2, 3), (2, 3)])) and raises(ValueError, lambda: chain_shape([(2, 3), (3, 4), (5, 1)]))
+--- check test | An empty list raises ValueError
+raises(ValueError, lambda: chain_shape([]))
+
++++ practice | A layer for a whole batch
+--- task
+A layer usually runs on a **batch**: several examples at once, one per row. The starter gives you \`shape\` and \`matmul\` from the lesson. Write \`linear(X, W, b)\`:
+
+- \`X\` is the batch, with shape \`(examples, n_in)\`.
+- \`W\` is the weight matrix, with shape \`(n_in, n_out)\`.
+- \`b\` is the bias, a list of \`n_out\` numbers.
+
+Return \`X @ W\` with \`b\` added to every row, position by position. So each example gets its own row of \`n_out\` outputs.
+
+Raise \`ValueError\` if a row of \`X\` does not have as many numbers as \`W\` has rows, or if \`b\` does not have as many numbers as \`W\` has columns. Do not change \`X\`, \`W\` or \`b\`.
+--- starter
+def shape(m):
+    if not m:
+        return (0, 0)
+    cols = len(m[0])
+    for row in m:
+        if len(row) != cols:
+            raise ValueError("ragged matrix: rows have different lengths")
+    return (len(m), cols)
+
+
+def matmul(a, b):
+    rows_a, cols_a = shape(a)
+    rows_b, cols_b = shape(b)
+    if cols_a != rows_b:
+        raise ValueError(f"matmul: ({rows_a}, {cols_a}) @ ({rows_b}, {cols_b}) do not fit")
+    columns = [list(col) for col in zip(*b)]
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def linear(X, W, b):
+    return matmul(X, W)
+--- solution
+def shape(m):
+    if not m:
+        return (0, 0)
+    cols = len(m[0])
+    for row in m:
+        if len(row) != cols:
+            raise ValueError("ragged matrix: rows have different lengths")
+    return (len(m), cols)
+
+
+def matmul(a, b):
+    rows_a, cols_a = shape(a)
+    rows_b, cols_b = shape(b)
+    if cols_a != rows_b:
+        raise ValueError(f"matmul: ({rows_a}, {cols_a}) @ ({rows_b}, {cols_b}) do not fit")
+    columns = [list(col) for col in zip(*b)]
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def linear(X, W, b):
+    if len(b) != shape(W)[1]:
+        raise ValueError(f"bias has {len(b)} numbers, W has {shape(W)[1]} columns")
+    return [[v + bias for v, bias in zip(row, b)] for row in matmul(X, W)]
+--- hint
+\`matmul(X, W)\` already does the multiplying and already refuses rows of the wrong length. What is left is the bias.
+--- hint
+Check \`len(b)\` against the number of columns of \`W\` first. Then go through the rows of the product and add \`b\` to each one, position by position.
+--- check case | Two examples, two inputs, three outputs
+linear([[1, 2], [0, -1]], [[1, 0, 2], [3, 1, 0]], [10, 20, 30])
+=> [[17, 22, 32], [7, 19, 30]]
+--- check case | A batch of one example
+linear([[2, 3]], [[1], [1]], [0.5])
+=> [[5.5]]
+--- check test | A row of the wrong length raises ValueError
+raises(ValueError, lambda: linear([[1, 2, 3]], [[1, 0], [0, 1]], [0, 0]))
+--- check test | A bias of the wrong length raises ValueError
+raises(ValueError, lambda: linear([[1, 2]], [[1, 0], [0, 1]], [0, 0, 0]))
+--- check test | The inputs are not changed
+(lambda X, W, b: (linear(X, W, b), X == [[1, 2]] and W == [[1, 0], [0, 1]] and b == [5, 6])[1])([[1, 2]], [[1, 0], [0, 1]], [5, 6])
+
++++ practice | Average each column
+--- task
+Before training, engineers often look at the average of each **feature** (each column of the data). Write \`column_means(m)\`, which returns a list with the mean of each column of the matrix \`m\`, as floats.
+
+- \`column_means([[1, 2], [3, 6]])\` returns \`[2.0, 4.0]\`.
+- A matrix with no rows, \`[]\`, returns \`[]\`.
+- A matrix whose rows are all empty, such as \`[[], []]\`, has no columns: return \`[]\`.
+- A single row returns its own numbers, as floats.
+- If the rows have different lengths, raise \`ValueError\`.
+--- starter
+def column_means(m):
+    return [sum(col) / len(col) for col in zip(*m)]
+--- solution
+def column_means(m):
+    if not m:
+        return []
+    width = len(m[0])
+    if any(len(row) != width for row in m):
+        raise ValueError("ragged matrix: rows have different lengths")
+    return [sum(col) / len(m) for col in zip(*m)]
+--- hint
+\`zip(*m)\` hands you the columns, but it quietly stops at the shortest row. Check every row's length against the first row's before you trust it.
+--- hint
+Handle \`[]\` first: it has no first row to compare with. A column's mean is its sum divided by the number of rows.
+--- check case | Two rows, two columns
+column_means([[1, 2], [3, 6]])
+=> [2.0, 4.0]
+--- check case | Negative numbers and three rows
+column_means([[-3, 1, 0], [3, 2, 0], [0, 6, 3]])
+=> [0.0, 3.0, 1.0]
+--- check case | No rows
+column_means([])
+=> []
+--- check case | Rows with no columns
+column_means([[], []])
+=> []
+--- check test | One row gives its own numbers as floats
+column_means([[4, 7]]) == [4.0, 7.0] and all(type(v) is float for v in column_means([[4, 7]]))
+--- check test | A ragged matrix raises ValueError, even when zip would not notice
+raises(ValueError, lambda: column_means([[1, 2, 3], [4, 5]])) and raises(ValueError, lambda: column_means([[1], [2, 3]]))
+
++++ practice | Fix the square-only matmul
+--- task
+This \`matmul\` gives the right answer for square matrices, such as two \`(2, 2)\` matrices. For other shapes it goes wrong: \`(2, 3) @ (3, 4)\` quietly returns wrong numbers, and \`(3, 2) @ (2, 1)\` crashes with an \`IndexError\`.
+
+Find the line that uses the wrong size and fix it, so every pair of shapes that fit gives the right product. Keep the three loops.
+--- starter
+def matmul(a, b):
+    n, m, p = len(a), len(b), len(b[0])
+    out = [[0] * p for _ in range(n)]
+    for i in range(n):
+        for j in range(p):
+            for k in range(n):
+                out[i][j] += a[i][k] * b[k][j]
+    return out
+--- solution
+def matmul(a, b):
+    n, m, p = len(a), len(b), len(b[0])
+    out = [[0] * p for _ in range(n)]
+    for i in range(n):
+        for j in range(p):
+            for k in range(m):
+                out[i][j] += a[i][k] * b[k][j]
+    return out
+--- hint
+Write the three sizes out for \`(2, 3) @ (3, 4)\`: \`n\`, \`m\` and \`p\` are 2, 3 and 4. Which of them should the innermost loop count to?
+--- hint
+\`k\` walks along a row of \`a\` and down a column of \`b\`, and both have \`m\` numbers, the shared inner size.
+--- check case | (2, 3) @ (3, 4)
+matmul([[1, 2, 3], [4, 5, 6]], [[1, 0, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1]])
+=> [[1, 2, 3, 6], [4, 5, 6, 15]]
+--- check case | (3, 2) @ (2, 1)
+matmul([[1, 2], [3, 4], [5, 6]], [[1], [-1]])
+=> [[-1], [-1], [-1]]
+--- check case | Square matrices still work
+matmul([[1, 2], [3, 4]], [[5, 6], [7, 8]])
+=> [[19, 22], [43, 50]]
+--- check case | A row times a column is a (1, 1) matrix
+matmul([[2, 0, -1]], [[3], [4], [5]])
+=> [[1]]
+
++++ practice | Find the closest words
+--- task
+Language models store each word as a vector, and words with similar meanings end up with vectors that point in similar directions. Write \`most_similar(query, table, k)\`:
+
+- \`table\` is a dict that maps each word to its vector.
+- Return a list of the \`k\` words whose vectors have the highest cosine similarity to \`query\`, most similar first.
+- If two words tie, the one that comes first alphabetically goes first.
+- Skip any word whose vector is all zeros: it has no direction.
+- If fewer than \`k\` words are left, return all of them.
+- If \`query\` is all zeros, or any vector in the table has a different length from \`query\`, raise \`ValueError\`.
+
+Cosine similarity is the dot product divided by both vectors' lengths, where a vector's length is the square root of its dot product with itself.
+--- starter
+import math
+
+
+def most_similar(query, table, k):
+    return sorted(table)[:k]
+--- solution
+import math
+
+
+def most_similar(query, table, k):
+    def size(v):
+        return math.sqrt(sum(x * x for x in v))
+
+    if size(query) == 0:
+        raise ValueError("the query has no direction")
+    scored = []
+    for word, vec in table.items():
+        if len(vec) != len(query):
+            raise ValueError(f"{word} has {len(vec)} numbers, the query has {len(query)}")
+        if size(vec) == 0:
+            continue
+        similarity = sum(q * v for q, v in zip(query, vec)) / (size(query) * size(vec))
+        scored.append((-similarity, word))
+    scored.sort()
+    return [word for _, word in scored[:k]]
+--- hint
+Work out every word's similarity first, then sort. Skip the all-zero vectors as you go.
+--- hint
+Sort pairs of \`(-similarity, word)\`: the minus sign puts the biggest similarity first, and on a tie Python compares the words, which puts them in alphabetical order.
+--- check case | The two closest words, in order
+most_similar([1.0, 0.0], {"moon": [0.9, 0.1], "star": [0.0, 1.0], "comet": [1.0, 0.5], "mars": [-1.0, 0.0]}, 2)
+=> ["moon", "comet"]
+--- check case | Length does not matter, only direction; ties go alphabetically
+most_similar([1, 0], {"b": [2, 0], "a": [5, 0], "c": [1, 1]}, 3)
+=> ["a", "b", "c"]
+--- check case | All-zero vectors are skipped, and k can be larger than what is left
+most_similar([0, 1], {"void": [0, 0], "up": [0, 3]}, 5)
+=> ["up"]
+--- check test | An all-zero query or a vector of the wrong length raises ValueError
+raises(ValueError, lambda: most_similar([0, 0], {"a": [1, 2]}, 1)) and raises(ValueError, lambda: most_similar([1, 2], {"a": [1, 2, 3]}, 1))
+--- check case | An empty table gives an empty list
+most_similar([1, 2], {}, 3)
+=> []
+
+=== ai-02 | Gradient descent: fitting a line
+--- teach
+Last lesson you built the containers every model is made of: vectors, matrices and their shapes. A model is a big pile of such numbers. **Training** means finding good values for them. This lesson shows how a computer finds them, and you fit your first model: a straight line.
+
+Picture yourself on a hillside in thick fog. You cannot see the valley, but you can feel which way the ground slopes under your feet. Take a step downhill, feel again, take another step. Keep going and you end up at the bottom. That is the whole idea of this lesson.
+
+### The loss: one number for how wrong
+
+To train a model you first need a way to score it. The **loss** is one number that says how wrong the model is on the data: 0 means perfect, bigger means worse. It is the height of the hillside. Training means [[making the loss smaller|loss-names]] by changing the model's numbers.
+
+To know which way to change a number, you need the slope of the hill at the spot where you stand.
+
+### A derivative is a slope
+
+For a function \`f\`, the **derivative** at a point \`x\` says how fast \`f\` changes when \`x\` changes a tiny bit.
+
+- If the derivative is positive, making \`x\` a little bigger makes \`f\` bigger.
+- If it is negative, making \`x\` a little bigger makes \`f\` smaller.
+- If it is 0, the ground is flat: you may be at the bottom.
+
+For example, \`f(x) = x ** 2\` (read "x squared") has derivative \`2 * x\`. At \`x = 3\` the slope is 6: nudge \`x\` up by 0.001 and \`f\` goes up by about 0.006.
+
+### Measuring a slope with two nudges
+
+You do not need calculus to measure a slope. Move \`x\` a little and watch how much \`f\` moves. This is called a **finite difference**, and the little move is \`h\`.
+
+\`\`\`python
+def f(x):
+    return x ** 2
+
+h = 1e-5                      # one hundred-thousandth
+x = 3.0
+forward = (f(x + h) - f(x)) / h
+central = (f(x + h) - f(x - h)) / (2 * h)
+print(forward)                # about 6.00001
+print(central)                # about 6.00000000004
+\`\`\`
+
+The first version nudges only forwards. The second, the **central difference**, nudges both ways and divides by the total distance \`2 * h\`. The true answer is 6, and the central difference is far closer. Its error shrinks with \`h * h\` instead of with \`h\`, so making \`h\` ten times smaller makes the error a hundred times smaller. There is [[a reason it is so much better|why-central]].
+
+**Watch out:** do not make \`h\` as small as you can. At \`h = 1e-12\` the two values of \`f\` agree in almost every digit, and their difference is mostly [[rounding noise|tiny-h]]. Around \`1e-5\` to \`1e-6\` works well for ordinary floats.
+
+### Gradient descent
+
+To find the \`x\` that makes \`f(x)\` smallest, start anywhere and repeat one step:
+
+\`\`\`text
+x = x - learning_rate * derivative_at(x)
+\`\`\`
+
+Read it as: "move \`x\` a small amount against the slope". If the slope is positive, \`x\` goes down; if it is negative, \`x\` goes up. Either way you walk downhill. This is **gradient descent**. The **[[learning rate|learning-rate]]** is a small positive number that sets how big each step is.
+
+Here it is on \`(x - 3) ** 2\`, which is smallest at \`x = 3\`. Its derivative is \`2 * (x - 3)\`. The loop tries two learning rates:
+
+\`\`\`python
+def slope(x):
+    return 2 * (x - 3)
+
+for lr in (0.1, 1.1):
+    x = 0.0
+    for _ in range(30):
+        x = x - lr * slope(x)
+    print(lr, round(x, 4))
+# 0.1 2.9963
+# 1.1 -709.1289
+\`\`\`
+
+With \`0.1\`, \`x\` walks towards 3: after 30 steps it is at 2.9963, and more steps bring it closer. With \`1.1\`, every step jumps past 3 and lands further away than before, so \`x\` flies off. A learning rate that is too small wastes time. One that is too big makes training **diverge**: the numbers grow without limit. You will see this again when a real training run's [[loss explodes|divergence]].
+
+### Fitting a line
+
+Now a real model. You have pairs of numbers \`(x, y)\`, and you want to predict \`y\` from \`x\` with a straight line:
+
+\`\`\`text
+prediction = w * x + b
+\`\`\`
+
+\`w\` is the slope of the line (the weight) and \`b\` is where it crosses zero (the bias). The numbers a model learns are its **parameters**, so this model has two.
+
+The loss is the **[[mean squared error|why-squared]]** (MSE): for each example, take the prediction minus the true \`y\`, square it, and average over all the examples.
+
+\`\`\`text
+MSE = mean over examples of (w * x + b - y) ** 2
+\`\`\`
+
+### Two parameters, two slopes: the gradient
+
+With two parameters you need two derivatives: how the loss changes when \`w\` moves, and how it changes when \`b\` moves. Together they are the **gradient**.
+
+Work it out for one example, one step at a time. Call the miss \`e = w * x + b - y\` (the error).
+
+1. The loss is \`e ** 2\`, so the loss changes \`2 * e\` times as fast as \`e\` does.
+2. When \`w\` goes up by 1, \`e\` goes up by \`x\`. When \`b\` goes up by 1, \`e\` goes up by 1.
+3. Multiply the rates along the way, which is the **[[chain rule|chain-rule]]**: the loss changes by \`2 * e * x\` per unit of \`w\`, and by \`2 * e\` per unit of \`b\`.
+
+Average over the examples and you have the gradient of the MSE:
+
+\`\`\`text
+dMSE/dw = mean of 2 * e * x
+dMSE/db = mean of 2 * e
+\`\`\`
+
+Read \`dMSE/dw\` as "the derivative of the MSE with respect to w".
+
+A check that it makes sense: one example with \`x = 2\`, \`y = 5\`, and the line starting at \`w = 1\`, \`b = 0\`. The prediction is 2, so \`e = -3\`. Then \`2 * e * x = -12\` and \`2 * e = -6\`. Both are negative, so making \`w\` or \`b\` bigger lowers the loss. That is right: the line predicted too low.
+
+### Compute both, then update both
+
+One training step uses the current \`w\` and \`b\` to compute **both** derivatives, and only then changes both parameters.
+
+**Watch out:** a common slip is to update \`w\` first and then compute \`b\`'s derivative with the new \`w\`. The code still runs and still roughly trains, but it is a different algorithm from the one you meant, and its numbers will not match anyone else's.
+
+### Check your formula with the slope you can measure
+
+You worked those formulas out by hand, and hand-made gradients are often wrong in ways that still sort of train. So compare them with the central difference at some point, using a loss written as a function of one parameter:
+
+\`\`\`python
+def loss_of_w(w):
+    return (w * 2 + 0 - 5) ** 2        # the one example above, with b = 0
+
+h = 1e-5
+print((loss_of_w(1 + h) - loss_of_w(1 - h)) / (2 * h))    # about -12, as the formula said
+\`\`\`
+
+The two should agree to many digits. Lesson 6 turns this into a proper debugging tool.
+
+In PyTorch: \`nn.MSELoss()\` computes the loss, \`loss.backward()\` works out the gradient for you, and \`optimizer.step()\` makes the update.
+
+::: context loss-names Loss, cost, objective
+You will meet several names for the same idea: **loss**, **cost**, **error** and **objective**. All of them mean one number that training tries to push down (or, for an objective, sometimes up). Choosing the loss is choosing what "good" means, so it is one of the most important decisions in a project. A model trained to minimise one loss can be bad at what you actually wanted, and much of a model developer's work is making the loss and the real goal agree.
+:::
+
+::: context why-central Why nudging both ways is so much better
+A curve seen up close is almost a straight line, but not quite: it bends. A forward difference measures the slope of a chord that sits off to one side of \`x\`, so the bend tilts it. A central difference uses a chord centred on \`x\`. The bend lifts both ends of that chord by about the same amount, so the tilt cancels out, and only a much smaller error is left. For \`x ** 2\` at 3 with \`h = 1e-5\`, the forward error is about 0.00001 while the central one is down at rounding level.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170" font-family="Inter, Arial, sans-serif">
+  <path d="M 30 150 Q 180 150 330 20" fill="none" stroke="#1f2a44" stroke-width="2"/>
+  <line x1="150" y1="20" x2="150" y2="160" stroke="#6c7a93" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="150" y="14" font-size="11" text-anchor="middle" fill="#6c7a93">x</text>
+  <line x1="90" y1="139" x2="210" y2="101" stroke="#1d6fd1" stroke-width="3"/>
+  <line x1="150" y1="123" x2="270" y2="65" stroke="#b4232c" stroke-width="2"/>
+  <text x="70" y="128" font-size="11" fill="#1d6fd1">central chord</text>
+  <text x="240" y="98" font-size="11" fill="#b4232c">forward chord</text>
+</svg>
+\`\`\`
+:::
+
+::: context tiny-h Why a tiny h goes wrong
+A Python float keeps about 16 significant digits. With \`h = 1e-12\`, \`f(x + h)\` and \`f(x - h)\` share their first 12 or so digits, and subtracting them throws those away. What is left are the last few digits, which are mostly rounding. Dividing by a tiny \`2 * h\` then blows that noise up. So the error first falls as \`h\` shrinks, then rises again. The best \`h\` sits in the middle, which is why gradient checks use about \`1e-6\`.
+:::
+
+::: context learning-rate The most important dial
+The learning rate is a **hyperparameter**: a setting you choose before training, as opposed to a parameter the model learns. It is usually the first one people tune, because nothing else matters if it is badly off. Typical values range from about 0.1 for simple problems down to 0.0003 or less for large language models. Real training also changes it over time, with a short warm-up and then a slow decay, which lesson 9 mentions.
+:::
+
+::: context divergence What divergence looks like in a real run
+In a real training run, divergence shows up as a loss curve that suddenly shoots upwards, then prints \`inf\` (infinity) or \`nan\` ("not a number", the result of sums like infinity minus infinity). Once a \`nan\` appears it spreads into every number it touches, and the run is ruined. The usual first fix is a smaller learning rate. Lessons 8 and 10 show other causes and their cures.
+:::
+
+::: context why-squared Why square the errors?
+Squaring does three useful things. A miss of -3 and a miss of +3 count the same, so errors cannot cancel out. Big misses count much more than small ones: a miss of 10 costs 100, while ten misses of 1 cost only 10. And the square has a smooth slope everywhere, even at 0, which gradient descent needs. Taking the plain size of the error instead (the mean absolute error) is also used, but its slope jumps at 0.
+:::
+
+::: context chain-rule Rates that multiply
+Picture three gears in a row. If the second gear turns 3 times for every turn of the first, and the third turns 2 times for every turn of the second, then the third turns 3 times 2, which is 6 times, for every turn of the first. The chain rule says the same about changes: when one thing depends on another through a middle step, the rates along the way multiply. It is the one rule all of backpropagation is built on, and lessons 4 and 5 turn it into code that applies it for you.
+:::
+--- task
+Write these four functions:
+
+- \`derivative(f, x, h=1e-5)\` returns the **central** difference estimate of \`f\`'s derivative at \`x\`.
+- \`mse(w, b, xs, ys)\` returns the mean squared error of the line \`w * x + b\` on the data: the lists \`xs\` and \`ys\` hold the \`x\` and \`y\` of each example.
+- \`mse_grads(w, b, xs, ys)\` returns the pair \`(dw, db)\`: the derivatives of the MSE with respect to \`w\` and to \`b\`, from the formulas in the explanation.
+- \`fit_line(xs, ys, lr=0.1, steps=1000)\` starts from \`w = 0.0\` and \`b = 0.0\` and makes exactly \`steps\` gradient-descent updates. Each update computes both derivatives first, then changes both parameters. Return \`(w, b)\`.
+--- starter
+def derivative(f, x, h=1e-5):
+    pass
+
+
+def mse(w, b, xs, ys):
+    pass
+
+
+def mse_grads(w, b, xs, ys):
+    pass
+
+
+def fit_line(xs, ys, lr=0.1, steps=1000):
+    w, b = 0.0, 0.0
+    return w, b
+--- solution
+def derivative(f, x, h=1e-5):
+    return (f(x + h) - f(x - h)) / (2 * h)
+
+
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def mse_grads(w, b, xs, ys):
+    n = len(xs)
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    dw = sum(2 * e * x for e, x in zip(errors, xs)) / n
+    db = sum(2 * e for e in errors) / n
+    return dw, db
+
+
+def fit_line(xs, ys, lr=0.1, steps=1000):
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        dw, db = mse_grads(w, b, xs, ys)
+        w -= lr * dw
+        b -= lr * db
+    return w, b
+--- hint
+The central difference nudges \`x\` by \`h\` in both directions and divides the change in \`f\` by the total distance, \`2 * h\`.
+--- hint
+In \`mse_grads\`, work out each example's error \`w * x + b - y\` once and keep them in a list. Then \`dw\` is the average of \`2 * e * x\` and \`db\` is the average of \`2 * e\`.
+--- hint
+In \`fit_line\`, each step starts with \`dw, db = mse_grads(w, b, xs, ys)\`. Only after that line, move \`w\` by \`-lr * dw\` and \`b\` by \`-lr * db\`.
+--- check test | derivative of x² at 3 is 6, to within 1e-7 (a forward difference is not accurate enough)
+abs(derivative(lambda x: x ** 2, 3.0) - 6.0) < 1e-7
+--- check test | derivative uses h: cube at 2 with h=1e-3 is 12 to within 1e-5
+abs(derivative(lambda x: x ** 3, 2.0, h=1e-3) - 12.0) < 1e-5
+--- check test | derivative of sin at 0 is 1
+abs(derivative(__import__("math").sin, 0.0) - 1.0) < 1e-8
+--- check test | mse is 0 for a perfect line and averages squared errors otherwise
+mse(2, 1, [0, 1, 2], [1, 3, 5]) == 0 and abs(mse(0, 0, [1, 2], [1, 3]) - 5.0) < 1e-12
+--- check test | mse_grads at w=0, b=0 on two points gives (-7, -4)
+(lambda g: abs(g[0] + 7) < 1e-12 and abs(g[1] + 4) < 1e-12)(mse_grads(0.0, 0.0, [1, 2], [1, 3]))
+--- check test | mse_grads agrees with the numerical derivative of mse
+(lambda xs, ys: (lambda g: abs(g[0] - derivative(lambda w: mse(w, -0.3, xs, ys), 0.7)) < 1e-6 and abs(g[1] - derivative(lambda b: mse(0.7, b, xs, ys), -0.3)) < 1e-6)(mse_grads(0.7, -0.3, xs, ys)))([0.5, -1.0, 2.0, 3.5], [1.0, 0.2, -2.0, 4.0])
+--- check test | One step from zero moves w and b against the gradient
+(lambda r: abs(r[0] - 0.7) < 1e-12 and abs(r[1] - 0.4) < 1e-12)(fit_line([1, 2], [1, 3], lr=0.1, steps=1))
+--- check test | Zero steps leaves w and b at 0
+fit_line([1, 2], [1, 3], steps=0) == (0, 0)
+--- check test | fit_line recovers y = 3x - 2
+(lambda xs: (lambda r: abs(r[0] - 3) < 1e-3 and abs(r[1] + 2) < 1e-3)(fit_line(xs, [3 * x - 2 for x in xs])))([i / 10 for i in range(-10, 11)])
+--- check test | A learning rate that is too big diverges
+(lambda xs: abs(fit_line(xs, [3 * x - 2 for x in xs], lr=2.0, steps=50)[1]) > 1e6)([i / 10 for i in range(-10, 11)])
+
++++ practice | A slope for every input
+--- task
+A model's loss depends on many numbers at once. Its gradient is the list of slopes, one for each number. Write \`numeric_gradient(f, point, h=1e-5)\`:
+
+- \`f\` takes a list of floats and returns a float.
+- \`point\` is a list of floats.
+- Return a list with one central-difference slope per position: for position \`i\`, nudge only \`point[i]\` up by \`h\` and down by \`h\`, and divide the change in \`f\` by \`2 * h\`.
+
+Do not change \`point\` itself. For an empty \`point\`, return \`[]\`.
+--- starter
+def numeric_gradient(f, point, h=1e-5):
+    grad = []
+    for i in range(len(point)):
+        point[i] += h
+        grad.append((f(point) - f(point)) / h)
+    return grad
+--- solution
+def numeric_gradient(f, point, h=1e-5):
+    grad = []
+    for i in range(len(point)):
+        up = list(point)
+        down = list(point)
+        up[i] += h
+        down[i] -= h
+        grad.append((f(up) - f(down)) / (2 * h))
+    return grad
+--- hint
+For each position, make two copies of \`point\` with \`list(point)\`: nudge one up and the other down, at that position only.
+--- hint
+The slope for position \`i\` is \`(f(up) - f(down)) / (2 * h)\`. Copies keep the caller's list as it was.
+--- check test | f = x0² + 3·x0·x1 at (1, 2) has slopes 8 and 3
+(lambda g: len(g) == 2 and abs(g[0] - 8) < 1e-6 and abs(g[1] - 3) < 1e-6)(numeric_gradient(lambda p: p[0] ** 2 + 3 * p[0] * p[1], [1.0, 2.0]))
+--- check test | The point is not changed
+(lambda p: (numeric_gradient(lambda q: q[0] * q[1], p), p == [2.0, -1.0])[1])([2.0, -1.0])
+--- check test | h is used: the slope of x³ at 2 with h = 0.001 is 12.000001
+abs(numeric_gradient(lambda p: p[0] ** 3, [2.0], h=1e-3)[0] - 12.000001) < 1e-8
+--- check case | An empty point has an empty gradient
+numeric_gradient(lambda p: 0.0, [])
+=> []
+
++++ practice | Walk downhill until the steps are tiny
+--- task
+Real training does not always run a fixed number of steps. Write \`descend(slope, x0, lr, tol=1e-8, max_steps=10000)\`. \`slope\` is a function that gives the derivative at any \`x\`.
+
+Start at \`x0\`. Before each step, work out the move \`lr * slope(x)\`:
+
+- If the size of the move is below \`tol\`, stop and return \`(x, steps_taken)\`.
+- Otherwise make the move: \`x\` becomes \`x - lr * slope(x)\`.
+- If \`x\` then has a size above \`1e12\`, the run has diverged: raise \`ValueError\`.
+- After \`max_steps\` moves, return \`(x, max_steps)\` even if the steps are not tiny yet.
+
+So starting exactly at the bottom returns \`(x0, 0)\`.
+--- starter
+def descend(slope, x0, lr, tol=1e-8, max_steps=10000):
+    x = x0
+    for step in range(max_steps):
+        x = x - lr * slope(x)
+    return x, max_steps
+--- solution
+def descend(slope, x0, lr, tol=1e-8, max_steps=10000):
+    x = x0
+    for step in range(max_steps):
+        move = lr * slope(x)
+        if abs(move) < tol:
+            return x, step
+        x -= move
+        if abs(x) > 1e12:
+            raise ValueError(f"diverged after {step + 1} steps")
+    return x, max_steps
+--- hint
+Count the moves. Inside the loop, compute the move first, and decide whether to stop before you make it.
+--- hint
+Use \`abs(...)\` for "size": a move of \`-0.5\` is as big as a move of \`0.5\`. Check \`abs(x) > 1e12\` right after each move.
+--- check test | (x - 3)² from 0 with lr 0.1 reaches 3 and stops after 81 steps
+(lambda r: abs(r[0] - 3) < 1e-6 and r[1] == 81)(descend(lambda x: 2 * (x - 3), 0.0, 0.1))
+--- check test | Starting at the bottom takes no steps
+descend(lambda x: 2 * (x - 3), 3.0, 0.1) == (3.0, 0)
+--- check test | max_steps caps the run
+(lambda r: r[1] == 5 and abs(r[0] - 3 * (1 - 0.8 ** 5)) < 1e-12)(descend(lambda x: 2 * (x - 3), 0.0, 0.1, max_steps=5))
+--- check test | A learning rate that is too big raises ValueError
+raises(ValueError, lambda: descend(lambda x: 2 * (x - 3), 0.0, 1.1))
+--- check test | A steeper bowl, 10x², needs a smaller learning rate but still gets there
+(lambda r: abs(r[0]) < 1e-8)(descend(lambda x: 20 * x, 5.0, 0.04))
+
++++ practice | The gradient with several inputs
+--- task
+Real data has several **features** per example: one row of numbers. A linear model then has one weight per feature and predicts \`dot(w, x) + b\`.
+
+Write \`linreg_grads(w, b, X, ys)\`:
+
+- \`w\` is a list of weights, \`b\` a number, \`X\` a list of rows (one row per example, each as long as \`w\`), and \`ys\` the true values.
+- Each example's error is \`e = dot(w, x) + b - y\`.
+- Return \`(dw, db)\`, where \`dw\` is a list: \`dw[j]\` is the mean of \`2 * e * x[j]\` over the examples, and \`db\` is the mean of \`2 * e\`.
+
+Raise \`ValueError\` if \`X\` is empty, or if any row's length differs from \`len(w)\`.
+--- starter
+def linreg_grads(w, b, X, ys):
+    dw = [0.0] * len(w)
+    db = 0.0
+    return dw, db
+--- solution
+def linreg_grads(w, b, X, ys):
+    if not X:
+        raise ValueError("no examples")
+    n = len(X)
+    dw = [0.0] * len(w)
+    db = 0.0
+    for x, y in zip(X, ys):
+        if len(x) != len(w):
+            raise ValueError(f"a row has {len(x)} features, w has {len(w)}")
+        e = sum(wj * xj for wj, xj in zip(w, x)) + b - y
+        for j in range(len(w)):
+            dw[j] += 2 * e * x[j] / n
+        db += 2 * e / n
+    return dw, db
+--- hint
+It is the line's gradient again, with the single \`x\` replaced by a row. For each example, work out its error once, then add its share into every \`dw[j]\` and into \`db\`.
+--- hint
+Divide each example's share by the number of examples as you add it, so the totals are means.
+--- check test | Two examples with two features
+(lambda g: all(abs(a - b) < 1e-12 for a, b in zip(g[0] + [g[1]], [2.0, -6.5, -1.0])))(linreg_grads([1.0, 0.0], 0.5, [[1.0, 2.0], [3.0, -1.0]], [4.0, 2.0]))
+--- check test | It agrees with the slope measured by nudging each parameter
+(lambda X, ys, w, b: (lambda loss, g: all(abs(g[0][j] - (loss([v + (1e-6 if i == j else 0.0) for i, v in enumerate(w)], b) - loss([v - (1e-6 if i == j else 0.0) for i, v in enumerate(w)], b)) / 2e-6) < 1e-5 for j in range(len(w))) and abs(g[1] - (loss(w, b + 1e-6) - loss(w, b - 1e-6)) / 2e-6) < 1e-5)(lambda ww, bb: sum((sum(p * q for p, q in zip(ww, x)) + bb - y) ** 2 for x, y in zip(X, ys)) / len(X), linreg_grads(w, b, X, ys)))([[1.0, 2.0], [0.5, -1.5], [-2.0, 0.25]], [1.0, -2.0, 0.5], [0.3, -0.7], 0.2)
+--- check test | With a perfect fit, every slope is 0
+linreg_grads([2.0, -1.0], 1.0, [[1.0, 1.0], [0.0, 3.0]], [2.0, -2.0]) == ([0.0, 0.0], 0.0)
+--- check test | No examples, or a row of the wrong length, raises ValueError
+raises(ValueError, lambda: linreg_grads([1.0], 0.0, [], [])) and raises(ValueError, lambda: linreg_grads([1.0, 2.0], 0.0, [[1.0]], [3.0]))
+
++++ practice | The exact answer, for checking
+--- task
+For a straight line there is a formula that gives the best \`w\` and \`b\` straight away. Engineers use it to check that gradient descent is heading to the right place. Write \`fit_line_exact(xs, ys)\`:
+
+1. Work out the mean of \`xs\` and the mean of \`ys\`.
+2. \`w\` is the sum of \`(x - mean_x) * (y - mean_y)\` over the examples, divided by the sum of \`(x - mean_x) ** 2\`.
+3. \`b\` is \`mean_y - w * mean_x\`.
+
+Return \`(w, b)\`. The formula fails on some data, so:
+
+- If the lists have different lengths, raise \`ValueError\`.
+- With fewer than 2 examples there is no single best line: raise \`ValueError\`.
+- If every \`x\` is the same, the bottom of the fraction is 0: raise \`ValueError\`.
+--- starter
+def fit_line_exact(xs, ys):
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    top = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    bottom = sum((x - mean_x) ** 2 for x in xs)
+    w = top / bottom
+    return w, mean_y - w * mean_x
+--- solution
+def fit_line_exact(xs, ys):
+    if len(xs) != len(ys):
+        raise ValueError("xs and ys have different lengths")
+    if len(xs) < 2:
+        raise ValueError("need at least two examples")
+    mean_x = sum(xs) / len(xs)
+    mean_y = sum(ys) / len(ys)
+    top = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys))
+    bottom = sum((x - mean_x) ** 2 for x in xs)
+    if bottom == 0:
+        raise ValueError("every x is the same")
+    w = top / bottom
+    return w, mean_y - w * mean_x
+--- hint
+The formula in the starter is right. What is missing are the checks for the data it cannot handle.
+--- hint
+Put the length checks first, before any division. Compare the bottom of the fraction with 0 just before you divide by it.
+--- check test | Points on y = 3x - 2 give back 3 and -2
+(lambda r: abs(r[0] - 3) < 1e-12 and abs(r[1] + 2) < 1e-12)(fit_line_exact([0, 1, 2, 5], [-2, 1, 4, 13]))
+--- check test | Two points give the line through them
+(lambda r: abs(r[0] + 0.5) < 1e-12 and abs(r[1] - 2) < 1e-12)(fit_line_exact([0, 4], [2, 0]))
+--- check test | Noisy points give the best line
+(lambda r: abs(r[0] - 0.8) < 1e-12 and abs(r[1] - 1.3) < 1e-12)(fit_line_exact([0, 1, 2, 3], [1, 3, 2, 4]))
+--- check test | One example or no examples raise ValueError
+raises(ValueError, lambda: fit_line_exact([3], [1])) and raises(ValueError, lambda: fit_line_exact([], []))
+--- check test | Every x the same raises ValueError
+raises(ValueError, lambda: fit_line_exact([2, 2, 2], [1, 5, 3]))
+--- check test | Lists of different lengths raise ValueError
+raises(ValueError, lambda: fit_line_exact([1, 2, 3], [1, 2]))
+
++++ practice | Fix the fit that breaks on big data
+--- task
+This \`fit_line\` fits a handful of points nicely. On 400 points, with the same learning rate, it explodes: \`w\` and \`b\` grow without limit.
+
+The bug is in \`mse_grads\`: its numbers are too big, and they grow with the number of examples. Fix it so \`mse_grads\` returns the derivatives of the **mean** squared error (the function \`mse\` in the starter is right). Leave \`fit_line\` alone.
+--- starter
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def mse_grads(w, b, xs, ys):
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    dw = sum(2 * e * x for e, x in zip(errors, xs))
+    db = sum(2 * e for e in errors)
+    return dw, db
+
+
+def fit_line(xs, ys, lr=0.1, steps=500):
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        dw, db = mse_grads(w, b, xs, ys)
+        w -= lr * dw
+        b -= lr * db
+    return w, b
+--- solution
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def mse_grads(w, b, xs, ys):
+    n = len(xs)
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    dw = sum(2 * e * x for e, x in zip(errors, xs)) / n
+    db = sum(2 * e for e in errors) / n
+    return dw, db
+
+
+def fit_line(xs, ys, lr=0.1, steps=500):
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        dw, db = mse_grads(w, b, xs, ys)
+        w -= lr * dw
+        b -= lr * db
+    return w, b
+--- hint
+Compare \`mse\` and \`mse_grads\`. One of them divides by the number of examples, and the other does not.
+--- hint
+The derivative of a mean is the mean of the derivatives. Divide both sums by \`len(xs)\`.
+--- check test | On two points the gradient at zero is (-7, -4)
+(lambda g: abs(g[0] + 7) < 1e-12 and abs(g[1] + 4) < 1e-12)(mse_grads(0.0, 0.0, [1, 2], [1, 3]))
+--- check test | The gradient agrees with the measured slope of mse
+(lambda xs, ys: (lambda g: abs(g[0] - (mse(0.5 + 1e-6, 1.0, xs, ys) - mse(0.5 - 1e-6, 1.0, xs, ys)) / 2e-6) < 1e-6 and abs(g[1] - (mse(0.5, 1.0 + 1e-6, xs, ys) - mse(0.5, 1.0 - 1e-6, xs, ys)) / 2e-6) < 1e-6)(mse_grads(0.5, 1.0, xs, ys)))([0.0, 1.0, -2.0, 3.0, 0.5], [1.0, 2.0, -1.0, 0.0, 4.0])
+--- check test | 401 points on y = 3x - 2 are fitted without exploding
+(lambda xs: (lambda r: abs(r[0] - 3) < 1e-6 and abs(r[1] + 2) < 1e-6)(fit_line(xs, [3 * x - 2 for x in xs])))([i / 200 for i in range(-200, 201)])
+--- check test | Four points still fit
+(lambda r: abs(r[0] - 2) < 1e-3 and abs(r[1] - 1) < 1e-3)(fit_line([-1, -0.5, 0.5, 1], [-1, 0, 2, 3]))
+
++++ practice | Calibrate a sensor
+--- task
+A temperature probe reports raw readings around 1000 to 1100, and you want the line that turns a raw reading into degrees: \`temperature = w * raw + b\`. Plain gradient descent with a learning rate of 0.1 explodes on numbers this big. The cure engineers use is **feature scaling**:
+
+1. Work out the mean of the raw readings and their standard deviation: \`std = sqrt(mean of (raw - mean) ** 2)\`.
+2. Turn every reading into \`z = (raw - mean) / std\`. The \`z\` values sit around 0, mostly between -2 and 2.
+3. Fit \`temperature = w_z * z + b_z\` with gradient descent on the MSE: start at 0.0 and 0.0, make \`steps\` updates with learning rate \`lr\`, computing both derivatives before changing either.
+4. Turn the result back into raw units and return \`(w, b)\`.
+
+Write \`calibrate(raw, temps, lr=0.1, steps=500)\`. If every raw reading is the same, \`std\` is 0: raise \`ValueError\`.
+
+For step 4, put \`z = (raw - mean) / std\` into \`w_z * z + b_z\` and collect what multiplies \`raw\` and what is left over.
+--- starter
+import math
+
+
+def calibrate(raw, temps, lr=0.1, steps=500):
+    n = len(raw)
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        errors = [w * r + b - t for r, t in zip(raw, temps)]
+        dw = sum(2 * e * r for e, r in zip(errors, raw)) / n
+        db = sum(2 * e for e in errors) / n
+        w -= lr * dw
+        b -= lr * db
+    return w, b
+--- solution
+import math
+
+
+def calibrate(raw, temps, lr=0.1, steps=500):
+    n = len(raw)
+    mean = sum(raw) / n
+    std = math.sqrt(sum((r - mean) ** 2 for r in raw) / n)
+    if std == 0:
+        raise ValueError("every reading is the same")
+    zs = [(r - mean) / std for r in raw]
+    w, b = 0.0, 0.0
+    for _ in range(steps):
+        errors = [w * z + b - t for z, t in zip(zs, temps)]
+        dw = sum(2 * e * z for e, z in zip(errors, zs)) / n
+        db = sum(2 * e for e in errors) / n
+        w -= lr * dw
+        b -= lr * db
+    return w / std, b - w * mean / std
+--- hint
+The training loop in the starter is fine. Feed it the \`z\` values instead of the raw readings.
+--- hint
+\`w_z * (raw - mean) / std + b_z\` is \`(w_z / std) * raw + (b_z - w_z * mean / std)\`. Those two brackets are the \`w\` and \`b\` to return.
+--- check test | Exact readings give back the exact line
+(lambda raw: (lambda r: abs(r[0] - 0.04) < 1e-9 and abs(r[1] + 25.0) < 1e-6)(calibrate(raw, [0.04 * x - 25.0 for x in raw])))([1000 + 7 * i for i in range(15)])
+--- check test | Noisy readings give the best line (the exact formula's answer)
+(lambda raw, t: (lambda r, mx, my: (lambda w: abs(r[0] - w) < 1e-9 and abs(r[1] - (my - w * mx)) < 1e-6)(sum((x - mx) * (y - my) for x, y in zip(raw, t)) / sum((x - mx) ** 2 for x in raw)))(calibrate(raw, t), sum(raw) / len(raw), sum(t) / len(t)))([1012.0, 1047.5, 1003.0, 1088.0, 1061.0, 1030.5, 1095.0], [15.4, 16.6, 15.0, 18.2, 17.1, 16.0, 18.9])
+--- check test | The numbers stay finite on big readings
+(lambda r: all(abs(v) < 1e6 for v in r))(calibrate([1000.0, 1100.0, 1050.0], [10.0, 20.0, 15.0]))
+--- check test | Identical readings raise ValueError
+raises(ValueError, lambda: calibrate([1000.0, 1000.0, 1000.0], [10.0, 11.0, 12.0]))
+
+=== ai-03 | Logistic regression: a first classifier
+--- teach
+Last lesson you fitted a line: the model predicted a number, and gradient descent nudged \`w\` and \`b\` downhill on the mean squared error. Many tasks ask a different kind of question: **which class** does this belong to? Spam or not spam, cat or dog, which word comes next. This lesson builds the simplest classifier, **logistic regression**. It is worth knowing exactly, because it is also the last layer of almost every neural network.
+
+Think of a doctor reading a test result. A number comes back, and she turns it into a judgement: "about 90% likely this patient has the flu". A classifier does the same two steps: work out a score, then turn the score into a probability.
+
+### Step 1: a score
+
+Given an input vector \`x\`, the model works out a score with the dot product from lesson 1:
+
+\`\`\`text
+z = dot(w, x) + b
+\`\`\`
+
+This score is called the **[[logit|logit-name]]**. It can be any number: large and positive means "probably class 1", large and negative means "probably class 0", near 0 means "not sure".
+
+### Step 2: squash the score into a probability
+
+The **sigmoid** function turns any number into a probability between 0 and 1. It is \`1 / (1 + exp(-z))\`, where \`exp(z)\` is the number e (about 2.718) raised to the power \`z\`.
+
+\`\`\`python
+import math
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+print([round(sigmoid(z), 3) for z in (-4, -1, 0, 1, 4)])
+# [0.018, 0.269, 0.5, 0.731, 0.982]
+\`\`\`
+
+A score of 0 gives exactly 0.5. Big positive scores get close to 1, big negative ones close to 0, and the curve between them is a smooth [[S shape|sigmoid-shape]].
+
+### From probability to a decision
+
+The model predicts class 1 when the probability is at least 0.5. That happens exactly when \`z >= 0\`, so you never need the sigmoid just to decide.
+
+The points where \`z = 0\` form the **decision boundary**. With two input features it reads \`w[0] * x0 + w[1] * x1 + b = 0\`, which is the equation of a straight line. Every point on one side of the line is class 1, every point on the other side is class 0. Training moves and turns that [[line|boundary-line]].
+
+### The loss: binary cross-entropy
+
+For one example with true label \`y\` (0 or 1) and predicted probability \`p\`, the loss is the **binary cross-entropy**:
+
+\`\`\`text
+loss = -(y * log(p) + (1 - y) * log(1 - p))
+\`\`\`
+
+\`log\` is the natural logarithm. Only one half of the bracket is ever switched on: when \`y = 1\` the loss is \`-log(p)\`, and when \`y = 0\` it is \`-log(1 - p)\`.
+
+Think of it as the model's **[[surprise|surprise]]** at the right answer:
+
+- \`y = 1\` and \`p = 0.99\`: the loss is \`-log(0.99)\`, about 0.01. Barely surprised.
+- \`y = 1\` and \`p = 0.01\`: the loss is \`-log(0.01)\`, about 4.6. Very surprised.
+
+Confident mistakes cost a lot, which is exactly what you want a classifier to fear. The squared error from lesson 2 works badly here, for a reason [[worth knowing|why-not-mse]].
+
+### The gradient is beautifully simple
+
+Put the sigmoid and the cross-entropy together and take the derivative of the loss with respect to the logit \`z\`. Almost everything cancels, and what is left is:
+
+\`\`\`text
+dloss/dz = p - y
+\`\`\`
+
+Read it as "predicted minus true". The model said 0.8 but the answer was 0? The logit gets pushed down by 0.8. It said 0.3 and the answer was 1? The logit gets pushed up by 0.7.
+
+Then the chain rule from lesson 2 carries it to the parameters. Since \`z = dot(w, x) + b\`, moving \`w[j]\` by 1 moves \`z\` by \`x[j]\`, and moving \`b\` by 1 moves \`z\` by 1. Averaged over the examples:
+
+\`\`\`text
+dw[j] = mean of (p - y) * x[j]
+db    = mean of (p - y)
+\`\`\`
+
+You will meet the same \`p - y\` again with softmax over many classes (lesson 10). It is the signal every language model trains on.
+
+### Numbers that break
+
+The sigmoid above is right on paper but crashes in code. \`math.exp(1000)\` is too big for a float, so Python raises \`OverflowError\`, and \`sigmoid(-1000)\` asks for exactly that. Real models produce big scores all the time, so the arithmetic has to [[stay inside what a float can hold|float-range]].
+
+The fix uses a second form of the same formula. Multiply the top and bottom of \`1 / (1 + exp(-z))\` by \`exp(z)\` and you get \`exp(z) / (exp(z) + 1)\`. Same value, different arithmetic. Look at what each form needs when \`z\` is very negative:
+
+\`\`\`python
+import math
+
+z = -1000.0
+# 1 / (1 + math.exp(-z)) needs math.exp(1000): OverflowError
+small = math.exp(z)            # exp(-1000) is tiny: it comes back as 0.0
+print(small / (1 + small))     # 0.0, the right answer for such a low score
+\`\`\`
+
+So a stable sigmoid looks at the sign of \`z\` first and picks the form that only ever calls \`exp\` on a number that is 0 or below.
+
+The loss has its own trap: \`math.log(0)\` raises \`ValueError\`. If a prediction rounds to exactly 0 or 1, the cross-entropy crashes. So before taking the log, **clamp** \`p\` into the range \`[eps, 1 - eps]\`, where \`eps\` is a tiny number such as \`1e-12\`: anything below \`eps\` becomes \`eps\`, anything above \`1 - eps\` becomes \`1 - eps\`.
+
+**Watch out:** the overflow only shows up for big scores, so a sigmoid that passes every test on small numbers can still crash halfway through training. Test the extremes, \`-1000\` and \`1000\`, on purpose.
+
+In PyTorch: \`torch.sigmoid\`, and \`nn.BCEWithLogitsLoss\`, which takes the logit rather than the probability precisely so it can do this arithmetic stably.
+
+::: context logit-name Where the word logit comes from
+The **odds** of an event are its probability divided by the probability that it does not happen: a probability of 0.8 is odds of 0.8 / 0.2, which is 4 to 1. The logit is the natural log of the odds. The sigmoid and the logit undo each other: the sigmoid turns a logit into a probability, the logit turns a probability back into a score. In machine learning the word has stretched to mean any raw score that goes into a sigmoid or a softmax.
+:::
+
+::: context sigmoid-shape The S-shaped curve
+The sigmoid rises slowly far to the left, steeply around 0, and slowly again far to the right, where it flattens out just below 1. Its slope at any point is \`p * (1 - p)\`, which is largest, 0.25, at the middle and almost 0 at both ends. That flat region is why a confidently wrong model learns so slowly with the wrong loss.
+
+\`\`\`svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 160" font-family="Inter, Arial, sans-serif">
+  <line x1="20" y1="130" x2="340" y2="130" stroke="#6c7a93" stroke-width="1"/>
+  <line x1="180" y1="20" x2="180" y2="140" stroke="#6c7a93" stroke-width="1"/>
+  <line x1="20" y1="30" x2="340" y2="30" stroke="#6c7a93" stroke-width="1" stroke-dasharray="4 3"/>
+  <path d="M 20 128 C 120 126, 150 120, 165 100 S 195 40, 240 34 S 320 30, 340 30" fill="none" stroke="#1d6fd1" stroke-width="3"/>
+  <circle cx="180" cy="80" r="4" fill="#b4232c"/>
+  <text x="188" y="84" font-size="11" fill="#b4232c">z = 0, p = 0.5</text>
+  <text x="26" y="24" font-size="11" fill="#1f2a44">p = 1</text>
+  <text x="26" y="148" font-size="11" fill="#1f2a44">p = 0</text>
+  <text x="300" y="148" font-size="11" fill="#1f2a44">z</text>
+</svg>
+\`\`\`
+:::
+
+::: context boundary-line The boundary is a line you can draw
+Take \`w = [1, 2]\` and \`b = -0.2\`. The boundary is \`x0 + 2 * x1 - 0.2 = 0\`, which you can rewrite as \`x1 = 0.1 - x0 / 2\`: a straight line sloping gently down. Points above it score positive and are class 1. Changing \`w\` turns the line; changing \`b\` slides it without turning. A single straight line is all logistic regression can draw, and lesson 7 shows a problem where that is not enough.
+:::
+
+::: context surprise Loss as surprise
+In information theory, the **surprise** of an event with probability \`p\` is \`-log(p)\`. A sure thing (\`p = 1\`) has surprise 0; a one-in-a-million event has surprise of about 13.8. Claude Shannon built the theory of communication on this idea in 1948. Measured with the natural log, the unit is called a **nat**. Average surprise is cross-entropy, so when a language model's loss is quoted "in nats per token", it means how surprised the model is, on average, by the real next token.
+:::
+
+::: context why-not-mse Why not the squared error?
+Through a sigmoid, the squared error's gradient with respect to the logit carries an extra factor of \`p * (1 - p)\`, the sigmoid's slope. When the model is confidently wrong, say \`p = 0.001\` for a true class 1, that factor is about 0.001, so the gradient is tiny and the model barely moves, exactly when it most needs to change. Cross-entropy's \`-log\` cancels that factor, leaving the clean \`p - y\`.
+:::
+
+::: context float-range How big a float can get
+A Python float can hold numbers up to about \`1.8e308\` (1.8 followed by 308 zeros). \`math.exp(709)\` still fits, but \`math.exp(710)\` does not, and Python raises \`OverflowError\`. At the other end, \`math.exp(-746)\` is too small to tell apart from zero and comes back as exactly \`0.0\`, which is called **underflow**. NumPy and PyTorch do not raise errors here: they quietly give infinity, and the infinity turns into \`nan\` a few steps later.
+:::
+--- task
+The starter gives you \`dot\` and \`make_data(n, seed)\`, which returns \`(X, Y)\`: \`n\` random points in two dimensions and their labels, 0 or 1. Write:
+
+- \`sigmoid(z)\`, stable for any float: no \`OverflowError\` at \`-1000\` or at \`1000\`.
+- \`bce(p, y, eps=1e-12)\`: the binary cross-entropy of one prediction, with \`p\` clamped into \`[eps, 1 - eps]\` first.
+- \`predict_proba(w, b, x)\`: the sigmoid of \`dot(w, x) + b\`.
+- \`train_logistic(X, Y, lr=0.5, steps=500)\`: start with one weight of \`0.0\` per feature and \`b = 0.0\`. Make exactly \`steps\` gradient-descent updates, each using every example (full batch) and the gradients from the explanation. Return \`(w, b)\`, with \`w\` as a list.
+- \`accuracy(w, b, X, Y)\`: the fraction of examples where the prediction is right. The model predicts class 1 when the probability is at least 0.5.
+--- starter
+import math
+import random
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_data(n, seed=0):
+    """n points in the square [-1, 1] x [-1, 1]; label 1 when x0 + 2 * x1 > 0.2."""
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + 2 * x1 > 0.2 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    return 1 / (1 + math.exp(-z))
+
+
+def bce(p, y, eps=1e-12):
+    pass
+
+
+def predict_proba(w, b, x):
+    pass
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    pass
+
+
+def accuracy(w, b, X, Y):
+    pass
+--- solution
+import math
+import random
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_data(n, seed=0):
+    """n points in the square [-1, 1] x [-1, 1]; label 1 when x0 + 2 * x1 > 0.2."""
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + 2 * x1 > 0.2 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def bce(p, y, eps=1e-12):
+    p = min(max(p, eps), 1 - eps)
+    return -(y * math.log(p) + (1 - y) * math.log(1 - p))
+
+
+def predict_proba(w, b, x):
+    return sigmoid(dot(w, x) + b)
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    n, d = len(X), len(X[0])
+    w, b = [0.0] * d, 0.0
+    for _ in range(steps):
+        dw, db = [0.0] * d, 0.0
+        for x, y in zip(X, Y):
+            err = predict_proba(w, b, x) - y
+            for j in range(d):
+                dw[j] += err * x[j] / n
+            db += err / n
+        w = [wj - lr * g for wj, g in zip(w, dw)]
+        b -= lr * db
+    return w, b
+
+
+def accuracy(w, b, X, Y):
+    right = sum(1 for x, y in zip(X, Y) if (predict_proba(w, b, x) >= 0.5) == (y == 1))
+    return right / len(X)
+--- hint
+For the stable \`sigmoid\`, branch on the sign of \`z\`. When \`z >= 0\`, the usual form is safe. Otherwise compute \`exp(z)\` once and use the second form, \`exp(z) / (1 + exp(z))\`.
+--- hint
+In \`train_logistic\`, each step starts \`dw\` and \`db\` at zero, then goes through every example: work out \`p - y\` once, add \`(p - y) * x[j] / n\` into each \`dw[j]\` and \`(p - y) / n\` into \`db\`. Only after the whole pass, update every weight and the bias.
+--- hint
+In \`accuracy\`, an example is right when "probability at least 0.5" and "label is 1" are both true or both false: compare \`predict_proba(w, b, x) >= 0.5\` with \`y == 1\`.
+--- check test | sigmoid(0) is 0.5 and sigmoid(2) is about 0.8808
+sigmoid(0) == 0.5 and abs(sigmoid(2) - 0.8807970779778823) < 1e-12
+--- check test | sigmoid survives huge inputs without overflowing
+sigmoid(-1000) < 1e-300 and sigmoid(1000) == 1.0 and abs(sigmoid(-2) - (1 - sigmoid(2))) < 1e-12
+--- check test | bce is -log(p) when y is 1 and -log(1 - p) when y is 0
+abs(bce(0.9, 1) - 0.10536051565782628) < 1e-9 and abs(bce(0.9, 0) - 2.302585092994045) < 1e-9
+--- check test | bce clamps: p of exactly 0 or 1 gives a finite loss
+abs(bce(0.0, 1) - 27.631021115928547) < 1e-6 and bce(1.0, 1) < 1e-9 and bce(1.0, 0) > 27
+--- check test | predict_proba applies the sigmoid to the score
+predict_proba([1, -1], 0, [2, 2]) == 0.5 and abs(predict_proba([2.0, 0.0], -1.0, [1.0, 5.0]) - sigmoid(1.0)) < 1e-12
+--- check test | One training step from zeros moves w and b by lr * (y - p) * x
+(lambda r: all(abs(a - b) < 1e-12 for a, b in zip(r[0] + [r[1]], [0.25, 0.5, 0.25])))(train_logistic([[1.0, 2.0]], [1], lr=0.5, steps=1))
+--- check test | train_logistic returns w as a list with one weight per feature
+(lambda r: isinstance(r[0], list) and len(r[0]) == 2 and isinstance(r[1], float))(train_logistic(*make_data(10), steps=3))
+--- check test | After training, accuracy on the data is at least 95%
+(lambda X, Y: accuracy(*train_logistic(X, Y), X, Y) >= 0.95)(*make_data(60))
+--- check test | Training lowers the average loss well below log 2 (where it starts)
+(lambda X, Y: (lambda w, b: sum(bce(predict_proba(w, b, x), y) for x, y in zip(X, Y)) / len(X) < 0.3)(*train_logistic(X, Y)))(*make_data(60))
+--- check test | The learned boundary generalizes to fresh points
+(lambda X, Y: accuracy(*train_logistic(X, Y), *make_data(200, seed=7)) >= 0.9)(*make_data(60))
+
++++ practice | The average surprise of a batch
+--- task
+Write \`mean_bce(probs, labels, eps=1e-12)\`. \`probs\` holds the model's predicted probabilities and \`labels\` the true labels (each 0 or 1), in the same order. Return the mean binary cross-entropy over the examples:
+
+- For one example the loss is \`-log(p)\` when the label is 1, and \`-log(1 - p)\` when it is 0.
+- Clamp each \`p\` into \`[eps, 1 - eps]\` before taking the log, so a probability of exactly 0 or 1 gives a large but finite loss.
+- If the two lists have different lengths, or are empty, raise \`ValueError\`.
+--- starter
+import math
+
+
+def mean_bce(probs, labels, eps=1e-12):
+    total = 0.0
+    for p, y in zip(probs, labels):
+        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))
+    return total / len(probs)
+--- solution
+import math
+
+
+def mean_bce(probs, labels, eps=1e-12):
+    if len(probs) != len(labels) or not probs:
+        raise ValueError("need the same number of probabilities and labels, at least one")
+    total = 0.0
+    for p, y in zip(probs, labels):
+        p = min(max(p, eps), 1 - eps)
+        total += -(y * math.log(p) + (1 - y) * math.log(1 - p))
+    return total / len(probs)
+--- hint
+\`min(max(p, eps), 1 - eps)\` clamps: \`max\` lifts anything below \`eps\` up to \`eps\`, and \`min\` brings anything above \`1 - eps\` down.
+--- hint
+Do the checks before the loop, so an empty list never reaches the division.
+--- check test | Two confident right answers and one unsure one
+abs(mean_bce([0.9, 0.2, 0.5], [1, 0, 1]) - 0.34055041584399376) < 1e-12
+--- check test | A probability of exactly 0 or 1 gives a finite loss
+abs(mean_bce([0.0], [1]) - 27.631021115928547) < 1e-6 and mean_bce([1.0, 0.0], [1, 0]) < 1e-9
+--- check test | Knowing nothing (p = 0.5) costs log 2 per example
+abs(mean_bce([0.5] * 4, [0, 1, 1, 0]) - 0.6931471805599453) < 1e-12
+--- check test | Empty lists or lists of different lengths raise ValueError
+raises(ValueError, lambda: mean_bce([], [])) and raises(ValueError, lambda: mean_bce([0.5, 0.5], [1]))
+
++++ practice | The loss straight from the logit
+--- task
+PyTorch's \`BCEWithLogitsLoss\` takes the logit \`z\` rather than the probability, so it never has to compute a probability that rounds to 0 or 1. Write \`bce_with_logits(z, y)\`, which returns the binary cross-entropy of \`sigmoid(z)\` against the label \`y\` (0 or 1) using this rearranged formula:
+
+\`\`\`text
+loss = max(z, 0) - z * y + log(1 + exp(-abs(z)))
+\`\`\`
+
+It gives the same number as the cross-entropy of the sigmoid (algebra moves the pieces around), but \`exp\` only ever sees a number that is 0 or below, so it never overflows, and the log never sees 0. It must work for any \`z\`, including \`-1000\` and \`1000\`.
+--- starter
+import math
+
+
+def bce_with_logits(z, y):
+    p = 1 / (1 + math.exp(-z))
+    return -(y * math.log(p) + (1 - y) * math.log(1 - p))
+--- solution
+import math
+
+
+def bce_with_logits(z, y):
+    return max(z, 0) - z * y + math.log(1 + math.exp(-abs(z)))
+--- hint
+Write the formula exactly as given: \`max\` and \`abs\` are Python's built-in functions.
+--- hint
+\`-abs(z)\` is never positive, so \`math.exp(-abs(z))\` is between 0 and 1 for every \`z\`.
+--- check test | A score of 0 costs log 2 whatever the label
+abs(bce_with_logits(0.0, 1) - 0.6931471805599453) < 1e-12 and abs(bce_with_logits(0.0, 0) - 0.6931471805599453) < 1e-12
+--- check test | It agrees with the cross-entropy of the sigmoid for ordinary scores
+all(abs(bce_with_logits(z, y) - -(y * __import__("math").log(1 / (1 + __import__("math").exp(-z))) + (1 - y) * __import__("math").log(1 - 1 / (1 + __import__("math").exp(-z))))) < 1e-9 for z in (-3.0, -0.5, 0.7, 2.5) for y in (0, 1))
+--- check test | Huge scores: right answers cost nothing, wrong ones cost the size of the score
+bce_with_logits(1000.0, 1) == 0.0 and bce_with_logits(-1000.0, 0) == 0.0 and abs(bce_with_logits(1000.0, 0) - 1000.0) < 1e-9 and abs(bce_with_logits(-1000.0, 1) - 1000.0) < 1e-9
+--- check test | The loss is never negative
+all(bce_with_logits(z, y) >= 0 for z in (-50.0, -1.0, 0.0, 1.0, 50.0) for y in (0, 1))
+
++++ practice | Counting right and wrong answers
+--- task
+Accuracy alone can fool you: on data where only 1 example in 100 is positive, a model that always says 0 is 99% accurate and useless. So engineers count the four kinds of answer. Write two functions:
+
+1. \`confusion(w, b, X, Y, threshold=0.5)\` returns a dict with four keys. For each example, the model predicts 1 when \`sigmoid(dot(w, x) + b) >= threshold\`. Then:
+   - \`"tp"\` (true positive): predicted 1, label 1;
+   - \`"fp"\` (false positive): predicted 1, label 0;
+   - \`"fn"\` (false negative): predicted 0, label 1;
+   - \`"tn"\` (true negative): predicted 0, label 0.
+2. \`precision_recall(counts)\` takes such a dict and returns the pair \`(precision, recall)\`. **Precision** is \`tp / (tp + fp)\`: of the examples called positive, the fraction that really are. **Recall** is \`tp / (tp + fn)\`: of the real positives, the fraction found. When a bottom of a fraction is 0, use \`0.0\` for that number.
+
+The starter gives you a stable \`sigmoid\` and \`dot\`.
+--- starter
+import math
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def confusion(w, b, X, Y, threshold=0.5):
+    return {"tp": 0, "fp": 0, "fn": 0, "tn": 0}
+
+
+def precision_recall(counts):
+    return counts["tp"] / (counts["tp"] + counts["fp"]), counts["tp"] / (counts["tp"] + counts["fn"])
+--- solution
+import math
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def confusion(w, b, X, Y, threshold=0.5):
+    counts = {"tp": 0, "fp": 0, "fn": 0, "tn": 0}
+    for x, y in zip(X, Y):
+        said_one = sigmoid(dot(w, x) + b) >= threshold
+        if said_one:
+            counts["tp" if y == 1 else "fp"] += 1
+        else:
+            counts["fn" if y == 1 else "tn"] += 1
+    return counts
+
+
+def precision_recall(counts):
+    called = counts["tp"] + counts["fp"]
+    real = counts["tp"] + counts["fn"]
+    precision = counts["tp"] / called if called else 0.0
+    recall = counts["tp"] / real if real else 0.0
+    return precision, recall
+--- hint
+Decide once per example whether the model said 1, then pick which of the four counters goes up from that and from the label.
+--- hint
+In \`precision_recall\`, work out each bottom first and only divide when it is not 0: \`tp / called if called else 0.0\`.
+--- check case | Four points, one of each kind
+confusion([1.0, 0.0], 0.0, [[2.0, 0.0], [1.0, 5.0], [-1.0, 0.0], [-3.0, 1.0]], [1, 0, 1, 0])
+=> {"tp": 1, "fp": 1, "fn": 1, "tn": 1}
+--- check case | A higher threshold calls fewer examples positive
+confusion([1.0], 0.0, [[0.5], [3.0], [-1.0]], [1, 1, 0], threshold=0.9)
+=> {"tp": 1, "fp": 0, "fn": 1, "tn": 1}
+--- check test | Precision and recall from counts
+(lambda pr: abs(pr[0] - 0.75) < 1e-12 and abs(pr[1] - 0.6) < 1e-12)(precision_recall({"tp": 3, "fp": 1, "fn": 2, "tn": 10}))
+--- check test | A model that never says 1 has precision and recall 0, not a crash
+precision_recall({"tp": 0, "fp": 0, "fn": 4, "tn": 96}) == (0.0, 0.0) and precision_recall({"tp": 0, "fp": 3, "fn": 0, "tn": 5}) == (0.0, 0.0)
+--- check case | Huge scores do not overflow
+confusion([1.0], 0.0, [[1000.0], [-1000.0]], [1, 0])
+=> {"tp": 1, "fp": 0, "fn": 0, "tn": 1}
+
++++ practice | A gradient that never crashes
+--- task
+Write \`logistic_grads(w, b, X, Y)\`, which returns \`(dw, db)\` for logistic regression with the mean binary cross-entropy: \`dw[j]\` is the mean of \`(p - y) * x[j]\` and \`db\` the mean of \`(p - y)\`, where \`p\` is the sigmoid of \`dot(w, x) + b\`. \`dw\` is a list.
+
+It must cope with awkward data:
+
+- Scores of any size, such as a million, must not raise \`OverflowError\`.
+- If \`X\` is empty, raise \`ValueError\`.
+- If any label is not 0 or 1, raise \`ValueError\`: a label of 2 or 0.5 is a bug in the data, and training on it would quietly learn nonsense.
+--- starter
+import math
+
+
+def logistic_grads(w, b, X, Y):
+    n = len(X)
+    dw = [0.0] * len(w)
+    db = 0.0
+    for x, y in zip(X, Y):
+        p = 1 / (1 + math.exp(-(sum(wj * xj for wj, xj in zip(w, x)) + b)))
+        for j in range(len(w)):
+            dw[j] += (p - y) * x[j] / n
+        db += (p - y) / n
+    return dw, db
+--- solution
+import math
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def logistic_grads(w, b, X, Y):
+    if not X:
+        raise ValueError("no examples")
+    if any(y not in (0, 1) for y in Y):
+        raise ValueError("every label must be 0 or 1")
+    n = len(X)
+    dw = [0.0] * len(w)
+    db = 0.0
+    for x, y in zip(X, Y):
+        p = sigmoid(sum(wj * xj for wj, xj in zip(w, x)) + b)
+        for j in range(len(w)):
+            dw[j] += (p - y) * x[j] / n
+        db += (p - y) / n
+    return dw, db
+--- hint
+The gradient formula in the starter is right. Replace the plain sigmoid with a stable one that branches on the sign of the score.
+--- hint
+Check the data before the loop: \`not X\` catches the empty case, and \`y not in (0, 1)\` catches a bad label.
+--- check test | Two examples by hand
+(lambda g: all(abs(a - b) < 1e-12 for a, b in zip(g[0] + [g[1]], [-0.25, 0.0])))(logistic_grads([0.0], 0.0, [[1.0], [0.0]], [1, 0]))
+--- check test | It agrees with the measured slope of the mean loss
+(lambda X, Y, m: (lambda L, g: abs(g[0][0] - (L([0.3 + 1e-6, -0.2], 0.1) - L([0.3 - 1e-6, -0.2], 0.1)) / 2e-6) < 1e-6 and abs(g[0][1] - (L([0.3, -0.2 + 1e-6], 0.1) - L([0.3, -0.2 - 1e-6], 0.1)) / 2e-6) < 1e-6 and abs(g[1] - (L([0.3, -0.2], 0.1 + 1e-6) - L([0.3, -0.2], 0.1 - 1e-6)) / 2e-6) < 1e-6)(lambda w, b: sum((lambda p: -(y * m.log(p) + (1 - y) * m.log(1 - p)))(1 / (1 + m.exp(-(w[0] * x[0] + w[1] * x[1] + b)))) for x, y in zip(X, Y)) / len(X), logistic_grads([0.3, -0.2], 0.1, X, Y)))([[1.0, 2.0], [-0.5, 1.0], [2.0, -1.0]], [1, 0, 1], __import__("math"))
+--- check test | Scores of a million in either direction do not overflow
+(lambda g: abs(g[0][0]) < 1e-12 and abs(g[1]) < 1e-12)(logistic_grads([1000.0], 0.0, [[1000.0], [-1000.0]], [1, 0]))
+--- check test | A confidently wrong model gets the full push of 1
+(lambda g: abs(g[0][0] - 1000.0) < 1e-9 and abs(g[1] - 1.0) < 1e-12)(logistic_grads([1.0], 0.0, [[1000.0]], [0]))
+--- check test | No examples, or a label that is not 0 or 1, raises ValueError
+raises(ValueError, lambda: logistic_grads([1.0], 0.0, [], [])) and raises(ValueError, lambda: logistic_grads([1.0], 0.0, [[1.0]], [2])) and raises(ValueError, lambda: logistic_grads([1.0], 0.0, [[1.0], [2.0]], [1, 0.5]))
+
++++ practice | Fix the classifier that gets worse
+--- task
+This training loop runs without errors, but the longer it trains, the worse the classifier gets: its accuracy on the very data it trains on ends up below 50%, worse than guessing, and the average loss goes **up** every step.
+
+Find the bug in \`train_logistic\` and fix it. The data, \`sigmoid\`, \`dot\` and \`accuracy\` are all correct.
+--- starter
+import math
+import random
+
+
+def make_data(n, seed=0):
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if 2 * x0 - x1 > 0.3 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def accuracy(w, b, X, Y):
+    return sum(1 for x, y in zip(X, Y) if (sigmoid(dot(w, x) + b) >= 0.5) == (y == 1)) / len(X)
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    n, d = len(X), len(X[0])
+    w, b = [0.0] * d, 0.0
+    for _ in range(steps):
+        dw, db = [0.0] * d, 0.0
+        for x, y in zip(X, Y):
+            err = y - sigmoid(dot(w, x) + b)
+            for j in range(d):
+                dw[j] += err * x[j] / n
+            db += err / n
+        w = [wj - lr * g for wj, g in zip(w, dw)]
+        b -= lr * db
+    return w, b
+--- solution
+import math
+import random
+
+
+def make_data(n, seed=0):
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if 2 * x0 - x1 > 0.3 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def accuracy(w, b, X, Y):
+    return sum(1 for x, y in zip(X, Y) if (sigmoid(dot(w, x) + b) >= 0.5) == (y == 1)) / len(X)
+
+
+def train_logistic(X, Y, lr=0.5, steps=500):
+    n, d = len(X), len(X[0])
+    w, b = [0.0] * d, 0.0
+    for _ in range(steps):
+        dw, db = [0.0] * d, 0.0
+        for x, y in zip(X, Y):
+            err = sigmoid(dot(w, x) + b) - y
+            for j in range(d):
+                dw[j] += err * x[j] / n
+            db += err / n
+        w = [wj - lr * g for wj, g in zip(w, dw)]
+        b -= lr * db
+    return w, b
+--- hint
+A loss that rises every step means each step goes uphill. Look at the sign of the gradient, not at the update line.
+--- hint
+The derivative of the loss with respect to the logit is "predicted minus true", \`p - y\`. Which way round is \`err\`?
+--- check test | One step from zeros moves w towards the positive example
+(lambda r: r[0][0] > 0 and r[0][1] > 0 and r[1] > 0)(train_logistic([[1.0, 2.0]], [1], steps=1))
+--- check test | After training, accuracy on the data is at least 95%
+(lambda X, Y: accuracy(*train_logistic(X, Y), X, Y) >= 0.95)(*make_data(80))
+--- check test | It also works on points it never saw
+(lambda X, Y: accuracy(*train_logistic(X, Y), *make_data(200, seed=9)) >= 0.9)(*make_data(80))
+
++++ practice | Do not miss the rare alarms
+--- task
+A pump sends a warning flag for rare faults: only about 1 reading in 7 is a fault (label 1). A plain classifier learns that "no fault" is usually right and misses many real faults. One fix is to make each fault count more in the loss.
+
+Write \`train_weighted(X, Y, pos_weight, lr=0.5, steps=500)\`. It is ordinary full-batch logistic regression (start from zeros, \`steps\` updates, mean gradients), with one change: for every example whose label is 1, multiply its \`p - y\` by \`pos_weight\` before adding it into the gradients. Return \`(w, b)\` with \`w\` as a list.
+
+Also write \`recall(w, b, X, Y)\`: of the examples with label 1, the fraction the model predicts as 1 (probability at least 0.5). If there are no examples with label 1, return \`0.0\`.
+
+The starter gives you \`sigmoid\`, \`dot\` and \`make_faults(n, seed)\`, which makes noisy, rare-fault data.
+--- starter
+import math
+import random
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_faults(n, seed=0):
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + x1 + rng.gauss(0, 0.4) > 1.1 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def train_weighted(X, Y, pos_weight, lr=0.5, steps=500):
+    pass
+
+
+def recall(w, b, X, Y):
+    pass
+--- solution
+import math
+import random
+
+
+def sigmoid(z):
+    if z >= 0:
+        return 1 / (1 + math.exp(-z))
+    e = math.exp(z)
+    return e / (1 + e)
+
+
+def dot(a, b):
+    return sum(x * y for x, y in zip(a, b))
+
+
+def make_faults(n, seed=0):
+    rng = random.Random(seed)
+    X = [[rng.uniform(-1, 1), rng.uniform(-1, 1)] for _ in range(n)]
+    Y = [1 if x0 + x1 + rng.gauss(0, 0.4) > 1.1 else 0 for x0, x1 in X]
+    return X, Y
+
+
+def train_weighted(X, Y, pos_weight, lr=0.5, steps=500):
+    n, d = len(X), len(X[0])
+    w, b = [0.0] * d, 0.0
+    for _ in range(steps):
+        dw, db = [0.0] * d, 0.0
+        for x, y in zip(X, Y):
+            err = sigmoid(dot(w, x) + b) - y
+            if y == 1:
+                err *= pos_weight
+            for j in range(d):
+                dw[j] += err * x[j] / n
+            db += err / n
+        w = [wj - lr * g for wj, g in zip(w, dw)]
+        b -= lr * db
+    return w, b
+
+
+def recall(w, b, X, Y):
+    positives = [x for x, y in zip(X, Y) if y == 1]
+    if not positives:
+        return 0.0
+    found = sum(1 for x in positives if sigmoid(dot(w, x) + b) >= 0.5)
+    return found / len(positives)
+--- hint
+Start from the logistic-regression training loop you already know. The only new line multiplies \`err\` by \`pos_weight\` when the label is 1.
+--- hint
+For \`recall\`, keep only the examples with label 1, then count how many of them the model calls 1.
+--- check test | One step with a weight of 3 pushes three times as hard on a fault
+(lambda r: all(abs(a - b) < 1e-12 for a, b in zip(r[0] + [r[1]], [0.75, 1.5, 0.75])))(train_weighted([[1.0, 2.0]], [1], 3.0, lr=0.5, steps=1))
+--- check test | A weight of 1 is plain logistic regression: it misses many faults
+(lambda X, Y: recall(*train_weighted(X, Y, 1.0), X, Y) < 0.7)(*make_faults(200, seed=3))
+--- check test | A weight of 5 finds at least 85% of the faults
+(lambda X, Y: recall(*train_weighted(X, Y, 5.0), X, Y) >= 0.85)(*make_faults(200, seed=3))
+--- check test | It still finds them on new readings
+(lambda X, Y: recall(*train_weighted(X, Y, 5.0), *make_faults(400, seed=11)) >= 0.85)(*make_faults(200, seed=3))
+--- check test | recall with no faults at all is 0.0
+recall([1.0, 1.0], 0.0, [[0.5, 0.5]], [0]) == 0.0
+
+=== ai-04 | Autograd 1: a Value that remembers
+--- teach
+For the line and for logistic regression, you worked out the gradient by hand. A neural network has thousands of parameters (real language models have billions) and a long chain of operations between them and the loss. Nobody works that out by hand. This lesson and the next build the machine that does it for you.
+
+Think of a spreadsheet. Each cell is made from other cells: C1 is A1 times B1, and D1 is C1 plus another cell. Change A1 and the change ripples forward through every cell that uses it. Training asks the reverse question: the final cell (the loss) is too big, so how much is each input to blame?
+
+### Automatic differentiation
+
+Every framework answers that question with **automatic differentiation**, or **autograd** for short. While your code computes, it records how each number was made. Afterwards it walks that record backwards and applies the chain rule from lesson 2 at every step. It is exact, and it costs about as much as running the computation once, which is why it [[beats nudging every parameter|why-autograd]]. Over this lesson and the next you build one. It is small, and it is the same idea as PyTorch's autograd.
+
+### The computation graph
+
+Take \`d = a * b + c\`. As it runs, it builds a small **[[computation graph|graph-word]]**: \`a\` and \`b\` feed a \`*\` that makes a new value \`e\`, then \`e\` and \`c\` feed a \`+\` that makes \`d\`.
+
+\`\`\`text
+a ──┐
+    (*)── e ──┐
+b ──┘         (+)── d
+c ────────────┘
+\`\`\`
+
+Each value remembers the values it was made from, its **children** in the graph. The ones you typed in yourself (\`a\`, \`b\`, \`c\`) have no children: they are the **leaves**.
+
+### Local derivatives: what each operation knows
+
+Each operation knows only its own small rule, called its **local derivative**: how much its output moves when one input moves by 1, with the other input held still.
+
+- For \`out = x + y\`: nudge \`x\` by 1 and \`out\` moves by 1. The same for \`y\`. The local derivatives are \`1\` and \`1\`.
+- For \`out = x * y\`: nudge \`x\` by 1 and \`out\` moves by \`y\`. Nudge \`y\` by 1 and \`out\` moves by \`x\`. The local derivatives are \`y\` and \`x\`.
+
+Check the second one with numbers: \`3 * 5\` is 15, and \`4 * 5\` is 20. Raising the first input by 1 raised the output by 5, the other input.
+
+### The chain rule, run backwards
+
+Write \`grad\` for "how much the final result changes per unit change of this value". The final result's own \`grad\` is 1: it changes one-for-one with itself.
+
+Then each operation passes gradient back to its inputs with one rule:
+
+\`\`\`text
+input grad = local derivative × output grad
+\`\`\`
+
+Walk through \`d = a * b + c\` with \`a = 2\`, \`b = -3\` and \`c = 10\`:
+
+1. Start: \`d.grad = 1\`.
+2. The \`+\` made \`d\` from \`e\` and \`c\`. Its local derivatives are both 1, so \`e.grad = 1 * 1 = 1\` and \`c.grad = 1 * 1 = 1\`.
+3. The \`*\` made \`e\` from \`a\` and \`b\`. So \`a.grad = b * e.grad = -3 * 1 = -3\`, and \`b.grad = a * e.grad = 2 * 1 = 2\`.
+
+So increasing \`a\` a little *decreases* \`d\`, three times as fast. That makes sense: \`a\` is multiplied by -3. Passing gradients back like this, from the result towards the leaves, is **[[backpropagation|backprop-history]]**.
+
+### Why += and never =
+
+Sometimes one value is used in two places. Then a change in it reaches the result along both paths, and the two effects add up.
+
+In \`a * a\`, \`a\` is both inputs of the \`*\`. From the first input it gets \`a * out.grad\`, and from the second input another \`a * out.grad\`: \`2 * a\` in total, which is the right derivative of \`a\` squared. So every backward rule **adds** into \`grad\` with \`+=\`.
+
+**Watch out:** writing \`=\` instead of \`+=\` keeps only the last path and silently throws the others away. The numbers still look reasonable, and nothing crashes. It is one of the most common autograd bugs.
+
+### How a Value stores all this
+
+Each \`Value\` keeps five things:
+
+- \`data\`: its number;
+- \`grad\`: its gradient, starting at \`0.0\`;
+- \`_prev\`: the values it was made from, as a set;
+- \`_op\`: a label for the operation that made it, such as \`"+"\`;
+- \`_backward\`: a function that pushes its gradient into its children.
+
+\`_backward\` is a **[[closure|closure-recap]]**, which you met in the advanced course's decorators lesson: it is defined inside \`__add__\`, so it remembers \`self\`, \`other\` and \`out\` long after \`__add__\` has returned.
+
+\`\`\`python
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None     # a leaf has nobody to pass gradient to
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += 1.0 * out.grad
+            other.grad += 1.0 * out.grad
+
+        out._backward = _backward
+        return out
+
+a, b = Value(2.0), Value(5.0)
+c = a + b
+c.grad = 1.0          # start: c changes one-for-one with itself
+c._backward()         # push it into a and b
+print(c.data, a.grad, b.grad)      # 7.0 1.0 1.0
+\`\`\`
+
+Writing \`a + b\` calls \`a.__add__(b)\`, which makes the new \`Value\` and remembers both children.
+
+### Three details
+
+- **Plain numbers.** \`Value(2) * 3\` should work, so wrap an operand that is not a \`Value\` yet: \`other = other if isinstance(other, Value) else Value(other)\`.
+- **Numbers on the left.** For \`3 * Value(2)\`, Python first asks the int \`3\` to multiply, and an int does not know what a \`Value\` is. So Python then tries the [[right-hand version|reflected-methods]] on the \`Value\`: \`__rmul__\`. You met these in the advanced course's special-methods lesson. \`__rmul__\` and \`__radd__\` can just return \`self * other\` and \`self + other\`.
+- **Do not define \`__eq__\`.** \`_prev\` is a set, and members of a set must be [[hashable|identity-hash]]. The default hash is based on identity, which is exactly right here: two different values that happen to hold the same number are still two different nodes in the graph.
+
+In PyTorch: a tensor made with \`requires_grad=True\` records its graph the same way. \`t.grad\` is your \`grad\`, and \`t.grad_fn\` plays the part of your \`_backward\`.
+
+::: context why-autograd Why not just nudge every parameter?
+Lesson 2 measured slopes by nudging one input at a time. For a model with a billion parameters, that means running the whole model two billion times to get one gradient, and a training run needs millions of gradients. Backpropagation gets every parameter's gradient in one backward pass that costs about as much as the forward pass. That difference, a few passes instead of billions, is the only reason training large networks is possible at all.
+:::
+
+::: context graph-word Graphs, nodes and edges
+In computing, a **graph** is a set of **nodes** joined by **edges**, like towns joined by roads. You used graphs for the shortest-path lessons in the advanced and expert courses. In a computation graph, each value is a node, and an edge runs from each input to the value made from it. The edges only ever point forward, from inputs to results, so you can never follow them round in a circle. That kind of graph is called a **directed acyclic graph**, or DAG.
+:::
+
+::: context backprop-history Where backpropagation comes from
+The idea of running the chain rule backwards through a computation was worked out by several people, including Seppo Linnainmaa in his 1970 master's thesis. It became famous in 1986, when David Rumelhart, Geoffrey Hinton and Ronald Williams showed it could train networks with hidden layers to learn useful features of their own. Hinton later shared the 2018 Turing Award and the 2024 Nobel Prize in Physics for work on neural networks. Every modern model is still trained with backpropagation.
+:::
+
+::: context closure-recap A closure remembers
+A function defined inside another function can use the outer function's variables, and it keeps them even after the outer function has returned. That pairing of a function with the variables it remembers is a closure. Here, every call to \`__add__\` makes a brand new \`_backward\` that holds on to that call's own \`self\`, \`other\` and \`out\`. A graph with a thousand additions holds a thousand separate closures, each knowing exactly its own inputs.
+:::
+
+::: context reflected-methods Who gets asked first
+For \`x * y\`, Python first calls \`x.__mul__(y)\`. If that method does not exist, or it returns the special value \`NotImplemented\` because it does not know \`y\`'s type, Python tries \`y.__rmul__(x)\`, the reflected version. An int's \`__mul__\` returns \`NotImplemented\` when handed a \`Value\`, so \`3 * Value(2)\` lands in \`Value.__rmul__\`. The same pairs exist for \`+\` (\`__radd__\`), \`-\` (\`__rsub__\`) and \`/\` (\`__rtruediv__\`), and lesson 5 uses them.
+:::
+
+::: context identity-hash Why identity is the right hash
+A set finds its members by their hash, a number worked out from the object. If you define \`__eq__\` on a class without also defining \`__hash__\`, Python makes the objects unhashable, and putting them in a set raises \`TypeError\`. The default, with neither defined, compares and hashes by identity: an object equals only itself. For graph nodes that is what you want, because \`Value(2.0)\` made in two places is two separate nodes with two separate gradients.
+:::
+--- task
+Complete the \`Value\` class:
+
+- \`__add__\` must also accept a plain number: wrap it in a \`Value\` first.
+- Add \`__mul__\`, accepting a \`Value\` or a plain number. Its result has \`_op\` \`"*"\`. Its \`_backward\` adds \`other.data * out.grad\` to \`self.grad\`, and \`self.data * out.grad\` to \`other.grad\`.
+- Add \`__radd__\` and \`__rmul__\`, so \`1 + Value(2)\` and \`3 * Value(2)\` work.
+- Add \`__repr__\`, returning text such as \`Value(data=6.0, grad=0.0)\`.
+
+Every backward rule must add into \`grad\` with \`+=\`.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+--- hint
+\`__mul__\` has the same shape as \`__add__\`: wrap \`other\`, build \`out\` from the product with \`(self, other)\` and \`"*"\`, define \`_backward\`, attach it to \`out\`, and return \`out\`.
+--- hint
+The local derivative of \`x * y\` with respect to \`x\` is \`y\`. So inside \`_backward\`, \`self\` gets \`other.data * out.grad\` added, and \`other\` gets \`self.data * out.grad\` added.
+--- hint
+\`__rmul__(self, other)\` can return \`self * other\`, which hands the work back to \`__mul__\`. \`__radd__\` works the same way with \`+\`.
+--- check test | Adding Values and plain numbers
+(Value(2.0) + Value(3.0)).data == 5.0 and (Value(2.0) + 3).data == 5.0 and (1 + Value(2.0)).data == 3.0
+--- check test | Multiplying Values and plain numbers
+(Value(2.0) * Value(-4.0)).data == -8.0 and (Value(2.0) * 3).data == 6.0 and (3 * Value(2.0)).data == 6.0
+--- check test | A product remembers its inputs and its operation
+(lambda a, b: (lambda c: c._prev == {a, b} and c._op == "*" and c.grad == 0.0)(a * b))(Value(2.0), Value(3.0))
+--- check test | Backward through *: a gets b, b gets a
+(lambda a, b: (lambda c: (setattr(c, "grad", 1.0), c._backward(), (a.grad, b.grad))[2] == (-3.0, 2.0))(a * b))(Value(2.0), Value(-3.0))
+--- check test | Backward through + with a number: the Value gets the whole gradient
+(lambda a: (lambda c: (setattr(c, "grad", 2.5), c._backward(), a.grad)[2] == 2.5)(a + 10))(Value(1.0))
+--- check test | a * a accumulates: the gradient is 2a, not a
+(lambda a: (lambda c: (setattr(c, "grad", 1.0), c._backward(), a.grad)[2] == 6.0)(a * a))(Value(3.0))
+--- check test | The chain rule by hand: d = a * b + c
+(lambda a, b, c: (lambda e: (lambda d: (setattr(d, "grad", 1.0), d._backward(), e._backward(), (a.grad, b.grad, c.grad))[3] == (-3.0, 2.0, 1.0))(e + c))(a * b))(Value(2.0), Value(-3.0), Value(10.0))
+--- check case | repr shows data and grad
+repr(Value(2.0) * 3)
+=> "Value(data=6.0, grad=0.0)"
+
++++ practice | Blame by hand
+--- task
+Before code does it, do one by hand. For \`f = (a + b) * c\`, write \`chain_grads(a, b, c)\`, which returns the tuple \`(df/da, df/db, df/dc)\`: how fast \`f\` changes per unit change of each input.
+
+Use only the local derivatives and the chain rule from the explanation, with plain numbers (no \`Value\` class). Work through the middle value \`s = a + b\` first.
+--- starter
+def chain_grads(a, b, c):
+    return (1.0, 1.0, 1.0)
+--- solution
+def chain_grads(a, b, c):
+    s = a + b
+    f_grad = 1.0
+    s_grad = c * f_grad
+    c_grad = s * f_grad
+    a_grad = 1.0 * s_grad
+    b_grad = 1.0 * s_grad
+    return (a_grad, b_grad, c_grad)
+--- hint
+Start from the end: \`f.grad\` is 1. \`f\` is \`s * c\`, so \`s\` gets \`c\` times that, and \`c\` gets \`s\` times that.
+--- hint
+\`s\` is \`a + b\`, whose local derivatives are both 1, so \`a\` and \`b\` each get exactly \`s\`'s gradient.
+--- check test | At a = 2, b = 3, c = 4
+chain_grads(2.0, 3.0, 4.0) == (4.0, 4.0, 5.0)
+--- check test | Negative numbers
+chain_grads(-1.0, 0.5, -2.0) == (-2.0, -2.0, -0.5)
+--- check test | It agrees with the measured slopes
+(lambda f, g: all(abs(g[i] - (f(*[v + (1e-6 if j == i else 0) for j, v in enumerate((0.7, -1.3, 2.2))]) - f(*[v - (1e-6 if j == i else 0) for j, v in enumerate((0.7, -1.3, 2.2))])) / 2e-6) < 1e-6 for i in range(3)))(lambda a, b, c: (a + b) * c, chain_grads(0.7, -1.3, 2.2))
+--- check test | When a + b is 0, c has no effect on f
+chain_grads(1.5, -1.5, 9.0)[2] == 0.0
+
++++ practice | A new operation: square
+--- task
+The starter has the \`Value\` class from this lesson. Add a method \`square()\`:
+
+- It returns a new \`Value\` whose \`data\` is \`self.data * self.data\`.
+- The new value's children are \`(self,)\` and its \`_op\` is \`"square"\`.
+- Its \`_backward\` adds the local derivative times \`out.grad\` into \`self.grad\`. The local derivative of \`x\` squared is \`2 * x\`.
+
+Build it directly, with its own \`_backward\`, not by calling \`self * self\`.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def square(self):
+        out = Value(self.data * self.data, (self,), "square")
+
+        def _backward():
+            self.grad += 2 * self.data * out.grad
+
+        out._backward = _backward
+        return out
+--- hint
+Copy the shape of \`__mul__\`, but with one child: \`Value(self.data * self.data, (self,), "square")\`.
+--- hint
+Inside \`_backward\`, add \`2 * self.data * out.grad\` to \`self.grad\`. Use \`+=\`, so a value squared twice gets both contributions.
+--- check test | The value, the child and the label
+(lambda a: (lambda s: s.data == 9.0 and s._prev == {a} and s._op == "square" and s.grad == 0.0)(a.square()))(Value(3.0))
+--- check test | Backward gives 2x times the output's gradient
+(lambda a: (lambda s: (setattr(s, "grad", 0.5), s._backward(), a.grad)[2] == -4.0)(a.square()))(Value(-4.0))
+--- check test | It adds into grad rather than overwriting it
+(lambda a: (setattr(a, "grad", 10.0), (lambda s: (setattr(s, "grad", 1.0), s._backward(), a.grad)[2])(a.square()))[1] == 12.0)(Value(1.0))
+--- check test | It is its own operation, not a product
+(lambda s: s._op == "square" and len(s._prev) == 1)(Value(2.0).square())
+
++++ practice | How big is the graph?
+--- task
+The starter has the \`Value\` class from this lesson. Write two functions that walk a graph backwards from a result, through each value's \`_prev\`:
+
+- \`count_nodes(root)\` returns how many different values the graph holds, the root included. A value reached along two paths counts once.
+- \`leaves(root)\` returns the \`data\` of every leaf (a value with no children), sorted from smallest to largest. Each leaf appears once, even if it is used twice.
+
+So for \`d = a * b + c\` there are 5 nodes and the leaves are \`a\`, \`b\` and \`c\`. For \`a * a\` there are 2 nodes and one leaf.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+
+def count_nodes(root):
+    return 1 + len(root._prev)
+
+
+def leaves(root):
+    return []
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+
+def all_nodes(root):
+    seen = set()
+
+    def visit(node):
+        if node not in seen:
+            seen.add(node)
+            for child in node._prev:
+                visit(child)
+
+    visit(root)
+    return seen
+
+
+def count_nodes(root):
+    return len(all_nodes(root))
+
+
+def leaves(root):
+    return sorted(node.data for node in all_nodes(root) if not node._prev)
+--- hint
+Collect every node into a set with a recursive \`visit(node)\`: if the node is already in the set, stop; otherwise add it and visit each of its children. The set takes care of values reached twice.
+--- hint
+Both answers come from that one set: its size, and the \`data\` of the members whose \`_prev\` is empty, sorted.
+--- check test | d = a * b + c has 5 nodes and leaves 2, -3 and 10
+(lambda a, b, c: (lambda d: count_nodes(d) == 5 and leaves(d) == [-3.0, 2.0, 10.0])(a * b + c))(Value(2.0), Value(-3.0), Value(10.0))
+--- check test | a * a has 2 nodes and one leaf
+(lambda a: count_nodes(a * a) == 2 and leaves(a * a) == [3.0])(Value(3.0))
+--- check test | A leaf on its own is a graph of one node
+count_nodes(Value(7.0)) == 1 and leaves(Value(7.0)) == [7.0]
+--- check test | A shared middle value is counted once
+(lambda a: (lambda e: (lambda f: count_nodes(f) == 6 and leaves(f) == [2.0, 3.0, 5.0])(e * e))(a * 2 + 3))(Value(5.0))
+--- check test | Two leaves with the same number are still two nodes
+(lambda a, b: count_nodes(a + b) == 3 and leaves(a + b) == [1.0, 1.0])(Value(1.0), Value(1.0))
+
++++ practice | Adding up a list of Values
+--- task
+Python's \`sum\` starts from the int \`0\` and adds each item to the running total. So \`sum([v1, v2, v3])\` first computes \`0 + v1\`, with a plain number on the **left**.
+
+The starter's \`__add__\` accepts only \`Value\`s. Fix the class so that:
+
+- \`Value + number\` and \`number + Value\` both work, by wrapping a plain number in a \`Value\` and by adding \`__radd__\`;
+- \`sum(list_of_values)\` returns a \`Value\` holding the total;
+- \`v + v\`, one value added to itself, still gives \`v\` a gradient of 2 after you set the result's \`grad\` to 1 and call its \`_backward()\`.
+
+\`sum([])\` will still give the int \`0\`. That is Python's rule, and it is fine.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad = out.grad
+            other.grad = out.grad
+
+        out._backward = _backward
+        return out
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __radd__(self, other):
+        return self + other
+--- hint
+Three changes: wrap \`other\` when it is not a \`Value\`, add \`__radd__\` that hands back \`self + other\`, and look closely at how \`_backward\` changes \`grad\`.
+--- hint
+For \`v + v\`, \`self\` and \`other\` are the same object. With \`=\`, the second line overwrites the first and \`v\` ends up with 1 instead of 2. With \`+=\`, both contributions count.
+--- check test | Numbers on either side
+(Value(2.0) + 3).data == 5.0 and (3 + Value(2.0)).data == 5.0 and (0.5 + Value(1.0) + 1).data == 2.5
+--- check test | sum of a list of Values is a Value with the total
+(lambda s: isinstance(s, Value) and s.data == 6.0)(sum([Value(1.0), Value(2.0), Value(3.0)]))
+--- check test | v + v gives v a gradient of 2
+(lambda v: (lambda s: (setattr(s, "grad", 1.0), s._backward(), v.grad)[2] == 2.0)(v + v))(Value(4.0))
+--- check test | A wrapped number gets its share of gradient too
+(lambda v: (lambda s: (setattr(s, "grad", 3.0), s._backward(), v.grad, [c.grad for c in s._prev if c is not v])[2:] == (3.0, [3.0]))(10 + v))(Value(1.0))
+--- check test | sum of an empty list is still 0
+sum([]) == 0
+
++++ practice | Fix the wrong local derivative
+--- task
+This \`Value\` class gives correct gradients for \`x * x\`, and for any product where both inputs hold the same number. For other products it is wrong: after \`c = a * b\` with \`a = 2\` and \`b = -3\`, setting \`c.grad = 1\` and calling \`c._backward()\` gives \`a.grad == 2.0\` and \`b.grad == -3.0\`, when the right answers are \`-3.0\` and \`2.0\`.
+
+Find the mistake in \`__mul__\` and fix it.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += self.data * out.grad
+            other.grad += other.data * out.grad
+
+        out._backward = _backward
+        return out
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+--- hint
+Why would the bug hide when both inputs are equal? Ask which number each input's gradient is being multiplied by.
+--- hint
+Nudging \`x\` in \`x * y\` moves the product by \`y\`, the *other* input. Each input's gradient needs the other input's \`data\`.
+--- check test | c = a * b at 2 and -3 gives a -3 and b 2
+(lambda a, b: (lambda c: (setattr(c, "grad", 1.0), c._backward(), (a.grad, b.grad))[2] == (-3.0, 2.0))(a * b))(Value(2.0), Value(-3.0))
+--- check test | The output's gradient scales both
+(lambda a, b: (lambda c: (setattr(c, "grad", 2.0), c._backward(), (a.grad, b.grad))[2] == (10.0, 8.0))(a * b))(Value(4.0), Value(5.0))
+--- check test | x * x still gives 2x
+(lambda a: (lambda c: (setattr(c, "grad", 1.0), c._backward(), a.grad)[2] == 6.0)(a * a))(Value(3.0))
+--- check test | A product with a plain number
+(lambda a: (lambda c: (setattr(c, "grad", 1.0), c._backward(), a.grad)[2] == 7.0)(a * 7))(Value(-1.0))
+
++++ practice | Backpropagate a square by hand
+--- task
+Let \`e = a * b\`, \`d = e + c\` and \`f = d * d\`. Using the \`Value\` class in the starter, write \`backprop(a, b, c)\`:
+
+1. Make \`Value\`s from the three numbers and build \`e\`, \`d\` and \`f\` from them, in that order.
+2. Set \`f.grad = 1.0\`.
+3. Call \`_backward()\` on \`f\`, then on \`d\`, then on \`e\`: each node only after every node that uses it.
+4. Return \`(a.grad, b.grad, c.grad)\` for the three leaf \`Value\`s, as floats.
+
+Note that \`d\` is used twice in \`f = d * d\`, so it must collect both contributions before it passes anything on.
+--- starter
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+
+def backprop(a, b, c):
+    return (0.0, 0.0, 0.0)
+--- solution
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+
+def backprop(a, b, c):
+    a, b, c = Value(a), Value(b), Value(c)
+    e = a * b
+    d = e + c
+    f = d * d
+    f.grad = 1.0
+    f._backward()
+    d._backward()
+    e._backward()
+    return (a.grad, b.grad, c.grad)
+--- hint
+After \`f._backward()\`, \`d.grad\` is \`2 * d.data\`: the \`*\` added \`d.data\` once for each of its two inputs, which are both \`d\`.
+--- hint
+Then \`d._backward()\` hands that to \`e\` and \`c\`, and \`e._backward()\` hands \`b.data * e.grad\` to \`a\` and \`a.data * e.grad\` to \`b\`.
+--- check test | At a = 2, b = -3, c = 10: d is 4, so the gradients are -24, 16 and 8
+backprop(2.0, -3.0, 10.0) == (-24.0, 16.0, 8.0)
+--- check test | It agrees with 2 * d times each input's local effect, at other numbers
+(lambda g: (lambda d: abs(g[0] - 2 * d * -0.5) < 1e-12 and abs(g[1] - 2 * d * 1.5) < 1e-12 and abs(g[2] - 2 * d) < 1e-12)(1.5 * -0.5 + 0.25))(backprop(1.5, -0.5, 0.25))
+--- check test | When d is 0, every gradient is 0
+backprop(2.0, 3.0, -6.0) == (0.0, 0.0, 0.0)
+--- check test | It agrees with the measured slopes
+(lambda f, g: all(abs(g[i] - (f(*[v + (1e-6 if j == i else 0) for j, v in enumerate((0.4, -1.1, 0.9))]) - f(*[v - (1e-6 if j == i else 0) for j, v in enumerate((0.4, -1.1, 0.9))])) / 2e-6) < 1e-6 for i in range(3)))(lambda a, b, c: (a * b + c) ** 2, backprop(0.4, -1.1, 0.9))
+--- check source | Uses the Value class's backward steps
+_backward\\(\\)
+
+=== ai-05 | Autograd 2: backward through the whole graph
+--- teach
+Last lesson your \`Value\` learned to remember how it was made, and you called each \`_backward()\` yourself, in the right order. That works for three nodes. A network has thousands. This lesson adds one method, \`backward()\`, that does it for the whole graph, and then the handful of operations a network needs.
+
+Think about getting dressed. Socks go on before shoes, and a shirt before a jacket. Undressing is the same list read backwards: shoes come off before socks. Backpropagation is the undressing.
+
+### Order matters
+
+A node may pass its gradient on only once its own \`grad\` is complete. Its \`grad\` is complete only after **every** node that used it has passed gradient into it.
+
+In \`d = a * b + c\`, the \`+\` that made \`d\` must run its \`_backward\` before the \`*\` that made \`e\`, because \`e\` gets its gradient from \`d\`. With shared values it gets subtle: if \`a\` feeds three different operations, all three must run their \`_backward\` before \`a\` is finished.
+
+### Topological order
+
+A list of the nodes in which every node comes after all the nodes it was made from is called a **[[topological order|topo-word]]**. A **[[depth-first search|dfs]]** builds one: to place a node, first place each of its children (recursion, as in the advanced course), then append the node itself. A \`visited\` set makes sure each node is listed only once, even when it can be reached along several paths.
+
+Here it is on a graph written as a plain dict, where each name maps to the names it was made from:
+
+\`\`\`python
+def topo_order(root, children):
+    order, visited = [], set()
+
+    def visit(node):
+        if node not in visited:
+            visited.add(node)
+            for child in children[node]:
+                visit(child)
+            order.append(node)
+
+    visit(root)
+    return order
+
+graph = {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []}
+print(topo_order("d", graph))         # ['a', 'b', 'e', 'c', 'd']: inputs before outputs
+\`\`\`
+
+Reverse that list and every node comes **before** its inputs, which is exactly the order backpropagation needs. So \`backward()\` does three things:
+
+1. build the topological order, starting from \`self\`;
+2. set \`self.grad = 1.0\`, because the result changes one-for-one with itself;
+3. call \`_backward()\` on each node in **reversed** order.
+
+**Watch out:** the \`visited\` set is not just tidiness. Without it, a node reachable along two paths is listed twice, its \`_backward\` runs twice, and it pushes its gradient into its children twice. The answers come out too big, and nothing crashes.
+
+### More operations, few new rules
+
+You only need new backward rules for a handful of **[[primitives|primitive-ops]]**: operations with their own \`_backward\`. Here is each one's local derivative:
+
+| Operation | Local derivative |
+| --- | --- |
+| \`x ** n\` (n a plain number) | \`n * x ** (n - 1)\` |
+| \`x.exp()\` | \`exp(x)\`, which is the output itself |
+| \`x.tanh()\` | \`1 - tanh(x) ** 2\` |
+| \`x.relu()\`: \`x\` if \`x > 0\`, else 0 | \`1\` if \`x > 0\`, else \`0\` |
+
+\`tanh\` is the **hyperbolic tangent**, an S-shaped curve like the sigmoid that runs from -1 to 1 instead of 0 to 1. \`relu\`, the **rectified linear unit**, passes positive numbers through and turns negative ones into 0. Both are [[activation functions|activations]], and lesson 7 puts them in neurons.
+
+Everything else is built from the primitives, and the gradients come for free, because the chain rule runs through each piece:
+
+\`\`\`text
+-x      = x * -1
+x - y   = x + (-y)
+x / y   = x * y ** -1
+\`\`\`
+
+Read \`y ** -1\` as "y to the power minus one", which is \`1 / y\`. The right-hand versions, as in \`10 - x\` or \`2 / x\`, come from \`__rsub__\` and \`__rtruediv__\`: \`other + (-self)\` and \`other * self ** -1\`.
+
+### Gradients pile up
+
+Every backward rule uses \`+=\`. So calling \`backward()\` twice on the same graph adds the gradients in a second time: the leaves end up with **double** what they should have.
+
+That is not a bug in your engine. PyTorch does exactly the same, and it is sometimes [[useful on purpose|accumulate-on-purpose]]. It is why every training step starts by setting the gradients back to zero (\`optimizer.zero_grad()\` in PyTorch). Forgetting to is a classic bug, and you will hunt it down in lesson 8.
+
+In PyTorch: \`loss.backward()\` is this method, and \`torch.tanh\`, \`torch.exp\` and \`torch.relu\` each carry a backward rule just like yours.
+
+::: context topo-word Where "topological" comes from
+**Topology** is the branch of mathematics about how things are connected, not about their exact sizes or positions. A topological order cares only about which node depends on which. A graph can have many valid orders: in \`d = a * b + c\`, both \`a, b, e, c, d\` and \`c, b, a, e, d\` work. Build tools such as \`make\` use the same idea to decide which files to compile first, and spreadsheets use it to decide which cells to recalculate.
+:::
+
+::: context dfs Going deep before going wide
+A **depth-first search** explores a graph by following one path as far as it goes before backing up to try the next, like exploring a maze by keeping one hand on the wall. The other classic way, **breadth-first search**, which you used for shortest paths on a grid, looks at everything one step away, then everything two steps away. For a topological order, depth-first is the natural fit: a node is appended only when everything below it is already in the list.
+:::
+
+::: context primitive-ops How many primitives a real library has
+Your engine has six primitives: \`+\`, \`*\`, \`**\`, \`exp\`, \`tanh\` and \`relu\`. PyTorch has hundreds of built-in operations, from matrix products to convolutions, and keeps the backward formula for each of them written down in one place, so that its autograd can look them up. When researchers invent a new operation, they write its forward and backward rules, and then they check the backward rule numerically, exactly as you will in lesson 6.
+:::
+
+::: context activations Why curves like tanh and relu
+An **activation function** is the bend applied after a neuron's dot product. Without a bend, stacking layers would add no power (lesson 7 shows why). \`tanh\` was the classic choice for decades. \`relu\`, which is just \`max(0, x)\`, took over around 2012 because it is very cheap and its gradient does not fade away for big inputs. Large language models today mostly use smooth relatives of relu, such as GELU, which you will meet in lesson 14.
+:::
+
+::: context accumulate-on-purpose When piling up is what you want
+Sometimes a batch of examples is too big to fit in a GPU's memory at once. Engineers then split it into smaller pieces, run backward on each piece without zeroing in between, and let the gradients add up. After the last piece, the total is the gradient of the whole batch, and only then do they take a step. This trick is called **gradient accumulation**, and it works only because backward adds into \`grad\` instead of overwriting it.
+:::
+--- task
+Add to your \`Value\` class:
+
+- \`backward()\`: build a topological order of the graph starting from \`self\`, with each node listed once. Set \`self.grad = 1.0\`, then call every node's \`_backward()\` in reverse order.
+- Four primitives, each with its own \`_backward\` from the table: \`__pow__(n)\` for a plain int or float \`n\` (any \`_op\` label you like), \`exp()\`, \`tanh()\` and \`relu()\`.
+- \`__neg__\`, \`__sub__\`, \`__rsub__\`, \`__truediv__\` and \`__rtruediv__\`, built from the operations you already have, with no \`_backward\` of their own.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- hint
+In \`backward\`, write a nested \`visit(node)\`. If the node is already in \`visited\`, do nothing. Otherwise add it to \`visited\`, visit each node in \`node._prev\`, and then append the node to a list.
+--- hint
+For \`tanh\`, compute \`t = math.tanh(self.data)\` once and make \`out = Value(t, (self,), "tanh")\`. Its \`_backward\` adds \`(1 - t * t) * out.grad\` to \`self.grad\`. \`exp\` works the same way, with the output itself as the local derivative.
+--- hint
+The last five need no \`_backward\`: \`__neg__\` returns \`self * -1\`, \`__sub__\` returns \`self + (-other)\`, and \`__truediv__\` returns \`self * other ** -1\`. The right-hand versions put \`other\` first.
+--- check test | backward fills every gradient of d = a * b + c
+(lambda a, b, c: (lambda d: (d.backward(), (a.grad, b.grad, c.grad, d.grad))[1] == (-3.0, 2.0, 1.0, 1.0))(a * b + c))(Value(2.0), Value(-3.0), Value(10.0))
+--- check test | A value used twice gets both contributions: a * a + a at 3 gives 7
+(lambda a: ((a * a + a).backward(), a.grad)[1] == 7.0)(Value(3.0))
+--- check test | Each node runs once: b = 2a, c = b + b, d = c * c gives dd/da = 32a
+(lambda a: (lambda b: (lambda c: ((c * c).backward(), abs(a.grad - 32.0) < 1e-12)[1])(b + b))(a * 2))(Value(1.0))
+--- check test | Powers: x ** 3 at 2 has gradient 12, and x ** 0.5 at 4 has 0.25
+(lambda x, y: ((x ** 3).backward(), (y ** 0.5).backward(), abs(x.grad - 12) < 1e-12 and abs(y.grad - 0.25) < 1e-12)[2])(Value(2.0), Value(4.0))
+--- check test | Subtraction and negation, both ways round
+(lambda a, b: ((a - b).backward(), (a.grad, b.grad) == (1.0, -1.0) and (-a).data == -5.0 and (10 - b).data == 8.0)[1])(Value(5.0), Value(2.0))
+--- check test | Division: d(a / b) is 1/b for a and -a/b² for b
+(lambda a, b: ((a / b).backward(), abs(a.grad - 0.5) < 1e-12 and abs(b.grad + 1.25) < 1e-12)[1])(Value(5.0), Value(2.0))
+--- check test | A number divided by a Value: 2 / x at 4
+(lambda x: (lambda y: (y.backward(), abs(y.data - 0.5) < 1e-12 and abs(x.grad + 0.125) < 1e-12)[1])(2 / x))(Value(4.0))
+--- check test | exp and tanh have the right values and gradients
+(lambda a, b: (a.exp().backward(), b.tanh().backward(), abs(a.grad - __import__("math").e) < 1e-12 and abs(b.grad - (1 - __import__("math").tanh(0.5) ** 2)) < 1e-12)[2])(Value(1.0), Value(0.5))
+--- check test | relu passes gradient only where the input is positive
+(lambda a, b: (a.relu().backward(), b.relu().backward(), (a.relu().data, a.grad, b.grad))[2] == (0.0, 0.0, 1.0))(Value(-2.0), Value(3.0))
+--- check test | A bigger expression agrees with the numerical derivative
+(lambda f: (lambda a, b: (f(a, b).backward(), abs(a.grad - (f(Value(0.7 + 1e-6), Value(-1.3)).data - f(Value(0.7 - 1e-6), Value(-1.3)).data) / 2e-6) < 1e-6 and abs(b.grad - (f(Value(0.7), Value(-1.3 + 1e-6)).data - f(Value(0.7), Value(-1.3 - 1e-6)).data) / 2e-6) < 1e-6)[1])(Value(0.7), Value(-1.3)))(lambda a, b: ((a * b + b ** 2 / 4).tanh() * 3 - a / b + (a - 1).relu() + (b * 0.5).exp()) * 0.1)
+--- check test | A chain 100 operations deep backpropagates
+(lambda x: (__import__("functools").reduce(lambda acc, _: acc * 1.01, range(100), x).backward(), abs(x.grad - 1.01 ** 100) < 1e-9)[1])(Value(1.0))
+--- check test | Gradients accumulate: a second backward() doubles them
+(lambda a, b: (lambda d: (d.backward(), d.backward(), a.grad)[2] == -6.0)(a * b))(Value(2.0), Value(-3.0))
+
++++ practice | Is this a valid order?
+--- task
+Write \`is_topological(order, children)\`. \`children\` is a dict that maps every node's name to the list of names it was made from (leaves map to \`[]\`). \`order\` is a list of names.
+
+Return \`True\` when \`order\` lists every node in \`children\` exactly once, and every node comes after all of its children. Otherwise return \`False\`. In particular:
+
+- a node missing from \`order\`, an extra name that is not in \`children\`, or a name listed twice, all give \`False\`;
+- an empty \`order\` for an empty \`children\` gives \`True\`.
+--- starter
+def is_topological(order, children):
+    return len(order) == len(children)
+--- solution
+def is_topological(order, children):
+    if len(order) != len(set(order)) or set(order) != set(children):
+        return False
+    position = {name: i for i, name in enumerate(order)}
+    for node, kids in children.items():
+        for child in kids:
+            if position[child] > position[node]:
+                return False
+    return True
+--- hint
+First check the names: no repeats, and exactly the same set of names as the keys of \`children\`. Comparing sets does both at once, once you know there are no repeats.
+--- hint
+Then record each name's position in a dict. The order is valid when every child's position is smaller than its parent's.
+--- check test | Inputs before outputs is valid
+is_topological(["a", "b", "e", "c", "d"], {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []})
+--- check test | Another valid order of the same graph
+is_topological(["c", "b", "a", "e", "d"], {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []})
+--- check test | A node before one of its children is not valid
+not is_topological(["a", "e", "b", "c", "d"], {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []})
+--- check test | Missing, extra or repeated names are not valid
+not is_topological(["a", "b", "e", "d"], {"d": ["e", "c"], "e": ["a", "b"], "a": [], "b": [], "c": []}) and not is_topological(["a", "a", "b"], {"b": ["a"], "a": []}) and not is_topological(["x", "a", "b"], {"b": ["a"], "a": []})
+--- check test | An empty graph and an empty order
+is_topological([], {})
+
++++ practice | A new primitive: sigmoid
+--- task
+The starter has the full \`Value\` class from this lesson. Add a method \`sigmoid()\` that is a **primitive**, with its own \`_backward\`:
+
+- Its output's \`data\` is the sigmoid of \`self.data\`, worked out stably: for \`x >= 0\` use \`1 / (1 + math.exp(-x))\`; otherwise compute \`e = math.exp(x)\` and use \`e / (1 + e)\`. So \`Value(-1000.0).sigmoid()\` must not raise \`OverflowError\`.
+- Its children are \`(self,)\` and its \`_op\` is \`"sigmoid"\`.
+- The sigmoid's local derivative is \`s * (1 - s)\`, where \`s\` is the output's \`data\`. The \`_backward\` adds that times \`out.grad\` into \`self.grad\`.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+    def sigmoid(self):
+        x = self.data
+        if x >= 0:
+            s = 1 / (1 + math.exp(-x))
+        else:
+            e = math.exp(x)
+            s = e / (1 + e)
+        out = Value(s, (self,), "sigmoid")
+
+        def _backward():
+            self.grad += s * (1 - s) * out.grad
+
+        out._backward = _backward
+        return out
+--- hint
+Follow the shape of \`tanh\` in the starter: compute the number once, make \`out\` with one child, attach a \`_backward\`, return \`out\`.
+--- hint
+Inside \`_backward\`, \`self.grad += s * (1 - s) * out.grad\`. The closure remembers \`s\` from when \`sigmoid()\` ran.
+--- check test | Value and label
+(lambda s: abs(s.data - 0.8807970779778823) < 1e-12 and s._op == "sigmoid" and len(s._prev) == 1)(Value(2.0).sigmoid())
+--- check test | The gradient at 0 is 0.25
+(lambda x: (x.sigmoid().backward(), abs(x.grad - 0.25) < 1e-12)[1])(Value(0.0))
+--- check test | It agrees with the measured slope inside a bigger expression
+(lambda f: (lambda x: (f(x).backward(), abs(x.grad - (f(Value(0.7 + 1e-6)).data - f(Value(0.7 - 1e-6)).data) / 2e-6) < 1e-6)[1])(Value(0.7)))(lambda v: (v * 3 - 1).sigmoid() * v.sigmoid())
+--- check test | Huge inputs do not overflow, and their gradient is almost 0
+(lambda a, b: (a.sigmoid().backward(), b.sigmoid().backward(), a.grad < 1e-300 and b.grad < 1e-300 and Value(-1000.0).sigmoid().data < 1e-300)[2])(Value(-1000.0), Value(1000.0))
+
++++ practice | Check lesson 3's gradient with your engine
+--- task
+In lesson 3 you were told that the derivative of the binary cross-entropy with respect to the logit \`z\` is \`p - y\`. Now your engine can confirm it. The starter has the full \`Value\` class.
+
+1. Add a primitive \`log()\`: its output's \`data\` is \`math.log(self.data)\`, its child is \`self\`, and its local derivative is \`1 / self.data\`.
+2. Write \`bce_value(z, y)\`. \`z\` is a \`Value\` and \`y\` is 0 or 1. Build \`p = 1 / (1 + (-z).exp())\` and return the \`Value\` \`-(y * p.log() + (1 - y) * (1 - p).log())\`, using only \`Value\` operations, so that \`backward()\` on the result fills \`z.grad\`.
+
+Only use it for moderate scores (between about -30 and 30); it is a check, not a stable loss.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def bce_value(z, y):
+    p = 1 / (1 + math.exp(-z.data))
+    return Value(-(y * math.log(p) + (1 - y) * math.log(1 - p)))
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+    def log(self):
+        out = Value(math.log(self.data), (self,), "log")
+
+        def _backward():
+            self.grad += (1 / self.data) * out.grad
+
+        out._backward = _backward
+        return out
+
+
+def bce_value(z, y):
+    p = 1 / (1 + (-z).exp())
+    return -(y * p.log() + (1 - y) * (1 - p).log())
+--- hint
+\`log()\` has the same shape as \`exp()\`, with \`math.log\` for the value and \`1 / self.data\` as the local derivative.
+--- hint
+In \`bce_value\`, every step must be a \`Value\` operation, so the graph reaches back to \`z\`. Turning anything into a plain float with \`.data\` cuts the graph, and \`z.grad\` stays 0.
+--- check test | log has the right value and gradient
+(lambda x: (x.log().backward(), abs(x.grad - 0.25) < 1e-12 and abs(Value(4.0).log().data - __import__("math").log(4.0)) < 1e-12)[1])(Value(4.0))
+--- check test | The loss value matches the formula
+(lambda z: abs(bce_value(z, 1).data - -__import__("math").log(1 / (1 + __import__("math").exp(-0.8)))) < 1e-12)(Value(0.8))
+--- check test | The engine finds dloss/dz = p - y, for both labels
+all((lambda z: (bce_value(z, y).backward(), abs(z.grad - (1 / (1 + __import__("math").exp(-zz)) - y)) < 1e-9)[1])(Value(zz)) for zz in (-2.5, 0.0, 0.8, 3.0) for y in (0, 1))
+--- check test | The loss is a Value built on z, not a fresh number
+(lambda z: (lambda L: isinstance(L, Value) and L._prev != set())(bce_value(z, 0)))(Value(1.0))
+
++++ practice | Backward for very deep graphs
+--- task
+The \`backward\` in the starter uses recursion. Python stops a recursion about 1,000 calls deep with a \`RecursionError\`, so a chain of 5,000 operations (a long sequence, a deep network) cannot backpropagate.
+
+Rewrite \`backward\` without recursion. Keep its job exactly the same: list every node once, children before parents, set \`self.grad = 1.0\`, then call \`_backward()\` on each node in reverse order.
+
+One way: keep your own stack of pairs \`(node, children_done)\`. Pop a pair. If \`children_done\` is true, append the node to the order. Otherwise, if the node is new, mark it visited and push \`(node, True)\` back, then push \`(child, False)\` for each child.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+        stack = [(self, False)]
+        while stack:
+            node, children_done = stack.pop()
+            if children_done:
+                order.append(node)
+            elif node not in visited:
+                visited.add(node)
+                stack.append((node, True))
+                for child in node._prev:
+                    stack.append((child, False))
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- hint
+The stack replaces the calls. Pushing \`(node, True)\` before the children means it is popped again only after every child pushed on top of it has been finished.
+--- hint
+Check \`visited\` when you first pop a node with \`children_done\` false, so a node reachable along two paths is expanded only once.
+--- check test | A chain 5,000 multiplications deep backpropagates
+(lambda x: (lambda y: (y.backward(), abs(x.grad / 1.0001 ** 5000 - 1) < 1e-9)[1])(__import__("functools").reduce(lambda acc, _: acc * 1.0001, range(5000), x)))(Value(1.0))
+--- check test | d = a * b + c still gets every gradient right
+(lambda a, b, c: (lambda d: (d.backward(), (a.grad, b.grad, c.grad, d.grad))[1] == (-3.0, 2.0, 1.0, 1.0))(a * b + c))(Value(2.0), Value(-3.0), Value(10.0))
+--- check test | A shared middle node passes its gradient on once
+(lambda a, b: (lambda e: (lambda g: (g.backward(), a.grad, b.grad)[1:] == (12.0, 6.0))(e + e * 2))(a * b))(Value(2.0), Value(4.0))
+--- check test | backward on a leaf sets its gradient to 1
+(lambda x: (x.backward(), x.grad)[1] == 1.0)(Value(5.0))
+--- check test | It agrees with the measured slope on a bigger expression
+(lambda f: (lambda a, b: (f(a, b).backward(), abs(a.grad - (f(Value(0.7 + 1e-6), Value(-1.3)).data - f(Value(0.7 - 1e-6), Value(-1.3)).data) / 2e-6) < 1e-6)[1])(Value(0.7), Value(-1.3)))(lambda a, b: (a * b + b ** 2 / 4).tanh() * 3 - a / b + (a - 1).relu() + (b * 0.5).exp())
+
++++ practice | Fix the gradients that come out too big
+--- task
+With this \`Value\` class, simple expressions get the right gradients. But when a middle value is used by two different operations, gradients further down come out too big. For example, with \`e = a * b\` and \`g = e + e * 2\`, which is \`3 * a * b\`, calling \`g.backward()\` at \`a = 2\` and \`b = 4\` gives \`a.grad == 24.0\`. The right answer is \`12.0\`.
+
+Find the bug in \`backward\` and fix it.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order = []
+
+        def visit(node):
+            for child in node._prev:
+                visit(child)
+            order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+--- hint
+Print the order \`backward\` builds for \`g\`. How many times does \`e\` appear in it?
+--- hint
+\`e\` is reached once directly from \`g\` and once through \`e * 2\`. A set of visited nodes makes \`visit\` list each node only once.
+--- check test | g = e + e * 2 with e = a * b gives 3b and 3a
+(lambda a, b: (lambda e: (lambda g: (g.backward(), a.grad, b.grad)[1:] == (12.0, 6.0))(e + e * 2))(a * b))(Value(2.0), Value(4.0))
+--- check test | A value feeding three operations
+(lambda x: (lambda t: (lambda y: (y.backward(), abs(x.grad - 3 * (1 - __import__("math").tanh(0.5) ** 2) * 2) < 1e-12)[1])(t * 2 + t + t * 3))(x.tanh()))(Value(0.5))
+--- check test | Simple expressions still work
+(lambda a, b, c: (lambda d: (d.backward(), (a.grad, b.grad, c.grad))[1] == (-3.0, 2.0, 1.0))(a * b + c))(Value(2.0), Value(-3.0), Value(10.0))
+
++++ practice | Gradient descent with your engine
+--- task
+Put lessons 2 and 5 together. Write \`minimize(f, x0, lr, steps)\`:
+
+- \`f\` is a function that takes a \`Value\` and returns a \`Value\`, built from \`Value\` operations.
+- Start from the number \`x0\` and make exactly \`steps\` gradient-descent updates. For each one, make a fresh \`Value\` from the current number, compute \`f\` of it, call \`backward()\`, and move the number by \`-lr\` times the gradient.
+- Return the final number as a float.
+
+So \`minimize(lambda v: (v - 3) ** 2, 0.0, 0.1, 200)\` returns a number very close to 3.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def minimize(f, x0, lr, steps):
+    return x0
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def minimize(f, x0, lr, steps):
+    x = float(x0)
+    for _ in range(steps):
+        v = Value(x)
+        f(v).backward()
+        x -= lr * v.grad
+    return x
+--- hint
+Keep the current position as a plain float. Each step wraps it in a new \`Value\`, so its gradient starts at 0 and nothing piles up from earlier steps.
+--- hint
+After \`f(v).backward()\`, \`v.grad\` holds the slope at \`x\`. The update is \`x -= lr * v.grad\`.
+--- check test | (v - 3)² is smallest at 3
+abs(minimize(lambda v: (v - 3) ** 2, 0.0, 0.1, 200) - 3) < 1e-9
+--- check test | (tanh(v) - 0.5)² is smallest where tanh(v) is 0.5
+abs(minimize(lambda v: (v.tanh() - 0.5) ** 2, 0.0, 0.5, 3000) - __import__("math").atanh(0.5)) < 1e-6
+--- check test | Zero steps returns the start, as a float
+minimize(lambda v: v * v, 4, 0.1, 0) == 4.0 and type(minimize(lambda v: v * v, 4, 0.1, 0)) is float
+--- check test | f really receives a Value
+(lambda seen: (minimize(lambda v: (seen.append(type(v).__name__), v * v)[1], 1.0, 0.1, 3), seen == ["Value"] * 3)[1])([])
+--- check test | A two-sided bowl from the other side
+abs(minimize(lambda v: (v + 1) ** 2 + 2, 5.0, 0.25, 100) + 1) < 1e-9
+
+=== ai-06 | Debugging: gradient checking
+--- teach
+Your engine now backpropagates through any graph you build. But how do you know its gradients are right? A wrong backward rule is the nastiest bug a model can have, because nothing crashes. The model still trains, only badly, and you can lose days blaming the data, the learning rate or the design. This lesson gives you the tool model developers use to catch these bugs: the **gradient check**.
+
+Think of two people measuring the same room. One uses a tape measure; the other counts floor tiles and multiplies. If their answers agree, both are probably right. If they disagree, one of them made a mistake, and now you know to look.
+
+### A second opinion you can trust
+
+You already have a second way to get a gradient: the **numerical gradient** from lesson 2. Nudge input \`i\` by \`+h\`, run the function forwards; nudge it by \`-h\`, run it again; divide the change by \`2 * h\`.
+
+It is slow, but it uses only the forward pass. So a mistake in some \`_backward\` cannot fool it. The gradient that backpropagation gives you is called the **analytic gradient**, because it comes from the formulas. A gradient check compares the two.
+
+### Compare with a relative error
+
+How close is close enough? An absolute difference of 0.01 is huge if the gradient is 0.02, and nothing at all if the gradient is 5000. So compare with a **[[relative error|relative-error]]**: the difference measured against the size of the numbers.
+
+\`\`\`text
+relative error = |analytic - numerical| / max(|analytic| + |numerical|, 1e-8)
+\`\`\`
+
+The bars \`|...|\` mean "size of", ignoring the sign. The \`max(..., 1e-8)\` stops a division by zero when both gradients are exactly 0.
+
+A [[rule of thumb|thresholds]] for ordinary Python floats:
+
+- below \`1e-7\`: correct;
+- around \`1e-4\`: suspicious, look closer;
+- above \`1e-2\`: a bug.
+
+### The debugging method, applied to gradients
+
+It is the method from the intermediate course: reproduce, check your assumptions, narrow down, fix the cause.
+
+1. **Reproduce with something small.** Not the whole network: a function of two or three numbers.
+2. **Get the second opinion.** Compute the numerical gradient for every input.
+3. **Compare with the relative error.** Any input above the thresholds is a lead.
+4. **Narrow down.** If a big function fails, check each operation on its own: \`x ** 3\`, \`x.tanh()\`, \`x * y\` and so on. The one that fails holds the bug.
+5. **Read that rule and fix the cause.** Compare it with the maths, and ask which situation your checks so far never tried: a value used twice, a negative input, a power below 1.
+
+Here is the whole method on someone's hand-derived formula. The function is \`x * exp(-x)\`, and the claimed derivative mixed up a sign:
+
+\`\`\`python
+import math
+
+def f(x):
+    return x * math.exp(-x)
+
+def claimed_slope(x):              # someone's working: the sign is wrong
+    return (1 + x) * math.exp(-x)
+
+x, h = 0.8, 1e-6
+numerical = (f(x + h) - f(x - h)) / (2 * h)
+analytic = claimed_slope(x)
+print(abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8))
+# about 0.8: far above 1e-2, so the formula is wrong
+\`\`\`
+
+The right derivative is \`(1 - x) * exp(-x)\`. The check did not say what was wrong, but it said, in one line, that something was.
+
+### Things that fool a gradient check
+
+- **Kinks.** \`relu\` has a sharp corner at 0. If you check exactly there, the nudge \`+h\` and the nudge \`-h\` land on [[different sides of the corner|kinks]], and the numerical gradient is a meaningless average. Pick test points away from corners.
+- **A bad \`h\`.** Too big and the curve's bend spoils the slope; too small and rounding does (lesson 2). Around \`1e-6\` suits ordinary floats.
+- **Untested situations.** A check only tests the inputs you give it. An accumulation bug, \`=\` instead of \`+=\`, hides until some value is **used twice**. So always include a case where one input appears in two places.
+
+**Watch out:** do not "fix" a failing check by loosening the threshold. An error of 0.3 is not noise. Errors that small-but-wrong come from real bugs far more often than from rounding.
+
+In PyTorch: \`torch.autograd.gradcheck\` does exactly this. Engineers run it whenever they write a custom operation or a [[GPU kernel|kernels]] with a hand-written backward pass.
+
+::: context relative-error Why relative, not absolute
+Suppose the true gradient is 5000 and your engine says 5000.01. The absolute difference, 0.01, sounds worrying, but relative to 5000 it is two parts in a million: fine. Now suppose the true gradient is 0.02 and your engine says 0.03. The absolute difference is the same size, but you are off by half. Dividing by the sizes of the numbers puts both cases on one scale. Adding the two sizes in the bottom, instead of using only one, keeps the measure symmetric and between 0 and 1.
+:::
+
+::: context thresholds Where the thresholds come from
+A Python float carries about 16 significant digits. A central difference with \`h = 1e-6\` has an error from the curve's bend of about \`h * h\`, near \`1e-12\`, plus rounding error of about \`1e-16 / 1e-6\`, near \`1e-10\`. So a correct gradient usually agrees to a relative error between about \`1e-10\` and \`1e-8\`. A result of \`1e-7\` leaves a safety margin. A typical bug, like a missing factor of 2, gives errors of 0.1 or more, nowhere near the line.
+:::
+
+::: context kinks When the nudge straddles a corner
+Picture \`relu\` at exactly 0. Nudging up by \`h\` gives \`h\`; nudging down gives \`0\`. The central difference is \`(h - 0) / (2 * h)\`, which is 0.5. Yet the true slope is 1 on one side and 0 on the other: 0.5 is neither. Your engine says 0 there (it treats 0 as "not positive"), so the check reports an error of 1 and blames a rule that is fine. Test at points like 0.3 or -0.7 instead.
+:::
+
+::: context kernels Hand-written backward passes
+A **kernel** is a small program that runs on a GPU, often written by hand for speed. Fast attention implementations, such as FlashAttention, fuse many steps into one kernel and come with a hand-written backward pass instead of an automatic one. A single wrong index in that backward pass would quietly damage every model trained with it. So the people who write kernels compare them against a slow, simple, trusted version, and against numerical gradients, before anyone trains with them.
+:::
+--- task
+**Bug report:** "Our tiny network trains much worse than the paper's. The code runs without errors. Someone suspects the autograd engine."
+
+1. Write \`grad_check(f, xs, h=1e-6)\`. \`f\` takes a list of \`Value\`s and returns a \`Value\`; \`xs\` is a list of floats.
+   - Run \`f\` on fresh \`Value\`s made from \`xs\`, and call \`backward()\` to get the analytic gradients.
+   - For each input \`i\`, compute the central-difference numerical gradient: run \`f\` on fresh \`Value\`s with only input \`i\` nudged by \`+h\`, then by \`-h\`.
+   - Return a list with the relative error for each input, using the formula in the explanation.
+2. Use \`grad_check\` to find the three bugs in the \`Value\` class, and fix their causes.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad = other.data * out.grad
+            other.grad = self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** n * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def grad_check(f, xs, h=1e-6):
+    pass
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def grad_check(f, xs, h=1e-6):
+    inputs = [Value(x) for x in xs]
+    f(inputs).backward()
+    errors = []
+    for i, v in enumerate(inputs):
+        plus = [Value(x + h if j == i else x) for j, x in enumerate(xs)]
+        minus = [Value(x - h if j == i else x) for j, x in enumerate(xs)]
+        numerical = (f(plus).data - f(minus).data) / (2 * h)
+        analytic = v.grad
+        errors.append(abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8))
+    return errors
+--- hint
+In \`grad_check\`, keep the list of \`Value\`s you pass to \`f\`, so you can read each one's \`.grad\` after \`backward()\`. For the numerical gradient, build two new lists of \`Value\`s for each input: one with \`xs[i] + h\`, one with \`xs[i] - h\`, everything else unchanged.
+--- hint
+Now narrow down, one operation at a time: try \`grad_check(lambda v: v[0] ** 3, [2.0])\`, \`grad_check(lambda v: v[0].tanh(), [0.5])\` and \`grad_check(lambda v: v[0] * v[0], [3.0])\`. Which of them are far above \`1e-7\`?
+--- hint
+Compare each failing rule with the table of local derivatives from lesson 5: the power rule's exponent, the derivative of \`tanh\`, and whether \`__mul__\` adds into \`grad\` or overwrites it.
+--- check test | grad_check returns one relative error per input, near 0 for a correct function
+(lambda r: len(r) == 2 and all(e < 1e-7 for e in r))(grad_check(lambda v: v[0] + v[1] * 2, [0.5, -1.5]))
+--- check test | A missing backward shows up as a relative error of 1
+(lambda r: all(abs(e - 1.0) < 1e-9 for e in r))(grad_check(lambda v: (lambda o: (setattr(o, "_backward", lambda: None), o)[1])(v[0] + v[1]), [1.0, 2.0]))
+--- check test | grad_check uses the relative error: analytic 1 against numerical 3 gives 0.5
+(lambda r: abs(r[0] - 0.5) < 1e-6)(grad_check(lambda v: (lambda o: (setattr(o, "_backward", lambda: setattr(v[0], "grad", v[0].grad + o.grad)), o)[1])(Value(v[0].data * 3, (v[0],))), [2.0]))
+--- check test | Fixed: the power rule (x ** 3 at 2 has gradient 12)
+(lambda x: ((x ** 3).backward(), abs(x.grad - 12.0) < 1e-9)[1])(Value(2.0)) and max(grad_check(lambda v: v[0] ** 3 + v[1] ** -2, [1.5, 0.7])) < 1e-6
+--- check test | Fixed: tanh's derivative is 1 - tanh²
+(lambda x: (x.tanh().backward(), abs(x.grad - (1 - __import__("math").tanh(0.5) ** 2)) < 1e-12)[1])(Value(0.5)) and max(grad_check(lambda v: v[0].tanh(), [-1.1])) < 1e-6
+--- check test | Fixed: a value used twice accumulates (x * x, and x * y + x * z)
+(lambda x: ((x * x).backward(), x.grad == 6.0)[1])(Value(3.0)) and max(grad_check(lambda v: v[0] * v[1] + v[0] * v[2], [0.5, 2.0, -3.0])) < 1e-6
+--- check test | A composite function passes the gradient check at several points
+all(max(grad_check(lambda v: ((v[0] * v[1]).tanh() + v[0] ** 2 * v[2]) * v[1] - v[2] / v[0], p)) < 1e-6 for p in ([0.3, -1.2, 0.8], [1.7, 0.4, -2.2], [-0.9, 1.1, 0.05]))
+
++++ practice | Is this gradient right?
+--- task
+Write \`verdict(analytic, numerical)\`. It returns a pair \`(error, word)\`:
+
+- \`error\` is the relative error: \`abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8)\`.
+- \`word\` is \`"ok"\` when \`error\` is below \`1e-7\`, \`"suspicious"\` when it is below \`1e-2\`, and \`"bug"\` otherwise.
+
+So two gradients that are both exactly 0 give \`(0.0, "ok")\`.
+--- starter
+def verdict(analytic, numerical):
+    error = abs(analytic - numerical)
+    return error, "ok" if error < 1e-7 else "bug"
+--- solution
+def verdict(analytic, numerical):
+    error = abs(analytic - numerical) / max(abs(analytic) + abs(numerical), 1e-8)
+    if error < 1e-7:
+        word = "ok"
+    elif error < 1e-2:
+        word = "suspicious"
+    else:
+        word = "bug"
+    return error, word
+--- hint
+Work out the error first, then choose the word with \`if\`, \`elif\` and \`else\`, smallest threshold first.
+--- hint
+The bottom of the fraction is the sum of the two sizes, but never less than \`1e-8\`.
+--- check test | Big gradients that agree closely are ok, even with an absolute gap of 0.001
+verdict(5000.0, 5000.001)[1] == "ok"
+--- check test | Small gradients off by a third are a bug
+(lambda r: abs(r[0] - 0.2) < 1e-12 and r[1] == "bug")(verdict(0.02, 0.03))
+--- check test | In between is suspicious
+verdict(1.0, 1.0002)[1] == "suspicious"
+--- check test | Two zero gradients are ok, not a division by zero
+verdict(0.0, 0.0) == (0.0, "ok")
+--- check test | Opposite signs give an error of 1
+verdict(-2.0, 2.0) == (1.0, "bug")
+
++++ practice | A gradient check for plain functions
+--- task
+Not every gradient comes from your engine: often someone writes one by hand. Write \`max_error(f, grad_f, xs, h=1e-6)\`:
+
+- \`f\` takes a list of floats and returns a float.
+- \`grad_f\` takes the same list and returns the claimed gradient: a list with one number per input.
+- For each input \`i\`, compute the central-difference numerical gradient, nudging only input \`i\`, on copies of \`xs\`.
+- Return the largest relative error over all inputs (with the \`1e-8\` floor in the bottom, as in the explanation).
+
+Do not change \`xs\`.
+--- starter
+def max_error(f, grad_f, xs, h=1e-6):
+    return 0.0
+--- solution
+def max_error(f, grad_f, xs, h=1e-6):
+    claimed = grad_f(list(xs))
+    worst = 0.0
+    for i in range(len(xs)):
+        up = list(xs)
+        down = list(xs)
+        up[i] += h
+        down[i] -= h
+        numerical = (f(up) - f(down)) / (2 * h)
+        error = abs(claimed[i] - numerical) / max(abs(claimed[i]) + abs(numerical), 1e-8)
+        worst = max(worst, error)
+    return worst
+--- hint
+Get the claimed gradient once. Then loop over the positions, building a nudged-up copy and a nudged-down copy of \`xs\` for each one.
+--- hint
+Keep the biggest error seen so far with \`max\`.
+--- check test | A correct gradient gives a tiny error
+max_error(lambda v: v[0] ** 2 * v[1] + 3 * v[1], lambda v: [2 * v[0] * v[1], v[0] ** 2 + 3], [1.5, -0.5]) < 1e-7
+--- check test | A wrong gradient for one input gives a big error
+max_error(lambda v: v[0] ** 2 * v[1], lambda v: [2 * v[0] * v[1], 2 * v[0]], [1.5, -0.5]) > 0.1
+--- check test | It reports the worst input, not the first
+abs(max_error(lambda v: v[0] + v[1], lambda v: [1.0, 3.0], [0.2, 0.4]) - 0.5) < 1e-6
+--- check test | xs is not changed
+(lambda xs: (max_error(lambda v: v[0] * v[1], lambda v: [v[1], v[0]], xs), xs == [2.0, 3.0])[1])([2.0, 3.0])
+
++++ practice | What a missing factor of 2 looks like
+--- task
+Lesson 2's line had two hand-derived gradients. Write \`check_line_grads(grads_fn, w, b, xs, ys, h=1e-6)\`:
+
+- \`grads_fn(w, b, xs, ys)\` returns someone's claimed \`(dw, db)\` for the mean squared error of the line \`w * x + b\`.
+- Compute the numerical derivative of \`mse\` (in the starter) with respect to \`w\`, and with respect to \`b\`, by central differences.
+- Return the pair \`(error_w, error_b)\` of relative errors.
+
+Then answer with numbers: a claimed gradient that forgot the factor of 2 is exactly half the truth. The checks confirm that its relative error comes out at about one third, the same for every data set.
+--- starter
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def check_line_grads(grads_fn, w, b, xs, ys, h=1e-6):
+    return (0.0, 0.0)
+--- solution
+def mse(w, b, xs, ys):
+    return sum((w * x + b - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+
+
+def check_line_grads(grads_fn, w, b, xs, ys, h=1e-6):
+    dw, db = grads_fn(w, b, xs, ys)
+    num_w = (mse(w + h, b, xs, ys) - mse(w - h, b, xs, ys)) / (2 * h)
+    num_b = (mse(w, b + h, xs, ys) - mse(w, b - h, xs, ys)) / (2 * h)
+
+    def rel(a, n):
+        return abs(a - n) / max(abs(a) + abs(n), 1e-8)
+
+    return rel(dw, num_w), rel(db, num_b)
+--- hint
+Nudge \`w\` alone for the first numerical derivative and \`b\` alone for the second, calling \`mse\` twice for each.
+--- hint
+A small helper for the relative error keeps the two comparisons tidy.
+--- check test | Correct gradients pass
+(lambda g: max(check_line_grads(g, 0.7, -0.3, [0.5, -1.0, 2.0], [1.0, 0.2, -2.0])) < 1e-7)(lambda w, b, xs, ys: (sum(2 * (w * x + b - y) * x for x, y in zip(xs, ys)) / len(xs), sum(2 * (w * x + b - y) for x, y in zip(xs, ys)) / len(xs)))
+--- check test | Forgetting the 2 gives an error of one third for both
+(lambda e: abs(e[0] - 1 / 3) < 1e-6 and abs(e[1] - 1 / 3) < 1e-6)(check_line_grads(lambda w, b, xs, ys: (sum((w * x + b - y) * x for x, y in zip(xs, ys)) / len(xs), sum(w * x + b - y for x, y in zip(xs, ys)) / len(xs)), 0.7, -0.3, [0.5, -1.0, 2.0], [1.0, 0.2, -2.0]))
+--- check test | A bug in only db shows up only in error_b
+(lambda e: e[0] < 1e-7 and e[1] > 0.1)(check_line_grads(lambda w, b, xs, ys: (sum(2 * (w * x + b - y) * x for x, y in zip(xs, ys)) / len(xs), sum(2 * (w * x - y) for x, y in zip(xs, ys)) / len(xs)), 1.0, 2.0, [1.0, 2.0, 3.0], [0.0, 1.0, 1.0]))
+
++++ practice | A nudge that fits the number
+--- task
+A fixed \`h = 1e-6\` works near 1, but not for huge inputs. At \`x = 1e8\`, \`x * x\` is about \`1e16\`, and a float that size can only change in steps of 2, so a nudge of a millionth is mostly lost to rounding.
+
+Write \`slope_at(f, x)\`, a central difference whose nudge grows with the size of \`x\`: use \`h = 1e-6 * max(1.0, abs(x))\`. So small inputs, including 0, still use \`1e-6\`.
+
+It must give the slope of \`x * x\` at \`1e8\`, which is \`2e8\`, to within a relative error of \`1e-6\`, and still work at 0, at negative inputs and at tiny ones.
+--- starter
+def slope_at(f, x):
+    h = 1e-6
+    return (f(x + h) - f(x - h)) / (2 * h)
+--- solution
+def slope_at(f, x):
+    h = 1e-6 * max(1.0, abs(x))
+    return (f(x + h) - f(x - h)) / (2 * h)
+--- hint
+Only the line that chooses \`h\` changes. \`abs(x)\` makes a negative \`x\` count by its size.
+--- hint
+\`max(1.0, abs(x))\` is 1 for every \`x\` between -1 and 1, so the nudge never shrinks below \`1e-6\`.
+--- check test | Huge input: the slope of x² at 1e8 is 2e8
+abs(slope_at(lambda x: x * x, 1e8) / 2e8 - 1) < 1e-6
+--- check test | Huge negative input: the slope of x³ at -1e5 is 3e10
+abs(slope_at(lambda x: x ** 3, -1e5) / 3e10 - 1) < 1e-6
+--- check test | At 0 and near 0 it still works
+abs(slope_at(lambda x: x * x + 3 * x, 0.0) - 3) < 1e-6 and abs(slope_at(lambda x: x * x + 3 * x, 1e-9) - 3) < 1e-6
+--- check test | An ordinary input
+abs(slope_at(lambda x: x ** 3, 2.0) - 12) < 1e-6
+
++++ practice | Fix the check that blames everything
+--- task
+This gradient checker reports a relative error of about 0.33 for every input of every function, even \`f = x + y\`, whose gradient is plainly \`[1, 1]\`. So it calls every gradient a bug, and nobody trusts it.
+
+Find the mistake in \`grad_check\` and fix it.
+--- starter
+def grad_check(f, grad_f, xs, h=1e-6):
+    claimed = grad_f(xs)
+    errors = []
+    for i in range(len(xs)):
+        up = list(xs)
+        down = list(xs)
+        up[i] += h
+        down[i] -= h
+        numerical = (f(up) - f(down)) / h
+        errors.append(abs(claimed[i] - numerical) / max(abs(claimed[i]) + abs(numerical), 1e-8))
+    return errors
+--- solution
+def grad_check(f, grad_f, xs, h=1e-6):
+    claimed = grad_f(xs)
+    errors = []
+    for i in range(len(xs)):
+        up = list(xs)
+        down = list(xs)
+        up[i] += h
+        down[i] -= h
+        numerical = (f(up) - f(down)) / (2 * h)
+        errors.append(abs(claimed[i] - numerical) / max(abs(claimed[i]) + abs(numerical), 1e-8))
+    return errors
+--- hint
+An error of one third is what you get when one of the two numbers is exactly twice the other. Which one is doubled?
+--- hint
+The two nudged points are \`2 * h\` apart, not \`h\`.
+--- check test | x + y now passes
+max(grad_check(lambda v: v[0] + v[1], lambda v: [1.0, 1.0], [0.5, -2.0])) < 1e-7
+--- check test | A real bug is still caught
+grad_check(lambda v: v[0] ** 3, lambda v: [3 * v[0] ** 3], [2.0])[0] > 0.1
+--- check test | A product with a shared input passes
+max(grad_check(lambda v: v[0] * v[0] * v[1], lambda v: [2 * v[0] * v[1], v[0] * v[0]], [1.5, -0.7])) < 1e-7
+
++++ practice | Find the broken operations
+--- task
+A library defines operations as pairs: a function and its claimed derivative, both taking one float. Some of the derivatives are wrong. Write \`broken_ops(ops, points, h=1e-6)\`:
+
+- \`ops\` is a dict mapping each operation's name to a pair \`(f, claimed_df)\`.
+- For every operation and every point in \`points\`, compare the claimed derivative with the central-difference numerical one, using the relative error.
+- An operation is **broken** if its relative error is above \`1e-5\` at any point.
+- Return the sorted list of the names of the broken operations.
+
+The points are chosen away from corners and inside every function's domain, so you do not need to handle errors.
+--- starter
+def broken_ops(ops, points, h=1e-6):
+    return sorted(ops)
+--- solution
+def broken_ops(ops, points, h=1e-6):
+    broken = []
+    for name, (f, claimed_df) in ops.items():
+        for x in points:
+            numerical = (f(x + h) - f(x - h)) / (2 * h)
+            claimed = claimed_df(x)
+            error = abs(claimed - numerical) / max(abs(claimed) + abs(numerical), 1e-8)
+            if error > 1e-5:
+                broken.append(name)
+                break
+    return sorted(broken)
+--- hint
+Two loops: over the operations, and inside it over the points. As soon as one point fails, the operation is broken and you can move on to the next one.
+--- hint
+\`for name, (f, claimed_df) in ops.items()\` unpacks each pair as you go.
+--- check case | Three right, three wrong
+broken_ops({"square": (lambda x: x * x, lambda x: 2 * x), "exp": (__import__("math").exp, __import__("math").exp), "tanh": (__import__("math").tanh, lambda x: 1 - __import__("math").tanh(x)), "log": (__import__("math").log, lambda x: 1 / x), "cube": (lambda x: x ** 3, lambda x: 3 * x ** 3), "sigmoid": (lambda x: 1 / (1 + __import__("math").exp(-x)), lambda x: (1 / (1 + __import__("math").exp(-x))) * (1 + 1 / (1 + __import__("math").exp(-x))))}, [0.3, 1.7, 2.5])
+=> ["cube", "sigmoid", "tanh"]
+--- check case | A bug that only shows at some points is still caught
+broken_ops({"sqrt": (lambda x: x ** 0.5, lambda x: 0.5 * x ** -0.5), "almost": (lambda x: x * x, lambda x: 2 * x if x < 2 else 2 * x + 1)}, [0.5, 1.0, 3.0])
+=> ["almost"]
+--- check case | Nothing broken
+broken_ops({"line": (lambda x: 3 * x + 1, lambda x: 3.0)}, [0.1, 5.0])
+=> []
+--- check case | No points means nothing can be shown broken
+broken_ops({"wrong": (lambda x: x * x, lambda x: 0.0)}, [])
+=> []
+
+=== ai-07 | Neurons, layers and a training loop
+--- teach
+You have an autograd engine. Now build a neural network on top of it and train it on a problem logistic regression cannot solve.
+
+**A neuron** is the logistic-regression score with a squashing function: a dot product of its weights with the input, plus a bias, passed through a **nonlinearity** such as \`tanh\`.
+
+\`\`\`python
+import math
+
+w, b = [0.5, -1.0], 0.1
+x = [2.0, 1.0]
+math.tanh(sum(wi * xi for wi, xi in zip(w, x)) + b)      # tanh(0.1) ≈ 0.0997
+\`\`\`
+
+**A layer** is several neurons reading the same input, each with its own weights; it turns a vector of \`n_in\` numbers into \`n_out\` numbers (the matrix–vector product from lesson 1, plus biases, then \`tanh\`). **A multi-layer perceptron (MLP)** feeds each layer's output into the next.
+
+**Why the nonlinearity matters.** Without it, a layer is a matrix product, and a matrix product of a matrix product is just another matrix: ten linear layers are no more powerful than one. \`tanh\` is what lets a network bend its decision boundary. The classic example is **XOR**: output 1 when exactly one of two inputs is 1.
+
+\`\`\`text
+x0 x1 | y
+ 0  0 | 0
+ 0  1 | 1
+ 1  0 | 1
+ 1  1 | 0
+\`\`\`
+
+No single straight line puts \`(0,1)\` and \`(1,0)\` on one side and \`(0,0)\` and \`(1,1)\` on the other, so logistic regression cannot learn it. One hidden layer of a few \`tanh\` neurons can. The **last** layer is usually left linear (no \`tanh\`), so the output can be any number; the loss decides what it means.
+
+**Initialisation.** Weights start as small random numbers, here uniform in \`[-1, 1]\`, from a seeded generator so runs repeat. They must not all start equal: identical neurons get identical gradients and stay identical forever. Biases can start at 0.
+
+**\`parameters()\`** returns every \`Value\` the optimiser should change, flattened into one list: each neuron's weights and bias, gathered from every layer.
+
+**The training loop.** Every step, in this order:
+
+1. **Forward:** run the model on the examples and compute the loss (a \`Value\`).
+2. **Zero the gradients** of every parameter (they accumulate, lesson 5).
+3. **Backward:** \`loss.backward()\`.
+4. **Update:** \`p.data -= lr * p.grad\` for every parameter.
+
+Record \`loss.data\` (a float) each step so you can watch the **loss curve**. This loop uses every example in each step (**full batch**). Real training samples a **mini-batch** of examples per step, because the dataset is far too big, and the noise even helps.
+
+In PyTorch: \`nn.Linear\` is your \`Layer\` without the \`tanh\`, \`nn.Sequential\` stacks layers, \`model.parameters()\` is the same idea, and the loop is \`optimizer.zero_grad()\`, \`loss.backward()\`, \`optimizer.step()\`, on a GPU, with millions or billions of parameters. It is the same loop.
+--- task
+The starter has your \`Value\` class and the XOR data. Write:
+
+- \`Neuron(n_in, rng, nonlin=True)\`: attributes \`w\` (a list of \`n_in\` \`Value\`s, each \`rng.uniform(-1, 1)\`, drawn in order), \`b\` (\`Value(0.0)\`) and \`nonlin\`. Calling it with a list \`x\` returns \`tanh(w·x + b)\`, or just \`w·x + b\` when \`nonlin\` is \`False\`. \`parameters()\` returns \`w + [b]\`.
+- \`Layer(n_in, n_out, rng, nonlin=True)\`: attribute \`neurons\` (a list of \`n_out\` neurons). Calling it returns the list of the neurons' outputs. \`parameters()\` returns all their parameters.
+- \`MLP(n_in, sizes, seed=0)\`: makes one \`random.Random(seed)\` and uses it for every layer; \`sizes\` lists each layer's output size (\`MLP(2, [4, 1])\` is 2 inputs, 4 hidden, 1 output). Every layer uses \`tanh\` except the last. Attribute \`layers\`; calling it returns the last layer's list of outputs; \`parameters()\` returns all parameters.
+- \`mse_loss(model, xs, ys)\`: the mean over examples of \`(model(x)[0] - y) ** 2\`, as a \`Value\`.
+- \`train(model, xs, ys, steps=200, lr=0.2)\`: the four-step loop above; returns the list of the loss (as a float) at each step, measured before that step's update.
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    pass
+
+
+class Layer:
+    pass
+
+
+class MLP:
+    pass
+
+
+def mse_loss(model, xs, ys):
+    pass
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    pass
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        for p in model.parameters():
+            p.grad = 0.0
+        loss.backward()
+        for p in model.parameters():
+            p.data -= lr * p.grad
+        losses.append(loss.data)
+    return losses
+--- hint
+In \`Neuron.__call__\`, \`sum((wi * xi for wi, xi in zip(self.w, x)), self.b)\` starts the sum at the bias, so the result is a \`Value\`.
+--- hint
+In \`MLP\`, list the sizes as \`[n_in] + sizes\`; layer \`i\` goes from \`dims[i]\` to \`dims[i + 1]\`, with \`nonlin=i < len(sizes) - 1\` so only the last layer is linear.
+--- hint
+In \`train\`, each step: \`loss = mse_loss(...)\`, set every \`p.grad = 0.0\`, \`loss.backward()\`, then \`p.data -= lr * p.grad\`, and append \`loss.data\`.
+--- check test | A neuron has n_in weights in [-1, 1], drawn in order, and a zero bias
+(lambda n: len(n.w) == 3 and n.b.data == 0.0 and n.w[0].data == __import__("random").Random(5).uniform(-1, 1) and all(-1 <= w.data <= 1 for w in n.w) and len(n.parameters()) == 4)(Neuron(3, __import__("random").Random(5)))
+--- check test | A neuron computes tanh(w·x + b), or the raw sum when nonlin is False
+(lambda n: (setattr(n.w[0], "data", 0.5), setattr(n.w[1], "data", -1.0), setattr(n.b, "data", 0.1), abs(n([2.0, 1.0]).data - __import__("math").tanh(0.1)) < 1e-12)[3])(Neuron(2, __import__("random").Random(0))) and (lambda n: (setattr(n.w[0], "data", 3.0), n([2.0]).data)[1] == 6.0)(Neuron(1, __import__("random").Random(0), nonlin=False))
+--- check test | A layer returns one output per neuron
+(lambda out: isinstance(out, list) and len(out) == 3 and all(isinstance(v, Value) for v in out))(Layer(2, 3, __import__("random").Random(0))([1.0, -1.0]))
+--- check test | MLP(2, [4, 1]) has 17 parameters, a tanh hidden layer and a linear output layer
+(lambda m: len(m.parameters()) == 17 and len(m.layers) == 2 and m.layers[0].neurons[0].nonlin and not m.layers[-1].neurons[0].nonlin and len(m([1, 0])) == 1)(MLP(2, [4, 1]))
+--- check test | The same seed gives the same network; a different seed a different one
+[p.data for p in MLP(2, [3, 1], seed=4).parameters()] == [p.data for p in MLP(2, [3, 1], seed=4).parameters()] != [p.data for p in MLP(2, [3, 1], seed=5).parameters()]
+--- check test | mse_loss is a Value holding the mean squared error
+(lambda m: (lambda loss: isinstance(loss, Value) and abs(loss.data - sum((m(x)[0].data - y) ** 2 for x, y in zip(XOR_X, XOR_Y)) / 4) < 1e-12)(mse_loss(m, XOR_X, XOR_Y)))(MLP(2, [4, 1]))
+--- check test | train returns one float loss per step
+(lambda losses: len(losses) == 5 and all(type(l) is float for l in losses))(train(MLP(2, [4, 1]), XOR_X, XOR_Y, steps=5))
+--- check test | The network learns XOR: loss falls below 0.02 and the outputs round to the right answers
+(lambda m: (lambda losses: losses[-1] < 0.02 and losses[0] > 0.3 and [round(m(x)[0].data) for x in XOR_X] == XOR_Y)(train(m, XOR_X, XOR_Y)))(MLP(2, [4, 1]))
+
++++ practice | A forward pass in plain numbers
+--- task
+Before autograd, a network is only arithmetic. Write \`mlp_forward(x, layers)\` using plain floats (no \`Value\`):
+
+- \`x\` is the input vector.
+- \`layers\` is a list of pairs \`(W, b)\`, one per layer. \`W\` has one row per neuron, and each row holds that neuron's weights, so \`W\` has shape \`(n_out, n_in)\`. \`b\` holds one bias per neuron.
+- Each neuron computes the dot product of its row with the layer's input, plus its bias. Every layer applies \`math.tanh\` to each result, **except the last layer**, which stays linear.
+- Return the last layer's outputs as a list.
+
+If a row's length does not match the length of the layer's input, or \`b\` does not have one number per row, raise \`ValueError\`.
+--- starter
+import math
+
+
+def mlp_forward(x, layers):
+    for W, b in layers:
+        x = [math.tanh(sum(wi * xi for wi, xi in zip(row, x)) + bi) for row, bi in zip(W, b)]
+    return x
+--- solution
+import math
+
+
+def mlp_forward(x, layers):
+    for index, (W, b) in enumerate(layers):
+        if len(b) != len(W):
+            raise ValueError(f"layer {index}: {len(W)} neurons but {len(b)} biases")
+        outputs = []
+        for row, bias in zip(W, b):
+            if len(row) != len(x):
+                raise ValueError(f"layer {index}: a row has {len(row)} weights for {len(x)} inputs")
+            outputs.append(sum(w * v for w, v in zip(row, x)) + bias)
+        last = index == len(layers) - 1
+        x = outputs if last else [math.tanh(v) for v in outputs]
+    return x
+--- hint
+Loop over the layers with \`enumerate\`, so you know when you have reached the last one. Each layer's outputs become the next layer's input.
+--- hint
+Check the sizes before computing: \`len(b)\` against the number of rows, and every row's length against the current input's length, because \`zip\` would silently stop at the shorter one.
+--- check test | One hidden tanh layer, then a linear output
+(lambda out: len(out) == 1 and abs(out[0] - (2 * __import__("math").tanh(0.5) - __import__("math").tanh(-1.0) + 0.5)) < 1e-12)(mlp_forward([1.0, 2.0], [([[0.5, 0.0], [1.0, -1.0]], [0.0, 0.0]), ([[2.0, -1.0]], [0.5])]))
+--- check case | A single layer is linear: no tanh at all
+mlp_forward([3.0, -1.0], [([[1.0, 1.0], [2.0, 0.0], [0.0, 0.0]], [0.0, 1.0, -4.0])])
+=> [2.0, 7.0, -4.0]
+--- check test | Wrong sizes raise ValueError instead of a quiet answer
+raises(ValueError, lambda: mlp_forward([1.0, 2.0, 3.0], [([[1.0, 1.0]], [0.0])])) and raises(ValueError, lambda: mlp_forward([1.0], [([[1.0], [2.0]], [0.0])]))
+--- check test | A mismatch in the second layer is caught too
+raises(ValueError, lambda: mlp_forward([1.0, 2.0], [([[1.0, 0.0], [0.0, 1.0]], [0.0, 0.0]), ([[1.0, 1.0, 1.0]], [0.0])]))
+--- check case | No layers returns the input
+mlp_forward([4.0, 5.0], [])
+=> [4.0, 5.0]
+
++++ practice | What a network costs
+--- task
+Before training anything, engineers work out how big a model is and how much arithmetic it needs. For an MLP made of \`Layer\`s as in this lesson (each neuron has one weight per input plus one bias), write:
+
+- \`count_params(n_in, sizes)\`: the total number of weights and biases. \`sizes\` lists each layer's output size, as for \`MLP\`.
+- \`macs_per_example(n_in, sizes)\`: the number of multiply-and-add steps for one forward pass on one example. A layer from \`a\` inputs to \`b\` outputs does \`a * b\` of them (count only the weight multiplications, not the biases or tanh).
+
+So \`count_params(2, [4, 1])\` is \`(2 + 1) * 4 + (4 + 1) * 1\`, which is 17, and \`macs_per_example(2, [4, 1])\` is \`2 * 4 + 4 * 1\`, which is 12. An empty \`sizes\` gives 0 for both.
+--- starter
+def count_params(n_in, sizes):
+    return sum(sizes)
+
+
+def macs_per_example(n_in, sizes):
+    return 0
+--- solution
+def count_params(n_in, sizes):
+    total = 0
+    for n_out in sizes:
+        total += (n_in + 1) * n_out
+        n_in = n_out
+    return total
+
+
+def macs_per_example(n_in, sizes):
+    total = 0
+    for n_out in sizes:
+        total += n_in * n_out
+        n_in = n_out
+    return total
+--- hint
+Walk through the layers, keeping the current input size. After each layer, its output size becomes the next layer's input size.
+--- hint
+Each layer adds \`(inputs + 1) * outputs\` parameters: one weight per input and one bias, for every neuron.
+--- check test | The lesson's XOR network
+count_params(2, [4, 1]) == 17 and macs_per_example(2, [4, 1]) == 12
+--- check test | A digit classifier: 784 pixels, 128 hidden, 10 classes
+count_params(784, [128, 10]) == 101770 and macs_per_example(784, [128, 10]) == 101632
+--- check test | Deeper and wider
+count_params(10, [32, 32, 32, 1]) == 2497 and macs_per_example(10, [32, 32, 32, 1]) == 2400
+--- check test | No layers
+count_params(5, []) == 0 and macs_per_example(5, []) == 0
+
++++ practice | A whole batch through two layers
+--- task
+Real networks push a whole batch through as matrix products. Write \`batch_forward(X, W1, b1, W2, b2)\`, with every matrix shaped \`(inputs, outputs)\` so each layer is \`X @ W\`:
+
+- \`X\` has shape \`(batch, n_in)\`: one example per row.
+- \`W1\` has shape \`(n_in, hidden)\` and \`b1\` has \`hidden\` numbers. The hidden layer is \`tanh\` of \`X @ W1 + b1\`, with \`b1\` added to every row.
+- \`W2\` has shape \`(hidden, n_out)\` and \`b2\` has \`n_out\` numbers. The output is \`hidden_rows @ W2 + b2\`, with no \`tanh\`.
+
+Return the output rows, shape \`(batch, n_out)\`. The starter gives you \`matmul\`, which raises \`ValueError\` when the inner sizes differ. Also raise \`ValueError\` if a bias has the wrong length.
+--- starter
+import math
+
+
+def matmul(a, b):
+    if len(a[0]) != len(b):
+        raise ValueError(f"({len(a)}, {len(a[0])}) @ ({len(b)}, {len(b[0])}) do not fit")
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def batch_forward(X, W1, b1, W2, b2):
+    return matmul(matmul(X, W1), W2)
+--- solution
+import math
+
+
+def matmul(a, b):
+    if len(a[0]) != len(b):
+        raise ValueError(f"({len(a)}, {len(a[0])}) @ ({len(b)}, {len(b[0])}) do not fit")
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def add_bias(rows, bias):
+    if len(bias) != len(rows[0]):
+        raise ValueError(f"bias has {len(bias)} numbers for {len(rows[0])} columns")
+    return [[v + c for v, c in zip(row, bias)] for row in rows]
+
+
+def batch_forward(X, W1, b1, W2, b2):
+    hidden = [[math.tanh(v) for v in row] for row in add_bias(matmul(X, W1), b1)]
+    return add_bias(matmul(hidden, W2), b2)
+--- hint
+Write a small helper that adds a bias to every row and checks its length. Then the function is two lines: the hidden layer, and the output.
+--- hint
+Apply \`tanh\` to every number of the hidden rows, after adding \`b1\` and before the second \`matmul\`.
+--- check test | Two examples, two inputs, three hidden, one output
+(lambda out: len(out) == 2 and len(out[0]) == 1 and abs(out[0][0] - (__import__("math").tanh(1.0) + __import__("math").tanh(2.0) - __import__("math").tanh(0.0) + 0.5)) < 1e-12 and abs(out[1][0] - (__import__("math").tanh(0.0) + __import__("math").tanh(-1.0) - __import__("math").tanh(1.0) + 0.5)) < 1e-12)(batch_forward([[1.0, 0.0], [0.0, 1.0]], [[1.0, 2.0, 0.0], [0.0, -1.0, 1.0]], [0.0, 0.0, 0.0], [[1.0], [1.0], [-1.0]], [0.5]))
+--- check test | Each example is handled on its own: a batch gives the same rows as one at a time
+(lambda args: batch_forward([[0.3, -0.2], [1.5, 0.7]], *args) == batch_forward([[0.3, -0.2]], *args) + batch_forward([[1.5, 0.7]], *args))(([[0.5, -1.0, 0.2], [0.1, 0.4, -0.3]], [0.1, 0.0, -0.1], [[1.0, 0.5], [-0.5, 1.0], [0.3, 0.3]], [0.0, 0.2]))
+--- check test | The output has shape (batch, n_out)
+(lambda out: len(out) == 3 and all(len(r) == 2 for r in out))(batch_forward([[1.0]] * 3, [[0.5, 0.5, 0.5, 0.5]], [0.0] * 4, [[1.0, 0.0]] * 4, [0.0, 0.0]))
+--- check test | Wrong shapes or bias lengths raise ValueError
+raises(ValueError, lambda: batch_forward([[1.0, 2.0]], [[1.0]], [0.0], [[1.0]], [0.0])) and raises(ValueError, lambda: batch_forward([[1.0]], [[1.0, 1.0]], [0.0], [[1.0], [1.0]], [0.0])) and raises(ValueError, lambda: batch_forward([[1.0]], [[1.0]], [0.0], [[1.0]], [0.0, 0.0]))
+
++++ practice | Cut the data into mini-batches
+--- task
+Real training does not use every example in every step: it walks through the data in shuffled **mini-batches**, and one full pass is an **epoch**. Write \`minibatches(n, batch_size, seed=0, drop_last=False)\`:
+
+1. Make the list of example indices \`0\` to \`n - 1\` and shuffle it with \`random.Random(seed).shuffle\`.
+2. Cut the shuffled list into consecutive pieces of \`batch_size\` indices. The last piece may be shorter.
+3. If \`drop_last\` is true and the last piece is shorter than \`batch_size\`, leave it out.
+
+Return the list of pieces. If \`batch_size\` is below 1, raise \`ValueError\`. With \`n = 0\`, return \`[]\`.
+--- starter
+import random
+
+
+def minibatches(n, batch_size, seed=0, drop_last=False):
+    return [list(range(i, i + batch_size)) for i in range(0, n, batch_size)]
+--- solution
+import random
+
+
+def minibatches(n, batch_size, seed=0, drop_last=False):
+    if batch_size < 1:
+        raise ValueError("batch_size must be at least 1")
+    order = list(range(n))
+    random.Random(seed).shuffle(order)
+    batches = [order[i:i + batch_size] for i in range(0, n, batch_size)]
+    if drop_last and batches and len(batches[-1]) < batch_size:
+        batches.pop()
+    return batches
+--- hint
+Shuffle a list of the indices first, then slice it with \`order[i:i + batch_size]\` for \`i\` in \`range(0, n, batch_size)\`. A slice past the end is just shorter, never an error.
+--- hint
+For \`drop_last\`, look only at the last piece, and only if there is one.
+--- check test | Every index appears exactly once, in pieces of 4 with a short last piece
+(lambda bs: [len(b) for b in bs] == [4, 4, 2] and sorted(i for b in bs for i in b) == list(range(10)))(minibatches(10, 4))
+--- check test | The order is the seeded shuffle
+minibatches(6, 4, seed=3) == (lambda order: (__import__("random").Random(3).shuffle(order), [order[:4], order[4:]])[1])(list(range(6)))
+--- check test | drop_last drops only a short last piece
+[len(b) for b in minibatches(10, 4, drop_last=True)] == [4, 4] and [len(b) for b in minibatches(8, 4, drop_last=True)] == [4, 4]
+--- check test | A batch bigger than the data, and no data at all
+[len(b) for b in minibatches(3, 10)] == [3] and minibatches(3, 10, drop_last=True) == [] and minibatches(0, 5) == []
+--- check test | A batch size below 1 raises ValueError
+raises(ValueError, lambda: minibatches(10, 0))
+
++++ practice | Fix the network that only learns the average
+--- task
+Someone changed the weight initialisation "so that every run is the same". Now training XOR goes wrong: the loss falls to 0.25 and stays there, and the network outputs 0.5 for every input. They are right that runs must repeat, but \`MLP\` already takes care of that with its seeded generator.
+
+Find the bug in \`Neuron\` and fix it, so weights start as \`rng.uniform(-1, 1)\`, drawn in order from the generator passed in. Everything else is correct.
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(0.0) for _ in range(n_in)]   # zeros: every run is the same
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        for p in model.parameters():
+            p.grad = 0.0
+        loss.backward()
+        for p in model.parameters():
+            p.data -= lr * p.grad
+        losses.append(loss.data)
+    return losses
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        for p in model.parameters():
+            p.grad = 0.0
+        loss.backward()
+        for p in model.parameters():
+            p.data -= lr * p.grad
+        losses.append(loss.data)
+    return losses
+--- hint
+Work out the gradient of one hidden weight when every weight is 0: the hidden outputs are \`tanh(0)\`, and the output layer's weights are 0 too. What does the chain rule give?
+--- hint
+With every weight at 0, only the output bias ever gets a gradient, so the network can only learn the average answer, 0.5. Draw each weight from \`rng\` instead.
+--- check test | Weights are drawn from the generator, in order
+(lambda n: n.w[0].data == __import__("random").Random(5).uniform(-1, 1) and len(set(w.data for w in n.w)) == 3)(Neuron(3, __import__("random").Random(5)))
+--- check test | The same seed still gives the same network
+[p.data for p in MLP(2, [4, 1], seed=4).parameters()] == [p.data for p in MLP(2, [4, 1], seed=4).parameters()]
+--- check test | The network learns XOR: loss below 0.02, outputs round to the answers
+(lambda m: (lambda losses: losses[-1] < 0.02 and [round(m(x)[0].data) for x in XOR_X] == XOR_Y)(train(m, XOR_X, XOR_Y)))(MLP(2, [4, 1]))
+
++++ practice | Backpropagation by hand for two layers
+--- task
+Write out, by hand, what autograd does for a small network. The network has one hidden layer of \`tanh\` neurons and a single linear output, and the loss for one example is the squared error:
+
+\`\`\`text
+h[j] = tanh(dot(W1[j], x) + b1[j])      for each hidden neuron j
+out  = dot(w2, h) + b2
+loss = (out - y) ** 2
+\`\`\`
+
+Write \`two_layer_grads(x, y, W1, b1, w2, b2)\` with plain floats. \`W1\` is a list of rows (row \`j\` holds hidden neuron \`j\`'s weights), \`b1\` and \`w2\` are lists with one number per hidden neuron, and \`b2\` is a number. Return a dict with the gradient of \`loss\` for every parameter, in the same shapes:
+
+\`{"W1": [[...], ...], "b1": [...], "w2": [...], "b2": number}\`
+
+Work backwards: first \`d_out = 2 * (out - y)\`, then the output layer's gradients, then each hidden neuron's, using the local derivative of \`tanh\`, \`1 - h[j] ** 2\`.
+--- starter
+import math
+
+
+def two_layer_grads(x, y, W1, b1, w2, b2):
+    return {"W1": [[0.0] * len(x) for _ in W1], "b1": [0.0] * len(b1), "w2": [0.0] * len(w2), "b2": 0.0}
+--- solution
+import math
+
+
+def two_layer_grads(x, y, W1, b1, w2, b2):
+    h = [math.tanh(sum(w * v for w, v in zip(row, x)) + b) for row, b in zip(W1, b1)]
+    out = sum(w * v for w, v in zip(w2, h)) + b2
+    d_out = 2 * (out - y)
+    d_w2 = [d_out * hj for hj in h]
+    d_b2 = d_out
+    d_z = [d_out * w * (1 - hj * hj) for w, hj in zip(w2, h)]
+    d_W1 = [[dz * v for v in x] for dz in d_z]
+    return {"W1": d_W1, "b1": d_z, "w2": d_w2, "b2": d_b2}
+--- hint
+Run the forward pass first and keep \`h\` and \`out\`. Then \`out\` moves one-for-one with \`b2\`, and by \`h[j]\` per unit of \`w2[j]\`.
+--- hint
+Hidden neuron \`j\` receives \`d_out * w2[j]\`. Multiply by \`1 - h[j] ** 2\` to get past the \`tanh\`; call that \`dz[j]\`. Then \`b1[j]\` gets \`dz[j]\` and \`W1[j][i]\` gets \`dz[j] * x[i]\`.
+--- check test | Every gradient agrees with the measured slope
+(lambda x, y, W1, b1, w2, b2: (lambda g, L: all(abs(g["W1"][j][i] - (L([[v + (1e-6 if (a, c) == (j, i) else 0) for c, v in enumerate(r)] for a, r in enumerate(W1)], b1, w2, b2) - L([[v - (1e-6 if (a, c) == (j, i) else 0) for c, v in enumerate(r)] for a, r in enumerate(W1)], b1, w2, b2)) / 2e-6) < 1e-6 for j in range(3) for i in range(2)) and all(abs(g["b1"][j] - (L(W1, [v + (1e-6 if a == j else 0) for a, v in enumerate(b1)], w2, b2) - L(W1, [v - (1e-6 if a == j else 0) for a, v in enumerate(b1)], w2, b2)) / 2e-6) < 1e-6 for j in range(3)) and all(abs(g["w2"][j] - (L(W1, b1, [v + (1e-6 if a == j else 0) for a, v in enumerate(w2)], b2) - L(W1, b1, [v - (1e-6 if a == j else 0) for a, v in enumerate(w2)], b2)) / 2e-6) < 1e-6 for j in range(3)) and abs(g["b2"] - (L(W1, b1, w2, b2 + 1e-6) - L(W1, b1, w2, b2 - 1e-6)) / 2e-6) < 1e-6)(two_layer_grads(x, y, W1, b1, w2, b2), lambda W, b, v, c: (sum(vj * __import__("math").tanh(sum(p * q for p, q in zip(row, x)) + bj) for vj, row, bj in zip(v, W, b)) + c - y) ** 2))([0.5, -1.2], 0.3, [[0.2, -0.4], [0.7, 0.1], [-0.3, 0.8]], [0.1, -0.2, 0.05], [0.6, -0.5, 0.9], 0.2)
+--- check test | The gradients have the same shapes as the parameters
+(lambda g: len(g["W1"]) == 2 and all(len(r) == 3 for r in g["W1"]) and len(g["b1"]) == 2 and len(g["w2"]) == 2 and isinstance(g["b2"], float))(two_layer_grads([1.0, 2.0, 3.0], 1.0, [[0.1, 0.2, 0.3], [0.0, -0.1, 0.1]], [0.0, 0.0], [1.0, -1.0], 0.0))
+--- check test | A perfect prediction gives all-zero gradients
+(lambda g: g["b2"] == 0.0 and g["w2"] == [0.0] and g["b1"] == [0.0] and g["W1"] == [[0.0]])(two_layer_grads([1.0], 0.5, [[0.0]], [0.0], [1.0], 0.5))
+--- check test | One example by hand: out is 1, y is 0, so b2 gets 2
+(lambda g: abs(g["b2"] - 2.0) < 1e-12 and abs(g["w2"][0]) < 1e-12 and abs(g["b1"][0] - 2.0) < 1e-12 and abs(g["W1"][0][0] - 6.0) < 1e-12)(two_layer_grads([3.0], 0.0, [[0.0]], [0.0], [1.0], 1.0))
+
+=== ai-08 | Debugging: a training loop that does not learn
+--- teach
+The most common report in machine learning is not a crash. It is "the loss is not going down". The code runs, the numbers print, and the model learns nothing, or gets worse. Here is how people who train models find the cause.
+
+**1. Look at the loss curve.** Print (or plot) the loss every step. Its shape is a diagnosis:
+
+| Curve | Usual suspects |
+| --- | --- |
+| Goes **up** steadily | the update has the wrong sign (climbing instead of descending) |
+| Falls, then swings wildly or shoots to \`inf\` / \`nan\` | learning rate too high; gradients never zeroed (they keep growing) |
+| Flat from the start | learning rate far too low; gradients not reaching the parameters; labels shuffled separately from inputs |
+| Falls, then flattens high | model too small, or a bug in the loss |
+
+**2. Overfit a tiny batch.** Train on 2 to 4 examples. Any working model and loop can memorise four examples and drive the loss to nearly 0. If yours cannot, the bug is in the code, not in the data or the model size. This is the first thing experienced people try.
+
+**3. Test one step.** Take a single step with a small learning rate and measure the loss again: it must go down. If it goes up, look at the sign of the update.
+
+**4. Test that gradients are fresh.** Compute the gradients twice without changing the parameters (learning rate 0). They must come out the same (up to rounding in the last digits: \`_prev\` is a set, so the order in which gradients are added up can differ between two graphs, and float addition is not exactly associative. GPUs have the same property). If the second set is double the first, nobody zeroed them, so each step's update is the sum of all previous gradients.
+
+You can watch that last bug happen on a single number. Minimise \`(x - 3) ** 2\`, but let the gradient pile up instead of starting from zero each step:
+
+\`\`\`python
+def df(x):
+    return 2 * (x - 3)
+
+for zero_each_step in (True, False):
+    x, grad, path = 0.0, 0.0, []
+    for _ in range(40):
+        if zero_each_step:
+            grad = 0.0
+        grad += df(x)
+        x -= 0.1 * grad
+        path.append(round(x, 2))
+    print(zero_each_step, path[-5:])
+\`\`\`
+
+With fresh gradients \`x\` settles at 3. With accumulated gradients it behaves like a ball with no friction: it keeps swinging from one side of 3 to the other (here between about 0 and 6) and never settles.
+
+**5. Watch what you keep.** Store the loss as a plain number (\`loss.data\`). Storing the \`Value\` itself keeps the **whole computation graph** of every step alive, and memory grows until the run dies. In PyTorch this is the famous \`losses.append(loss)\` bug; the fix is \`loss.item()\`.
+
+A good habit: when you find the bug, write the check that would have caught it (a one-step test, a fresh-gradient test) so it can never come back.
+--- task
+**Bug report:** "\`train(MLP(2, [4, 1]), XOR_X, XOR_Y)\` does not learn XOR: the loss goes up and swings around the longer it runs. Two calls of \`train_step\` with \`lr=0.0\` on an unchanged model give different gradients. And the list \`train\` returns holds \`Value\` objects, and the run's memory use keeps growing."
+
+The model and \`mse_loss\` are correct. Find and fix the causes in \`train_step\` (one step of full-batch gradient descent that returns the loss before the update, as a float) and \`train\`, keeping their signatures.
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train_step(model, xs, ys, lr):
+    loss = mse_loss(model, xs, ys)
+    loss.backward()
+    for p in model.parameters():
+        p.data += lr * p.grad
+    return loss
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        losses.append(train_step(model, xs, ys, lr))
+    return losses
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train_step(model, xs, ys, lr):
+    loss = mse_loss(model, xs, ys)
+    for p in model.parameters():
+        p.grad = 0.0
+    loss.backward()
+    for p in model.parameters():
+        p.data -= lr * p.grad
+    return loss.data
+
+
+def train(model, xs, ys, steps=200, lr=0.2):
+    losses = []
+    for _ in range(steps):
+        losses.append(train_step(model, xs, ys, lr))
+    return losses
+--- hint
+Reproduce each symptom with a check from the lesson: call \`train_step(m, XOR_X, XOR_Y, 0.0)\` twice and compare \`[p.grad for p in m.parameters()]\` after each call.
+--- hint
+Gradient descent steps against the gradient. And gradients from the previous step must be cleared before \`backward()\`.
+--- hint
+Three changes: set every \`p.grad = 0.0\` before \`loss.backward()\`, use \`p.data -= lr * p.grad\`, and return \`loss.data\` rather than \`loss\`.
+--- check test | train_step returns the loss as a plain float
+type(train_step(MLP(2, [4, 1]), XOR_X, XOR_Y, 0.1)) is float
+--- check test | Gradients are fresh: two lr=0 steps on the same model give identical gradients
+(lambda m: (lambda g1, g2: all(abs(a - b) < 1e-12 for a, b in zip(g1, g2)) and any(g != 0 for g in g1))((train_step(m, XOR_X, XOR_Y, 0.0), [p.grad for p in m.parameters()])[1], (train_step(m, XOR_X, XOR_Y, 0.0), [p.grad for p in m.parameters()])[1]))(MLP(2, [4, 1]))
+--- check test | One small step lowers the loss
+(lambda m: (lambda before: mse_loss(m, XOR_X, XOR_Y).data < before)(train_step(m, XOR_X, XOR_Y, 0.01)))(MLP(2, [4, 1], seed=3))
+--- check test | train returns floats, one per step
+(lambda losses: len(losses) == 7 and all(type(l) is float for l in losses))(train(MLP(2, [4, 1]), XOR_X, XOR_Y, steps=7))
+--- check test | The loop learns XOR: the final loss is below 0.02
+(lambda losses: losses[-1] < 0.02 and losses[-1] < losses[0] / 10)(train(MLP(2, [4, 1]), XOR_X, XOR_Y))
+
++++ practice | Read the loss curve
+--- task
+Write \`diagnose(losses)\`, which reads a list of losses (one per step) and returns one word, checking these rules in this order:
+
+1. If there are fewer than 2 losses, raise \`ValueError\`: one number is not a curve.
+2. If any loss is not a finite number (\`nan\`, \`inf\` or \`-inf\`), return \`"diverged"\`. \`math.isfinite(x)\` tells you.
+3. If the last loss is higher than the first, return \`"rising"\`.
+4. If the loss fell by less than 1% of the first loss, return \`"flat"\`.
+5. Otherwise return \`"learning"\`.
+--- starter
+import math
+
+
+def diagnose(losses):
+    if losses[-1] < losses[0]:
+        return "learning"
+    return "rising"
+--- solution
+import math
+
+
+def diagnose(losses):
+    if len(losses) < 2:
+        raise ValueError("need at least two losses to read a curve")
+    if not all(math.isfinite(x) for x in losses):
+        return "diverged"
+    first, last = losses[0], losses[-1]
+    if last > first:
+        return "rising"
+    if first - last < 0.01 * abs(first):
+        return "flat"
+    return "learning"
+--- hint
+Check the rules in the order given. The \`nan\` check must come before any comparison, because every comparison with \`nan\` is \`False\`.
+--- hint
+"Fell by less than 1% of the first loss" is \`first - last < 0.01 * abs(first)\`.
+--- check test | A falling curve is learning
+diagnose([2.3, 1.9, 1.2, 0.8]) == "learning"
+--- check test | A curve that ends higher is rising
+diagnose([0.7, 0.9, 1.4, 2.0]) == "rising"
+--- check test | A tiny fall is flat
+diagnose([0.6931, 0.6930, 0.6929]) == "flat" and diagnose([1.0, 1.0]) == "flat"
+--- check test | nan or inf anywhere is diverged, even if the curve fell first
+diagnose([2.0, 1.0, float("nan"), 0.5]) == "diverged" and diagnose([2.0, float("inf")]) == "diverged" and diagnose([float("nan"), 1.0]) == "diverged"
+--- check test | Fewer than two losses raise ValueError
+raises(ValueError, lambda: diagnose([1.0])) and raises(ValueError, lambda: diagnose([]))
+
++++ practice | How big a step can you take?
+--- task
+For the bowl \`f(x) = c * x ** 2\`, whose derivative is \`2 * c * x\`, a steeper bowl (bigger \`c\`) tolerates only a smaller learning rate. Find out by experiment. Write \`largest_stable_lr(c, lrs, steps=100)\`:
+
+- For each learning rate in \`lrs\`, start at \`x = 1.0\` and run \`steps\` gradient-descent updates on \`f\`.
+- A learning rate is **stable** if the final \`abs(x)\` is smaller than \`1.0\`, where it started.
+- Return the largest stable learning rate, or \`None\` if none of them is stable.
+
+Run the simulation; do not use a formula for the answer.
+--- starter
+def largest_stable_lr(c, lrs, steps=100):
+    return max(lrs)
+--- solution
+def largest_stable_lr(c, lrs, steps=100):
+    best = None
+    for lr in lrs:
+        x = 1.0
+        for _ in range(steps):
+            x -= lr * 2 * c * x
+        if abs(x) < 1.0 and (best is None or lr > best):
+            best = lr
+    return best
+--- hint
+Run one small loop per learning rate, always starting again from \`x = 1.0\`.
+--- hint
+Keep the best stable learning rate seen so far, starting from \`None\`.
+--- check test | c = 1: up to just below 1.0 is stable
+largest_stable_lr(1.0, [0.1, 0.5, 0.9, 1.0, 1.5]) == 0.9
+--- check test | A bowl ten times steeper needs a learning rate ten times smaller
+largest_stable_lr(10.0, [0.001, 0.01, 0.05, 0.09, 0.1, 0.5]) == 0.09
+--- check test | The order of lrs does not matter
+largest_stable_lr(1.0, [1.5, 0.9, 0.1]) == 0.9
+--- check test | Nothing stable gives None
+largest_stable_lr(100.0, [0.5, 1.0]) is None
+
++++ practice | Clip the gradient
+--- task
+When the loss suddenly spikes, one bad batch can produce a gradient so large that a single step wrecks the model. Most training code guards against this with **gradient clipping**. Write \`clip_grad_norm(grads, max_norm)\`:
+
+- \`grads\` is a list of numbers: every parameter's gradient. Its **norm** (length) is the square root of the sum of their squares.
+- If the norm is above \`max_norm\`, multiply every gradient by \`max_norm / norm\`, so the new norm is exactly \`max_norm\` and the direction is unchanged. Otherwise leave them as they are.
+- Return the pair \`(new_grads, norm)\`: a new list, and the norm **before** clipping. Do not change \`grads\`.
+- If \`max_norm\` is not above 0, raise \`ValueError\`. An empty list returns \`([], 0.0)\`.
+--- starter
+import math
+
+
+def clip_grad_norm(grads, max_norm):
+    return [max(-max_norm, min(max_norm, g)) for g in grads], max_norm
+--- solution
+import math
+
+
+def clip_grad_norm(grads, max_norm):
+    if max_norm <= 0:
+        raise ValueError("max_norm must be positive")
+    norm = math.sqrt(sum(g * g for g in grads))
+    if norm > max_norm:
+        scale = max_norm / norm
+        return [g * scale for g in grads], norm
+    return list(grads), norm
+--- hint
+Work out the norm once. Clipping each number on its own, as the starter does, changes the direction of the gradient; scaling all of them by the same factor does not.
+--- hint
+Only scale when \`norm > max_norm\`. That also keeps an all-zero gradient away from a division by zero.
+--- check test | A big gradient is scaled down to the limit, keeping its direction
+(lambda r: all(abs(a - b) < 1e-12 for a, b in zip(r[0], [0.6, 0.8])) and r[1] == 5.0)(clip_grad_norm([3.0, 4.0], 1.0))
+--- check test | A small gradient is left alone
+clip_grad_norm([0.3, -0.4], 1.0) == ([0.3, -0.4], 0.5)
+--- check test | Exactly at the limit is left alone; zeros and empty lists are fine
+clip_grad_norm([3.0, 4.0], 5.0) == ([3.0, 4.0], 5.0) and clip_grad_norm([0.0, 0.0], 1.0) == ([0.0, 0.0], 0.0) and clip_grad_norm([], 1.0) == ([], 0.0)
+--- check test | The input list is not changed, and a new list comes back
+(lambda g: (lambda r: g == [6.0, 8.0] and r[0] is not g)(clip_grad_norm(g, 5.0)))([6.0, 8.0])
+--- check test | max_norm of 0 or below raises ValueError
+raises(ValueError, lambda: clip_grad_norm([1.0], 0.0)) and raises(ValueError, lambda: clip_grad_norm([1.0], -1.0))
+
++++ practice | Catch the spike early
+--- task
+A training run that will diverge often shows a sudden spike first. Write \`first_bad_step(losses, window=5, factor=3.0)\`, which returns the index of the first bad step, or \`None\` if there is none. Step \`i\` is bad when either:
+
+- its loss is not finite (\`nan\`, \`inf\` or \`-inf\`); or
+- there are at least \`window\` losses before it, and it is more than \`factor\` times the mean of the \`window\` losses just before it.
+
+Before \`window\` losses have been seen, only the first rule applies. An empty list returns \`None\`.
+--- starter
+def first_bad_step(losses, window=5, factor=3.0):
+    for i, loss in enumerate(losses):
+        if loss > factor * losses[0]:
+            return i
+    return None
+--- solution
+import math
+
+
+def first_bad_step(losses, window=5, factor=3.0):
+    for i, loss in enumerate(losses):
+        if not math.isfinite(loss):
+            return i
+        if i >= window:
+            recent = losses[i - window:i]
+            if loss > factor * sum(recent) / window:
+                return i
+    return None
+--- hint
+\`nan > anything\` is \`False\`, so check \`math.isfinite(loss)\` first, on every step.
+--- hint
+The \`window\` losses just before step \`i\` are the slice \`losses[i - window:i]\`.
+--- check test | A spike after a steady run
+first_bad_step([1.0, 0.9, 0.85, 0.8, 0.78, 0.76, 3.1, 0.7]) == 6
+--- check test | A slow rise is not a spike
+first_bad_step([1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0]) is None
+--- check test | nan is caught at once, even at the start
+first_bad_step([float("nan"), 1.0]) == 0 and first_bad_step([1.0, 0.9, float("inf")]) == 2
+--- check test | A big early value is not judged before a full window
+first_bad_step([0.1, 5.0, 4.0, 3.0, 2.0, 1.5]) is None and first_bad_step([0.1, 0.1, 0.5], window=2, factor=3.0) == 2
+--- check test | An empty list gives None
+first_bad_step([]) is None
+
++++ practice | Fix the loss that never moves
+--- task
+This training loop fits the slope \`w\` of the line \`y = w * x\`. It runs without errors and records the loss, but the loss is perfectly flat: \`w\` never moves from 0.
+
+Find the bug in \`fit_slope\` and fix it. Keep recording each step's loss (before its update) as a float.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def fit_slope(xs, ys, lr=0.1, steps=100):
+    w = Value(0.0)
+    losses = []
+    for _ in range(steps):
+        loss = sum((w * x - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+        loss.backward()
+        w.grad = 0.0
+        w.data -= lr * w.grad
+        losses.append(loss.data)
+    return w.data, losses
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+def fit_slope(xs, ys, lr=0.1, steps=100):
+    w = Value(0.0)
+    losses = []
+    for _ in range(steps):
+        loss = sum((w * x - y) ** 2 for x, y in zip(xs, ys)) / len(xs)
+        w.grad = 0.0
+        loss.backward()
+        w.data -= lr * w.grad
+        losses.append(loss.data)
+    return w.data, losses
+--- hint
+Print \`w.grad\` just before the update. What value does it always have?
+--- hint
+Zeroing must happen before \`backward()\` fills the gradient, never between \`backward()\` and the step that uses it.
+--- check test | It recovers the slope 2
+(lambda r: abs(r[0] - 2.0) < 1e-6)(fit_slope([1.0, 2.0, -1.0], [2.0, 4.0, -2.0]))
+--- check test | The loss falls, and is recorded as floats
+(lambda r: r[1][-1] < r[1][0] / 100 and all(type(v) is float for v in r[1]))(fit_slope([1.0, 2.0, -1.0], [2.0, 4.0, -2.0]))
+--- check test | One step by hand: from 0, the gradient is -2 * mean(x * y)
+(lambda r: abs(r[0] - 0.1 * 2 * 3.0) < 1e-12)(fit_slope([1.0, 2.0], [1.0, 2.5], steps=1))
+
++++ practice | Gradient accumulation without the classic bug
+--- task
+When a batch is too big for memory, engineers split it into **micro-batches**, compute each one's gradient, and add them up before taking one step. Done right, the result equals the gradient of the whole batch.
+
+The starter gives you \`mse_grads(w, b, xs, ys)\`, the **mean** gradient of the MSE over the examples it is given. Write \`accumulated_grads(w, b, xs, ys, micro)\`:
+
+- Split the examples, in order, into consecutive micro-batches of \`micro\` examples. The last one may be smaller.
+- Compute \`mse_grads\` on each micro-batch, and add up the results so that the total equals \`mse_grads\` on all the data.
+- Return \`(dw, db)\`. If \`micro\` is below 1, raise \`ValueError\`.
+
+The classic bug is to average the micro-batch gradients equally. That is only right when every micro-batch has the same size.
+--- starter
+def mse_grads(w, b, xs, ys):
+    n = len(xs)
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    return sum(2 * e * x for e, x in zip(errors, xs)) / n, sum(2 * e for e in errors) / n
+
+
+def accumulated_grads(w, b, xs, ys, micro):
+    parts = [mse_grads(w, b, xs[i:i + micro], ys[i:i + micro]) for i in range(0, len(xs), micro)]
+    return sum(p[0] for p in parts) / len(parts), sum(p[1] for p in parts) / len(parts)
+--- solution
+def mse_grads(w, b, xs, ys):
+    n = len(xs)
+    errors = [w * x + b - y for x, y in zip(xs, ys)]
+    return sum(2 * e * x for e, x in zip(errors, xs)) / n, sum(2 * e for e in errors) / n
+
+
+def accumulated_grads(w, b, xs, ys, micro):
+    if micro < 1:
+        raise ValueError("micro must be at least 1")
+    n = len(xs)
+    dw, db = 0.0, 0.0
+    for i in range(0, n, micro):
+        chunk_x, chunk_y = xs[i:i + micro], ys[i:i + micro]
+        gw, gb = mse_grads(w, b, chunk_x, chunk_y)
+        share = len(chunk_x) / n
+        dw += gw * share
+        db += gb * share
+    return dw, db
+--- hint
+Each micro-batch's mean gradient stands for \`len(chunk)\` examples out of \`n\`. Weight it by \`len(chunk) / n\` before adding.
+--- hint
+With micro-batches of 3, 3 and 1 examples, the equal average gives the last single example as much say as three examples together.
+--- check test | Equal micro-batches match the full batch
+(lambda xs, ys: (lambda a, f: abs(a[0] - f[0]) < 1e-12 and abs(a[1] - f[1]) < 1e-12)(accumulated_grads(0.5, -1.0, xs, ys, 2), mse_grads(0.5, -1.0, xs, ys)))([1.0, 2.0, -1.0, 0.5], [3.0, 1.0, 0.0, 2.0])
+--- check test | A short last micro-batch still matches the full batch
+(lambda xs, ys: (lambda a, f: abs(a[0] - f[0]) < 1e-12 and abs(a[1] - f[1]) < 1e-12)(accumulated_grads(0.5, -1.0, xs, ys, 3), mse_grads(0.5, -1.0, xs, ys)))([1.0, 2.0, -1.0, 0.5, 4.0, -2.0, 3.0], [3.0, 1.0, 0.0, 2.0, -1.0, 5.0, 0.5])
+--- check test | One example at a time, or all at once
+(lambda xs, ys: all((lambda a, f: abs(a[0] - f[0]) < 1e-12 and abs(a[1] - f[1]) < 1e-12)(accumulated_grads(1.5, 0.2, xs, ys, m), mse_grads(1.5, 0.2, xs, ys)) for m in (1, 5, 50)))([0.1, -0.3, 2.0, 1.0, -1.5], [1.0, 0.0, 2.0, -1.0, 0.5])
+--- check test | micro below 1 raises ValueError
+raises(ValueError, lambda: accumulated_grads(0.0, 0.0, [1.0], [1.0], 0))
+
+=== ai-09 | Design: optimizers behind one interface
+--- teach
+So far the update rule \`p.data -= lr * p.grad\` has lived inside the training loop. Real training code keeps three things apart: the **model** (what computes), the **loss** (what "wrong" means) and the **optimizer** (how parameters move). Then you can swap the optimizer without touching the loop, which is how it looks in every framework:
+
+\`\`\`text
+optimizer = torch.optim.AdamW(model.parameters(), lr=3e-4)
+for batch in data:
+    loss = loss_fn(model(batch.x), batch.y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+\`\`\`
+
+This is a **design** lesson: a **refactor** (same behaviour, better shape; the checks keep working while the structure changes, as in the intermediate course's first design lesson). The starter's \`train\` handles three optimizers with an \`if\` chain on a string and a heap of unrelated state variables. It works, but every new optimizer means editing the loop. The fix is the strategy pattern from py3-10: one small interface, \`zero_grad()\` and \`step()\`, and a class per strategy that keeps its **own state**.
+
+**SGD with momentum.** Plain gradient descent zigzags across narrow valleys. Momentum keeps a running **velocity** per parameter, so steps in a consistent direction build up speed and zigzags cancel:
+
+\`\`\`text
+velocity = momentum * velocity + grad
+p.data  -= lr * velocity
+\`\`\`
+
+With \`momentum = 0\` this is plain SGD (the form PyTorch's \`SGD\` uses).
+
+**Adam** gives every parameter its own step size. It keeps two running averages per parameter: \`m\` of the gradient (like momentum) and \`v\` of the squared gradient (how large gradients usually are for this parameter). Dividing by \`sqrt(v)\` makes steps similar in size whether a parameter's gradients are tiny or huge. Both averages start at 0, which biases them towards 0 early on, so Adam corrects them using the step count \`t\` (starting at 1):
+
+\`\`\`text
+m = beta1 * m + (1 - beta1) * grad
+v = beta2 * v + (1 - beta2) * grad ** 2
+m_hat = m / (1 - beta1 ** t)
+v_hat = v / (1 - beta2 ** t)
+p.data -= lr * m_hat / (sqrt(v_hat) + eps)
+\`\`\`
+
+On the very first step \`m_hat\` is the gradient and \`sqrt(v_hat)\` is its size, so every parameter moves by about \`lr\`, whatever its gradient's scale.
+
+A small, runnable version of the idea, with a stand-in for a parameter:
+
+\`\`\`python
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+class SGD:
+    def __init__(self, params, lr):
+        self.params, self.lr = list(params), lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for p in self.params:
+            p.data -= self.lr * p.grad
+
+x = Param(0.0)
+opt = SGD([x], lr=0.1)
+for _ in range(50):
+    opt.zero_grad()
+    x.grad = 2 * (x.data - 3)      # the gradient of (x - 3) ** 2
+    opt.step()
+round(x.data, 4)                    # 3.0
+\`\`\`
+
+**Design notes.** Store per-parameter state in lists **aligned with** \`self.params\` (index \`i\` is parameter \`i\`), created once in \`__init__\`. Each optimizer instance owns its state, so two models trained side by side never share it. Put what every optimizer shares (\`params\`, \`lr\`, \`zero_grad\`) in a base class; each subclass writes only its own \`step\`.
+
+**At scale.** Large language models are trained with **AdamW** (Adam plus weight decay, which gently shrinks weights) and a **learning-rate schedule**: a short warm-up, then a slow decay. Adam's two extra numbers per parameter are a real cost: for a model with billions of parameters, optimizer state is a large share of GPU memory, which is one reason labs shard it across many GPUs.
+--- task
+Refactor the starter into:
+
+- A base class \`Optimizer(params, lr)\` that stores \`params\` (as a list) and \`lr\`, has \`zero_grad()\` (sets every parameter's \`grad\` to \`0.0\`), and a \`step()\` that raises \`NotImplementedError\`.
+- \`SGD(params, lr=0.1, momentum=0.0)\`, a subclass of \`Optimizer\`, whose \`step()\` applies the momentum rule above.
+- \`Adam(params, lr=0.01, betas=(0.9, 0.999), eps=1e-8)\`, a subclass of \`Optimizer\`, whose \`step()\` applies the Adam rule above with its own step counter.
+- \`train(model, xs, ys, optimizer, steps=200)\`: each step computes \`mse_loss\`, calls \`optimizer.zero_grad()\`, \`loss.backward()\`, \`optimizer.step()\`, and records \`loss.data\`. It returns the list of losses and knows nothing about which optimizer it has (no branching on a method name).
+--- starter
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+def train(model, xs, ys, method="sgd", lr=0.1, steps=200, momentum=0.0, beta1=0.9, beta2=0.999, eps=1e-8):
+    params = model.parameters()
+    vel = [0.0] * len(params)
+    m = [0.0] * len(params)
+    v = [0.0] * len(params)
+    losses = []
+    for t in range(1, steps + 1):
+        loss = mse_loss(model, xs, ys)
+        for p in params:
+            p.grad = 0.0
+        loss.backward()
+        for i, p in enumerate(params):
+            if method == "sgd":
+                vel[i] = momentum * vel[i] + p.grad
+                p.data -= lr * vel[i]
+            elif method == "adam":
+                m[i] = beta1 * m[i] + (1 - beta1) * p.grad
+                v[i] = beta2 * v[i] + (1 - beta2) * p.grad ** 2
+                m_hat = m[i] / (1 - beta1 ** t)
+                v_hat = v[i] / (1 - beta2 ** t)
+                p.data -= lr * m_hat / (math.sqrt(v_hat) + eps)
+            else:
+                raise ValueError(f"unknown method: {method}")
+        losses.append(loss.data)
+    return losses
+--- solution
+import math
+import random
+
+XOR_X = [[0, 0], [0, 1], [1, 0], [1, 1]]
+XOR_Y = [0, 1, 1, 0]
+
+
+# Your autograd engine from lesson 5.
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+
+class Neuron:
+    def __init__(self, n_in, rng, nonlin=True):
+        self.w = [Value(rng.uniform(-1, 1)) for _ in range(n_in)]
+        self.b = Value(0.0)
+        self.nonlin = nonlin
+
+    def __call__(self, x):
+        act = sum((wi * xi for wi, xi in zip(self.w, x)), self.b)
+        return act.tanh() if self.nonlin else act
+
+    def parameters(self):
+        return self.w + [self.b]
+
+
+class Layer:
+    def __init__(self, n_in, n_out, rng, nonlin=True):
+        self.neurons = [Neuron(n_in, rng, nonlin) for _ in range(n_out)]
+
+    def __call__(self, x):
+        return [n(x) for n in self.neurons]
+
+    def parameters(self):
+        return [p for n in self.neurons for p in n.parameters()]
+
+
+class MLP:
+    def __init__(self, n_in, sizes, seed=0):
+        rng = random.Random(seed)
+        dims = [n_in] + list(sizes)
+        self.layers = [
+            Layer(dims[i], dims[i + 1], rng, nonlin=i < len(sizes) - 1)
+            for i in range(len(sizes))
+        ]
+
+    def __call__(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
+
+
+def mse_loss(model, xs, ys):
+    return sum((model(x)[0] - y) ** 2 for x, y in zip(xs, ys)) / len(ys)
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class SGD(Optimizer):
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        super().__init__(params, lr)
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        super().__init__(params, lr)
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+def train(model, xs, ys, optimizer, steps=200):
+    losses = []
+    for _ in range(steps):
+        loss = mse_loss(model, xs, ys)
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        losses.append(loss.data)
+    return losses
+--- hint
+Start with the base class: \`__init__\` keeps \`list(params)\` and \`lr\`, \`zero_grad\` loops over \`self.params\`, and \`step\` just raises \`NotImplementedError\`.
+--- hint
+Each subclass calls \`super().__init__(params, lr)\` and then creates its own state lists, one entry per parameter: \`self.velocity\` for SGD, \`self.m\`, \`self.v\` and a counter \`self.t = 0\` for Adam.
+--- hint
+In \`Adam.step\`, add 1 to \`self.t\` once per call (not once per parameter), then update \`m[i]\`, \`v[i]\` and the parameter for each \`i\`, exactly as the old \`adam\` branch did.
+--- check test | Plain SGD moves a parameter by lr * grad
+(lambda p: (setattr(p, "grad", 2.0), SGD([p], lr=0.1).step(), abs(p.data - 0.8) < 1e-12)[2])(Value(1.0))
+--- check test | SGD with momentum builds up velocity over two steps
+(lambda p: (lambda o: (setattr(p, "grad", 2.0), o.step(), o.step(), abs(p.data - 0.42) < 1e-12)[3])(SGD([p], lr=0.1, momentum=0.9)))(Value(1.0))
+--- check test | zero_grad clears every parameter's gradient
+(lambda ps: (lambda o: ([setattr(p, "grad", 5.0) for p in ps], o.zero_grad(), all(p.grad == 0.0 for p in ps))[2])(Adam(ps)))([Value(1.0), Value(2.0), Value(3.0)])
+--- check test | Adam's first step moves every parameter by about lr, whatever the gradient's size
+(lambda a, b: (lambda o: (setattr(a, "grad", 2.0), setattr(b, "grad", -0.001), o.step(), abs(a.data - 0.99) < 1e-6 and abs(b.data - 1.01) < 1e-4)[3])(Adam([a, b])))(Value(1.0), Value(1.0))
+--- check test | Adam's second step uses bias correction with t = 2
+(lambda p: (lambda o: (setattr(p, "grad", 2.0), o.step(), setattr(p, "grad", -1.0), o.step(), abs(p.data - 0.9873366296702432) < 1e-9)[4])(Adam([p], lr=0.01)))(Value(1.0))
+--- check test | Each optimizer keeps its own state
+(lambda a, b: (lambda o1, o2: (setattr(a, "grad", 2.0), o1.step(), o1.step(), setattr(b, "grad", 2.0), o2.step(), abs(b.data - 0.99) < 1e-6)[5])(Adam([a]), Adam([b])))(Value(1.0), Value(1.0))
+--- check test | SGD and Adam share the Optimizer base, whose own step is not implemented
+issubclass(SGD, Optimizer) and issubclass(Adam, Optimizer) and raises(NotImplementedError, lambda: Optimizer([Value(1.0)], 0.1).step())
+--- check test | train calls zero_grad then step, once each per step, on any optimizer
+(lambda o: (train(MLP(2, [4, 1]), XOR_X, XOR_Y, o, steps=3), o.calls)[1] == ["zero_grad", "step"] * 3)(type("Recorder", (), {"calls": [], "zero_grad": lambda self: self.calls.append("zero_grad"), "step": lambda self: self.calls.append("step")})())
+--- check test | Plain SGD learns XOR (loss below 0.02)
+(lambda m: train(m, XOR_X, XOR_Y, SGD(m.parameters(), lr=0.2))[-1] < 0.02)(MLP(2, [4, 1]))
+--- check test | SGD with momentum learns XOR faster: below 0.02 within 100 steps
+(lambda m: train(m, XOR_X, XOR_Y, SGD(m.parameters(), lr=0.05, momentum=0.9), steps=100)[-1] < 0.02)(MLP(2, [4, 1]))
+--- check test | Adam learns XOR (loss below 0.02)
+(lambda m: train(m, XOR_X, XOR_Y, Adam(m.parameters(), lr=0.05), steps=150)[-1] < 0.02)(MLP(2, [4, 1]))
+--- check source absent | train no longer branches on a method name
+method\\s*==
+--- check source | SGD is a subclass of Optimizer
+class\\s+SGD\\s*\\(\\s*Optimizer\\s*\\)
+
++++ practice | A running average, with and without correction
+--- task
+Momentum and Adam both keep an **exponential moving average**: a running average where recent values count more. Write \`ema(values, beta, correct=False)\`:
+
+- Start with \`m = 0.0\`. For each value \`v\`, in order, set \`m = beta * m + (1 - beta) * v\`.
+- Without correction, record \`m\` after each value.
+- With \`correct=True\`, record \`m / (1 - beta ** t)\` instead, where \`t\` counts the values seen so far, starting at 1. This is Adam's bias correction: it undoes the pull towards the starting 0.
+
+Return the list of recorded numbers, one per value. An empty list gives \`[]\`.
+--- starter
+def ema(values, beta, correct=False):
+    return [sum(values[:i + 1]) / (i + 1) for i in range(len(values))]
+--- solution
+def ema(values, beta, correct=False):
+    m = 0.0
+    out = []
+    for t, v in enumerate(values, start=1):
+        m = beta * m + (1 - beta) * v
+        out.append(m / (1 - beta ** t) if correct else m)
+    return out
+--- hint
+\`enumerate(values, start=1)\` gives you the count \`t\` alongside each value.
+--- hint
+Keep updating the same \`m\`; only the number you record changes with \`correct\`.
+--- check test | Without correction, a constant 10 starts far too low
+(lambda r: abs(r[0] - 1.0) < 1e-12 and abs(r[1] - 1.9) < 1e-12 and r[-1] < 10)(ema([10.0] * 5, 0.9))
+--- check test | With correction, a constant 10 is 10 from the very first step
+all(abs(m - 10.0) < 1e-9 for m in ema([10.0] * 5, 0.9, correct=True))
+--- check test | It follows a change, slowly
+(lambda r: abs(r[2] - (0.9 * (0.9 * 0.1 * 1.0 + 0.1 * 1.0) + 0.1 * 5.0)) < 1e-12)(ema([1.0, 1.0, 5.0], 0.9))
+--- check test | beta = 0 keeps only the newest value; an empty list gives []
+ema([3.0, -1.0, 4.0], 0.0) == [3.0, -1.0, 4.0] and ema([], 0.9) == [] and ema([], 0.9, correct=True) == []
+
++++ practice | A third optimizer: RMSprop
+--- task
+**RMSprop** is Adam without the momentum part: it divides each step by a running average of the squared gradient, so every parameter gets its own step size. The starter has a \`Param\` (a stand-in for a \`Value\`) and the \`Optimizer\` base class from the lesson. Write \`RMSprop(params, lr=0.01, alpha=0.99, eps=1e-8)\`, a subclass of \`Optimizer\`, whose \`step()\` does, for each parameter \`i\`:
+
+\`\`\`text
+v[i] = alpha * v[i] + (1 - alpha) * grad ** 2
+p.data -= lr * grad / (sqrt(v[i]) + eps)
+\`\`\`
+
+Each \`v[i]\` starts at \`0.0\`, and each optimizer keeps its own list.
+--- starter
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class RMSprop(Optimizer):
+    pass
+--- solution
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class RMSprop(Optimizer):
+    def __init__(self, params, lr=0.01, alpha=0.99, eps=1e-8):
+        super().__init__(params, lr)
+        self.alpha = alpha
+        self.eps = eps
+        self.v = [0.0] * len(self.params)
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.v[i] = self.alpha * self.v[i] + (1 - self.alpha) * p.grad ** 2
+            p.data -= self.lr * p.grad / (math.sqrt(self.v[i]) + self.eps)
+--- hint
+Call \`super().__init__(params, lr)\` first, then make \`self.v\`, one \`0.0\` per parameter.
+--- hint
+In \`step\`, update \`self.v[i]\` before you use it to scale the parameter's move.
+--- check test | One step: the move is lr / sqrt(1 - alpha), whatever the gradient's size
+(lambda a, b: (lambda o: (setattr(a, "grad", 2.0), setattr(b, "grad", -0.002), o.step(), abs(a.data - (1 - 0.01 / 0.1)) < 1e-6 and abs(b.data - (1 + 0.01 / 0.1)) < 1e-4)[3])(RMSprop([a, b])))(Param(1.0), Param(1.0))
+--- check test | Two steps by hand
+(lambda p: (lambda o: (setattr(p, "grad", 1.0), o.step(), setattr(p, "grad", 3.0), o.step(), abs(p.data - (1.0 - 0.1 / (0.5 ** 0.5) - 0.1 * 3.0 / ((0.5 * 0.5 + 0.5 * 9.0) ** 0.5))) < 1e-7)[4])(RMSprop([p], lr=0.1, alpha=0.5)))(Param(1.0))
+--- check test | Each optimizer keeps its own state
+(lambda a, b: (lambda o1, o2: (setattr(a, "grad", 1.0), o1.step(), o1.step(), setattr(b, "grad", 1.0), o2.step(), abs(b.data - (1 - 0.01 / 0.1)) < 1e-6)[5])(RMSprop([a]), RMSprop([b])))(Param(1.0), Param(1.0))
+--- check test | It is an Optimizer, and it minimises (x - 3)²
+issubclass(RMSprop, Optimizer) and (lambda x: (lambda o: ([(o.zero_grad(), setattr(x, "grad", 2 * (x.data - 3)), o.step()) for _ in range(500)], abs(x.data - 3) < 0.05)[1])(RMSprop([x], lr=0.01)))(Param(0.0))
+
++++ practice | Warm up, then decay
+--- task
+Large models are trained with a **learning-rate schedule**: a short warm-up, then a slow decay. Write two things.
+
+1. \`lr_at(step, base_lr, warmup, total)\`, for steps counted from 1:
+   - while \`step <= warmup\`: \`base_lr * step / warmup\` (a straight climb);
+   - after that, up to \`total\`: \`base_lr * 0.5 * (1 + cos(pi * (step - warmup) / (total - warmup)))\`, a **cosine decay** from \`base_lr\` down to 0;
+   - after \`total\`: \`0.0\`.
+2. A class \`Scheduled(optimizer, schedule)\` that wraps any optimizer with the lesson's interface. \`schedule\` is a function from the step number to a learning rate. \`zero_grad()\` passes straight through. \`step()\` counts its calls from 1, sets \`optimizer.lr\` to \`schedule(count)\`, then calls \`optimizer.step()\`.
+
+The starter has \`Param\` and the lesson's \`SGD\`.
+--- starter
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class SGD:
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        self.params = list(params)
+        self.lr = lr
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+def lr_at(step, base_lr, warmup, total):
+    return base_lr
+
+
+class Scheduled:
+    def __init__(self, optimizer, schedule):
+        self.optimizer = optimizer
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
+
+    def step(self):
+        self.optimizer.step()
+--- solution
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class SGD:
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        self.params = list(params)
+        self.lr = lr
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+def lr_at(step, base_lr, warmup, total):
+    if step <= warmup:
+        return base_lr * step / warmup
+    if step > total:
+        return 0.0
+    progress = (step - warmup) / (total - warmup)
+    return base_lr * 0.5 * (1 + math.cos(math.pi * progress))
+
+
+class Scheduled:
+    def __init__(self, optimizer, schedule):
+        self.optimizer = optimizer
+        self.schedule = schedule
+        self.count = 0
+
+    def zero_grad(self):
+        self.optimizer.zero_grad()
+
+    def step(self):
+        self.count += 1
+        self.optimizer.lr = self.schedule(self.count)
+        self.optimizer.step()
+--- hint
+In \`lr_at\`, handle the three ranges in order: warm-up, after the end, and the cosine part in between.
+--- hint
+\`Scheduled\` holds the optimizer instead of inheriting from it, so it works with any optimizer. It only needs a counter and the schedule.
+--- check test | The warm-up climbs in a straight line
+abs(lr_at(1, 0.1, 4, 20) - 0.025) < 1e-12 and abs(lr_at(4, 0.1, 4, 20) - 0.1) < 1e-12
+--- check test | The cosine decay: half way down at the middle, 0 at the end, 0 after
+abs(lr_at(12, 0.1, 4, 20) - 0.05) < 1e-12 and abs(lr_at(20, 0.1, 4, 20)) < 1e-12 and lr_at(25, 0.1, 4, 20) == 0.0
+--- check test | Scheduled sets the learning rate before each step
+(lambda p: (lambda o: ([(o.zero_grad(), setattr(p, "grad", 1.0), o.step()) for _ in range(3)], abs(p.data - (0.0 - 0.1 - 0.2 - 0.3)) < 1e-12 and abs(o.optimizer.lr - 0.3) < 1e-12)[1])(Scheduled(SGD([p], lr=99.0), lambda t: 0.1 * t)))(Param(0.0))
+--- check test | zero_grad passes through
+(lambda p: (lambda o: (setattr(p, "grad", 5.0), o.zero_grad(), p.grad)[2] == 0.0)(Scheduled(SGD([p]), lambda t: 0.1)))(Param(1.0))
+--- check test | With lr_at as the schedule, a training run follows it
+(lambda p: (lambda o: ([(o.zero_grad(), setattr(p, "grad", 1.0), o.step()) for _ in range(10)], abs(-p.data - sum(lr_at(t, 0.2, 2, 10) for t in range(1, 11))) < 1e-12)[1])(Scheduled(SGD([p]), lambda t: lr_at(t, 0.2, 2, 10))))(Param(0.0))
+
++++ practice | An optimizer that copes with awkward parameter lists
+--- task
+Real parameter lists are messy, and PyTorch's optimizers handle three awkward cases. Write a class \`SGD(params, lr=0.1)\` with \`zero_grad()\` and \`step()\` (plain gradient descent, no momentum) that copes with them:
+
+- \`params\` may be any iterable, including a generator, which can only be read once.
+- The same parameter object may be listed twice (for example, a weight shared by two layers). Keep it **once**, in the order first seen, so it is not stepped twice. Compare objects by identity (\`is\`), not by value: two different parameters may hold the same number.
+- A parameter whose \`grad\` is \`None\` has not been used yet: \`step()\` skips it.
+- An empty parameter list raises \`ValueError\`, as PyTorch does.
+
+\`zero_grad()\` sets every parameter's \`grad\` to \`0.0\`. The starter has a \`Param\` class.
+--- starter
+class Param:
+    def __init__(self, data, grad=0.0):
+        self.data, self.grad = data, grad
+
+
+class SGD:
+    def __init__(self, params, lr=0.1):
+        self.params = params
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for p in self.params:
+            p.data -= self.lr * p.grad
+--- solution
+class Param:
+    def __init__(self, data, grad=0.0):
+        self.data, self.grad = data, grad
+
+
+class SGD:
+    def __init__(self, params, lr=0.1):
+        unique = []
+        seen = set()
+        for p in params:
+            if id(p) not in seen:
+                seen.add(id(p))
+                unique.append(p)
+        if not unique:
+            raise ValueError("optimizer got an empty parameter list")
+        self.params = unique
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for p in self.params:
+            if p.grad is not None:
+                p.data -= self.lr * p.grad
+--- hint
+Read \`params\` once, into a list, in \`__init__\`. Keep a set of \`id(p)\` values you have seen, so a repeated object is skipped, while two different objects holding equal numbers are both kept.
+--- hint
+In \`step\`, test \`p.grad is not None\` before using it.
+--- check test | A generator works, and is stepped every time
+(lambda ps: (lambda o: ([setattr(p, "grad", 1.0) for p in ps], o.step(), o.step(), abs(ps[0].data - 0.8) < 1e-12 and abs(ps[1].data - 1.8) < 1e-12)[3])(SGD(p for p in ps)))([Param(1.0), Param(2.0)])
+--- check test | A parameter listed twice is stepped once
+(lambda p: (lambda o: (setattr(p, "grad", 1.0), o.step(), abs(p.data - 0.9) < 1e-12 and len(o.params) == 1)[2])(SGD([p, p])))(Param(1.0))
+--- check test | Two different parameters with the same number are both kept
+len(SGD([Param(1.0), Param(1.0)]).params) == 2
+--- check test | A parameter with no gradient yet is skipped
+(lambda a, b: (lambda o: (setattr(a, "grad", 2.0), o.step(), abs(a.data - 0.8) < 1e-12 and b.data == 5.0)[2])(SGD([a, b])))(Param(1.0), Param(5.0, grad=None))
+--- check test | An empty list raises ValueError
+raises(ValueError, lambda: SGD([])) and raises(ValueError, lambda: SGD(p for p in []))
+
++++ practice | Fix Adam's clock
+--- task
+This \`Adam\` works perfectly when it has a single parameter. With several parameters, its first step moves only the first parameter by about \`lr\`; the others move by different amounts, and later steps are off too.
+
+Find the bug and fix it. The update formulas themselves are right.
+--- starter
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Adam:
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        self.params = list(params)
+        self.lr = lr
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.t += 1
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+--- solution
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Adam:
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        self.params = list(params)
+        self.lr = lr
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+--- hint
+\`t\` is the number of steps taken so far. Count how many times it goes up during a single call of \`step()\` with three parameters.
+--- hint
+Move the counter up by one per call of \`step()\`, before the loop over the parameters.
+--- check test | The first step moves every parameter by about lr
+(lambda ps: (lambda o: ([setattr(p, "grad", g) for p, g in zip(ps, [2.0, -1.0, 0.5])], o.step(), all(abs(abs(p.data - 1.0) - 0.01) < 1e-6 for p in ps))[2])(Adam(ps)))([Param(1.0), Param(1.0), Param(1.0)])
+--- check test | After two steps, every parameter matches a one-parameter Adam
+(lambda gs: (lambda ps, singles: (lambda o, os_: ([setattr(p, "grad", g) for p, g in zip(ps, gs)], [setattr(q, "grad", g) for q, g in zip(singles, gs)], o.step(), [so.step() for so in os_], [setattr(p, "grad", -g / 2) for p, g in zip(ps, gs)], [setattr(q, "grad", -g / 2) for q, g in zip(singles, gs)], o.step(), [so.step() for so in os_], all(abs(p.data - q.data) < 1e-12 for p, q in zip(ps, singles)))[8])(Adam(ps), [Adam([q]) for q in singles]))([Param(1.0) for _ in gs], [Param(1.0) for _ in gs]))([2.0, -1.0, 0.5])
+--- check test | The step counter goes up once per step
+(lambda o: (o.step(), o.step(), o.t)[2] == 2)(Adam([Param(1.0), Param(2.0), Param(3.0)]))
+
++++ practice | Race the optimizers down a narrow valley
+--- task
+The valley \`f(x, y) = x ** 2 + 25 * y ** 2\` is 25 times steeper across \`y\` than along \`x\`, the kind of shape where plain gradient descent zigzags. Its gradient is \`(2 * x, 50 * y)\`.
+
+Write \`steps_to_converge(make_opt, tol=1e-6, max_steps=5000)\`:
+
+1. Make two \`Param\`s, \`x\` and \`y\`, both starting at \`1.0\`, and an optimizer with \`make_opt([x, y])\`.
+2. Repeat: call \`zero_grad()\`, set \`x.grad\` and \`y.grad\` from the formula above, call \`step()\`. Count the steps.
+3. As soon as \`f(x, y)\` is below \`tol\` after a step, return the number of steps taken.
+4. If it never gets there within \`max_steps\` steps, return \`None\`.
+
+The starter has \`Param\` and the lesson's \`SGD\` and \`Adam\`. The checks race them.
+--- starter
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class SGD(Optimizer):
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        super().__init__(params, lr)
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        super().__init__(params, lr)
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+def steps_to_converge(make_opt, tol=1e-6, max_steps=5000):
+    return max_steps
+--- solution
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Optimizer:
+    def __init__(self, params, lr):
+        self.params = list(params)
+        self.lr = lr
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        raise NotImplementedError
+
+
+class SGD(Optimizer):
+    def __init__(self, params, lr=0.1, momentum=0.0):
+        super().__init__(params, lr)
+        self.momentum = momentum
+        self.velocity = [0.0] * len(self.params)
+
+    def step(self):
+        for i, p in enumerate(self.params):
+            self.velocity[i] = self.momentum * self.velocity[i] + p.grad
+            p.data -= self.lr * self.velocity[i]
+
+
+class Adam(Optimizer):
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        super().__init__(params, lr)
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+def steps_to_converge(make_opt, tol=1e-6, max_steps=5000):
+    x, y = Param(1.0), Param(1.0)
+    opt = make_opt([x, y])
+    for step in range(1, max_steps + 1):
+        opt.zero_grad()
+        x.grad = 2 * x.data
+        y.grad = 50 * y.data
+        opt.step()
+        if x.data ** 2 + 25 * y.data ** 2 < tol:
+            return step
+    return None
+--- hint
+The function only drives the loop; the optimizer does the moving. Count steps from 1 with \`range(1, max_steps + 1)\`.
+--- hint
+Test \`f\` after each \`step()\`, and return as soon as it is below \`tol\`. Falling out of the loop means it never got there.
+--- check test | Plain SGD with lr 0.03 takes 112 steps
+steps_to_converge(lambda ps: SGD(ps, lr=0.03)) == 112
+--- check test | Momentum gets there faster
+steps_to_converge(lambda ps: SGD(ps, lr=0.02, momentum=0.8)) < steps_to_converge(lambda ps: SGD(ps, lr=0.03))
+--- check test | Just above lr = 1/25 the steep direction diverges: None
+steps_to_converge(lambda ps: SGD(ps, lr=0.041)) is None
+--- check test | Adam gets there too
+(lambda n: n is not None and n < 200)(steps_to_converge(lambda ps: Adam(ps, lr=0.1)))
+--- check test | max_steps is respected
+steps_to_converge(lambda ps: SGD(ps, lr=0.03), max_steps=50) is None
+
++++ practice | What training costs in memory
+--- task
+During training, every parameter needs memory for its value, for its gradient, and for the optimizer's state: none for plain SGD, one number (the velocity) for SGD with momentum, and two numbers (\`m\` and \`v\`) for Adam.
+
+Write \`training_memory_gb(n_params, optimizer, bytes_per_number=4)\`:
+
+- \`optimizer\` is \`"sgd"\`, \`"momentum"\` or \`"adam"\`. Anything else raises \`ValueError\`.
+- Return the total in gigabytes, where one gigabyte is \`1e9\` bytes: \`n_params * bytes_per_number * (2 + extra)\`, with \`extra\` being 0, 1 or 2.
+
+So a 7-billion-parameter model trained with Adam in 32-bit floats (4 bytes each) needs \`7e9 * 4 * 4 / 1e9\`, which is 112 gigabytes, before counting anything the forward pass keeps.
+--- starter
+def training_memory_gb(n_params, optimizer, bytes_per_number=4):
+    return n_params * bytes_per_number / 1e9
+--- solution
+def training_memory_gb(n_params, optimizer, bytes_per_number=4):
+    extra = {"sgd": 0, "momentum": 1, "adam": 2}
+    if optimizer not in extra:
+        raise ValueError(f"unknown optimizer: {optimizer}")
+    return n_params * bytes_per_number * (2 + extra[optimizer]) / 1e9
+--- hint
+A small dict from the optimizer's name to its extra numbers per parameter does the lookup and the check at once.
+--- hint
+Value and gradient are always there, so the multiplier is \`2 + extra\`.
+--- check test | 7 billion parameters with Adam in 32-bit floats
+abs(training_memory_gb(7e9, "adam") - 112.0) < 1e-9
+--- check test | The same model with plain SGD, and with momentum
+abs(training_memory_gb(7e9, "sgd") - 56.0) < 1e-9 and abs(training_memory_gb(7e9, "momentum") - 84.0) < 1e-9
+--- check test | 16-bit numbers halve it
+abs(training_memory_gb(124e6, "adam", bytes_per_number=2) - 0.992) < 1e-9
+--- check test | An unknown optimizer raises ValueError
+raises(ValueError, lambda: training_memory_gb(1e6, "lion"))
+
+=== ai-10 | Debugging: softmax overflow and log-sum-exp
+--- teach
+A network that chooses between many classes (and a language model choosing the next token out of tens of thousands is exactly that) ends in **softmax**: it turns a list of scores (**logits**) into probabilities that are positive and add up to 1.
+
+\`\`\`python
+import math
+
+logits = [2.0, 1.0, 0.1]
+exps = [math.exp(z) for z in logits]
+[round(e / sum(exps), 3) for e in exps]      # [0.659, 0.242, 0.099]
+\`\`\`
+
+The loss is **cross-entropy**: minus the log of the probability given to the right class, \`-log(p[target])\`. It is the multi-class version of the binary cross-entropy from lesson 3, and its gradient with respect to the logits is the same beautiful shape:
+
+\`\`\`text
+dloss/dlogit[i] = p[i] - (1 if i == target else 0)
+\`\`\`
+
+Push down every wrong class by its probability, and push up the right one by how much probability it is missing.
+
+**Where it breaks.** The formula is right; the arithmetic is not. \`math.exp\` overflows for anything above about 709.78 (the largest float is about \`1.8e308\`), and underflows to exactly \`0.0\` below about -745. Logits in a real network drift into those ranges, especially early in training or with a learning rate a bit too high. Then:
+
+- a big logit makes \`math.exp\` raise \`OverflowError\` (NumPy or PyTorch return \`inf\`, and \`inf / inf\` is \`nan\`, which then silently spreads through every number it touches);
+- a right answer whose logit is far below the others gets probability exactly \`0.0\`, and \`log(0)\` raises \`ValueError\` (or gives \`-inf\` and then \`nan\` in a framework).
+
+In training this shows up as a loss that is fine for hours and then suddenly \`nan\`. With **mixed precision** (training in 16-bit floats to go faster, as every large model does), \`float16\` overflows at \`exp(11.1)\`, so this is not an edge case.
+
+**The fix: shift, then use logs.** Softmax does not change if you add the same number to every logit (the factor \`exp(c)\` cancels between top and bottom). So subtract the **maximum** first: the largest exponent is then \`exp(0) = 1\`, nothing overflows, and the sum is at least 1.
+
+For the loss, never take the log of a probability that may have rounded to 0. Work in logs throughout:
+
+\`\`\`text
+log p[i] = z[i] - log(sum_j exp(z[j]))
+\`\`\`
+
+and compute that last term, the **log-sum-exp**, with the same shift:
+
+\`\`\`python
+import math
+
+def logsumexp(xs):
+    m = max(xs)
+    return m + math.log(sum(math.exp(x - m) for x in xs))
+
+logsumexp([1000.0, 1000.0])       # 1000.6931..., where the naive version overflows
+\`\`\`
+
+So cross-entropy is simply \`logsumexp(logits) - logits[target]\`: no division, no \`log(0)\`, no overflow.
+
+**A sanity check worth memorising.** With all logits equal (a freshly initialised model knows nothing), cross-entropy is \`log(number of classes)\`. A character model with 27 symbols should start near \`log 27 ≈ 3.30\`. If your first loss is much bigger, the initialisation is too confident, and that is worth fixing before training for hours.
+
+**Debugging it.** Reproduce with the smallest failing input (\`[1000.0, 0.0]\`), read the traceback to the exact \`math.exp\` or \`math.log\` call, and fix the cause (the arithmetic) rather than the symptom. A \`try\`/\`except\` that returns \`0\` on overflow, or clamping logits into \`[-50, 50]\`, just hides wrong numbers.
+
+In PyTorch: \`F.softmax\`, \`F.log_softmax\`, \`torch.logsumexp\` and \`F.cross_entropy\` (which takes **logits**, not probabilities, for exactly this reason).
+--- task
+**Bug report:** "Training crashed after a few thousand steps with \`OverflowError: math range error\` inside \`softmax\` (the logits had reached about 800). Earlier, a run died with \`ValueError: math domain error\` in \`cross_entropy\` when the right answer's logit was about 800 below the rest."
+
+Fix the causes and complete the module:
+
+- \`softmax(logits)\`: stable for any finite logits.
+- \`logsumexp(xs)\`: stable, as above.
+- \`log_softmax(logits)\`: the list of \`log p[i]\`, computed without ever taking the log of a probability.
+- \`cross_entropy(logits, target)\`: \`-log p[target]\`, stable.
+- \`cross_entropy_grad(logits, target)\`: the list of derivatives of \`cross_entropy\` with respect to each logit.
+--- starter
+import math
+
+
+def softmax(logits):
+    exps = [math.exp(z) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def logsumexp(xs):
+    pass
+
+
+def log_softmax(logits):
+    pass
+
+
+def cross_entropy(logits, target):
+    return -math.log(softmax(logits)[target])
+
+
+def cross_entropy_grad(logits, target):
+    pass
+--- solution
+import math
+
+
+def softmax(logits):
+    m = max(logits)
+    exps = [math.exp(z - m) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def logsumexp(xs):
+    m = max(xs)
+    return m + math.log(sum(math.exp(x - m) for x in xs))
+
+
+def log_softmax(logits):
+    lse = logsumexp(logits)
+    return [z - lse for z in logits]
+
+
+def cross_entropy(logits, target):
+    return logsumexp(logits) - logits[target]
+
+
+def cross_entropy_grad(logits, target):
+    probs = softmax(logits)
+    return [p - (1.0 if i == target else 0.0) for i, p in enumerate(probs)]
+--- hint
+Reproduce it: \`softmax([800.0, 0.0])\` and \`cross_entropy([0.0, -800.0], 1)\`. Which call in each traceback fails?
+--- hint
+Subtract \`max(logits)\` from every logit before \`math.exp\`. For the loss, use \`logsumexp(logits) - logits[target]\` so you never take \`log\` of a probability.
+--- hint
+The gradient is \`softmax(logits)\` with 1 subtracted at the \`target\` position.
+--- check test | softmax gives the right probabilities, adding up to 1
+(lambda p: all(abs(a - b) < 1e-12 for a, b in zip(p, [0.09003057317038046, 0.24472847105479764, 0.6652409557748219])) and abs(sum(p) - 1) < 1e-12)(softmax([1.0, 2.0, 3.0]))
+--- check test | softmax survives huge logits: [1000, 1000] is [0.5, 0.5]
+softmax([1000.0, 1000.0]) == [0.5, 0.5] and abs(softmax([800.0, 0.0])[0] - 1.0) < 1e-12
+--- check test | softmax survives very negative logits too
+(lambda p: p[0] < 1e-300 and abs(p[1] - 1.0) < 1e-12)(softmax([-1000.0, 0.0]))
+--- check test | Adding a constant to every logit changes nothing
+all(abs(a - b) < 1e-12 for a, b in zip(softmax([1.0, 2.0, 3.0]), softmax([501.0, 502.0, 503.0])))
+--- check test | logsumexp is stable at both ends
+abs(logsumexp([1000.0, 1000.0]) - (1000 + __import__("math").log(2))) < 1e-9 and abs(logsumexp([-1000.0, -1000.0]) - (-1000 + __import__("math").log(2))) < 1e-9 and logsumexp([3.0]) == 3.0
+--- check test | log_softmax works where log(softmax) would hit log(0)
+(lambda ls: abs(ls[0]) < 1e-12 and abs(ls[1] + 800.0) < 1e-9)(log_softmax([0.0, -800.0]))
+--- check test | cross_entropy: known value, and a hopeless answer costs about 800 instead of crashing
+abs(cross_entropy([2.0, 1.0, 0.1], 0) - 0.41703001627783376) < 1e-12 and abs(cross_entropy([0.0, -800.0], 1) - 800.0) < 1e-9 and abs(cross_entropy([800.0, 0.0], 0)) < 1e-12
+--- check test | With equal logits the loss is log(number of classes)
+abs(cross_entropy([0.0] * 27, 5) - __import__("math").log(27)) < 1e-12
+--- check test | cross_entropy_grad is softmax minus one-hot, and adds up to 0
+(lambda g: all(abs(a - b) < 1e-12 for a, b in zip(g, [0.09003057317038046, -0.7552715289452024, 0.6652409557748219])) and abs(sum(g)) < 1e-12)(cross_entropy_grad([1.0, 2.0, 3.0], 1))
+--- check test | cross_entropy_grad agrees with the numerical derivative
+(lambda z, t: all(abs(g - (cross_entropy(z[:i] + [z[i] + 1e-6] + z[i + 1:], t) - cross_entropy(z[:i] + [z[i] - 1e-6] + z[i + 1:], t)) / 2e-6) < 1e-6 for i, g in enumerate(cross_entropy_grad(z, t))))([0.3, -1.2, 2.5, 0.0], 2)
+--- check test | cross_entropy_grad survives huge logits
+(lambda g: abs(g[0]) < 1e-12 and abs(g[1]) < 1e-12)(cross_entropy_grad([1000.0, 0.0], 0))
+
++++ practice | Softmax with a temperature
+--- task
+When a language model samples text, its logits are divided by a **temperature** first. Below 1 the distribution gets sharper (more predictable text); above 1 it gets flatter (more surprising text).
+
+Write \`softmax_t(logits, temperature)\`: the softmax of every logit divided by \`temperature\`, computed stably (subtract the largest scaled logit before \`math.exp\`). If \`temperature\` is 0 or below, raise \`ValueError\`.
+--- starter
+import math
+
+
+def softmax_t(logits, temperature):
+    exps = [math.exp(z / temperature) for z in logits]
+    return [e / sum(exps) for e in exps]
+--- solution
+import math
+
+
+def softmax_t(logits, temperature):
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    scaled = [z / temperature for z in logits]
+    top = max(scaled)
+    exps = [math.exp(s - top) for s in scaled]
+    total = sum(exps)
+    return [e / total for e in exps]
+--- hint
+Divide first, then do the usual stable softmax on the divided logits: subtract their maximum before \`math.exp\`.
+--- hint
+Check the temperature before dividing, so 0 gives your \`ValueError\` and not a \`ZeroDivisionError\`.
+--- check test | Temperature 1 is the plain softmax
+all(abs(a - b) < 1e-12 for a, b in zip(softmax_t([1.0, 2.0, 3.0], 1.0), [0.09003057317038046, 0.24472847105479764, 0.6652409557748219]))
+--- check test | A low temperature is nearly one-hot, a high one nearly uniform
+softmax_t([1.0, 2.0, 3.0], 0.01)[2] > 0.999999 and all(abs(p - 1 / 3) < 0.01 for p in softmax_t([1.0, 2.0, 3.0], 100.0))
+--- check test | A low temperature on big logits does not overflow
+(lambda p: abs(p[0] - 1.0) < 1e-12 and abs(sum(p) - 1) < 1e-12)(softmax_t([50.0, 40.0], 0.001))
+--- check test | A temperature of 0 or below raises ValueError
+raises(ValueError, lambda: softmax_t([1.0, 2.0], 0)) and raises(ValueError, lambda: softmax_t([1.0, 2.0], -1.0))
+
++++ practice | The loss of a whole batch
+--- task
+Write \`batch_cross_entropy(rows, targets)\`. \`rows\` is a list of logit lists, one per example, and \`targets\` holds each example's correct class index. Return the mean cross-entropy over the batch, computed stably for each row as \`logsumexp(row) - row[target]\`.
+
+Raise \`ValueError\` if the batch is empty, if the two lists have different lengths, or if a target is not a valid index for its row. Watch out: in Python a target of \`-1\` would quietly pick the last class instead of failing, so test the range yourself.
+--- starter
+import math
+
+
+def batch_cross_entropy(rows, targets):
+    total = 0.0
+    for row, t in zip(rows, targets):
+        exps = [math.exp(z) for z in row]
+        total += -math.log(exps[t] / sum(exps))
+    return total / len(rows)
+--- solution
+import math
+
+
+def logsumexp(xs):
+    top = max(xs)
+    return top + math.log(sum(math.exp(x - top) for x in xs))
+
+
+def batch_cross_entropy(rows, targets):
+    if not rows or len(rows) != len(targets):
+        raise ValueError("need one target per row, and at least one row")
+    total = 0.0
+    for row, t in zip(rows, targets):
+        if not 0 <= t < len(row):
+            raise ValueError(f"target {t} is not a class of a row with {len(row)} logits")
+        total += logsumexp(row) - row[t]
+    return total / len(rows)
+--- hint
+Write a stable \`logsumexp\` helper first; each example's loss is then one subtraction.
+--- hint
+\`0 <= t < len(row)\` is the honest range test. Do all the checks before adding anything up.
+--- check test | Two examples with known losses
+abs(batch_cross_entropy([[2.0, 1.0, 0.1], [0.0, 0.0]], [0, 1]) - (0.41703001627783376 + 0.6931471805599453) / 2) < 1e-12
+--- check test | Huge logits in either direction are fine
+abs(batch_cross_entropy([[1000.0, 0.0], [0.0, -1000.0]], [0, 1]) - 500.0) < 1e-9
+--- check test | An empty batch or a length mismatch raises ValueError
+raises(ValueError, lambda: batch_cross_entropy([], [])) and raises(ValueError, lambda: batch_cross_entropy([[1.0, 2.0]], [0, 1]))
+--- check test | A target out of range, including -1, raises ValueError
+raises(ValueError, lambda: batch_cross_entropy([[1.0, 2.0]], [2])) and raises(ValueError, lambda: batch_cross_entropy([[1.0, 2.0]], [-1]))
+
++++ practice | The most likely next tokens
+--- task
+Write \`top_k(logits, k)\`, which returns the \`k\` most likely classes as a list of pairs \`(index, probability)\`, most likely first:
+
+- The probabilities come from the stable softmax over **all** the logits, not only the top \`k\`.
+- If two classes have the same probability, the smaller index comes first.
+- If \`k\` is larger than the number of classes, return them all. If \`k\` is 0 or below, return \`[]\`.
+--- starter
+import math
+
+
+def top_k(logits, k):
+    order = sorted(range(len(logits)), key=lambda i: logits[i], reverse=True)
+    return [(i, logits[i]) for i in order[:k]]
+--- solution
+import math
+
+
+def top_k(logits, k):
+    if k <= 0:
+        return []
+    top = max(logits)
+    exps = [math.exp(z - top) for z in logits]
+    total = sum(exps)
+    probs = [e / total for e in exps]
+    order = sorted(range(len(logits)), key=lambda i: (-probs[i], i))
+    return [(i, probs[i]) for i in order[:k]]
+--- hint
+Turn the logits into probabilities first, then sort the indices by probability.
+--- hint
+A sort key of \`(-probs[i], i)\` puts the biggest probability first and breaks ties by the smaller index.
+--- check test | The top two of four, with their probabilities
+(lambda r: [i for i, _ in r] == [2, 0] and abs(r[0][1] - 0.6439142598879722) < 1e-12 and abs(r[1][1] - 0.23688281808991013) < 1e-12)(top_k([2.0, 1.0, 3.0, 0.0], 2))
+--- check test | Ties go to the smaller index
+[i for i, _ in top_k([1.0, 5.0, 5.0, 1.0], 3)] == [1, 2, 0]
+--- check test | k larger than the vocabulary returns everything, adding up to 1
+(lambda r: len(r) == 3 and abs(sum(p for _, p in r) - 1) < 1e-12)(top_k([0.1, 0.2, 0.3], 10))
+--- check test | k of 0 gives [], and huge logits do not overflow
+top_k([1.0, 2.0], 0) == [] and top_k([1000.0, 999.0], 1)[0][0] == 0
+
++++ practice | Log-sum-exp when some entries are masked
+--- task
+Attention masks (lesson 13) set some scores to \`-math.inf\`. A log-sum-exp must cope with that. Write \`safe_logsumexp(xs)\`:
+
+- \`-inf\` entries contribute nothing: \`safe_logsumexp([0.0, -math.inf])\` is \`0.0\`.
+- If **every** entry is \`-inf\`, return \`-math.inf\`. (The plain recipe subtracts the maximum, and \`-inf - (-inf)\` is \`nan\`.)
+- If any entry is \`math.inf\`, return \`math.inf\`.
+- An empty list raises \`ValueError\`.
+- Otherwise, the usual stable recipe.
+--- starter
+import math
+
+
+def safe_logsumexp(xs):
+    top = max(xs)
+    return top + math.log(sum(math.exp(x - top) for x in xs))
+--- solution
+import math
+
+
+def safe_logsumexp(xs):
+    if not xs:
+        raise ValueError("logsumexp of nothing")
+    top = max(xs)
+    if top == -math.inf:
+        return -math.inf
+    if top == math.inf:
+        return math.inf
+    return top + math.log(sum(math.exp(x - top) for x in xs))
+--- hint
+Look at the maximum before subtracting it. If it is \`-inf\`, every entry is; if it is \`inf\`, the answer is \`inf\`.
+--- hint
+For a finite maximum the usual recipe already handles \`-inf\` entries, because \`math.exp(-math.inf)\` is exactly \`0.0\`.
+--- check test | Masked entries contribute nothing
+safe_logsumexp([0.0, -__import__("math").inf]) == 0.0 and abs(safe_logsumexp([1.0, 1.0, -__import__("math").inf]) - (1 + __import__("math").log(2))) < 1e-12
+--- check test | Everything masked gives -inf, not nan
+safe_logsumexp([-__import__("math").inf, -__import__("math").inf]) == -__import__("math").inf
+--- check test | An infinite entry gives inf
+safe_logsumexp([1.0, __import__("math").inf]) == __import__("math").inf
+--- check test | Ordinary and huge values still work
+abs(safe_logsumexp([1000.0, 1000.0]) - (1000 + __import__("math").log(2))) < 1e-9 and safe_logsumexp([3.0]) == 3.0
+--- check test | An empty list raises ValueError
+raises(ValueError, lambda: safe_logsumexp([]))
+
++++ practice | Fix the softmax that still overflows
+--- task
+Someone "made softmax stable", but it still crashes: \`softmax([0.0, 800.0])\` raises \`OverflowError\`. It does work for \`[800.0, 800.0]\` and for small logits, which is why nobody noticed.
+
+Find the one-word mistake and fix it.
+--- starter
+import math
+
+
+def softmax(logits):
+    shift = min(logits)
+    exps = [math.exp(z - shift) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+--- solution
+import math
+
+
+def softmax(logits):
+    shift = max(logits)
+    exps = [math.exp(z - shift) for z in logits]
+    total = sum(exps)
+    return [e / total for e in exps]
+--- hint
+After the shift, what is the largest number passed to \`math.exp\`? For \`[0.0, 800.0]\` with the starter's shift, it is 800.
+--- hint
+Subtracting the **largest** logit makes the biggest exponent \`exp(0) = 1\`, so nothing can overflow.
+--- check test | [0, 800] no longer overflows
+(lambda p: p[0] < 1e-300 and abs(p[1] - 1.0) < 1e-12)(softmax([0.0, 800.0]))
+--- check test | A wide spread in both directions
+(lambda p: abs(sum(p) - 1) < 1e-12 and abs(p[1] - 1.0) < 1e-12)(softmax([-900.0, 900.0, 0.0]))
+--- check test | Ordinary logits are unchanged
+all(abs(a - b) < 1e-12 for a, b in zip(softmax([1.0, 2.0, 3.0]), [0.09003057317038046, 0.24472847105479764, 0.6652409557748219]))
+
++++ practice | Label smoothing
+--- task
+**Label smoothing** stops a classifier from becoming overconfident: instead of a target of 1 on the right class and 0 elsewhere, the target becomes \`1 - eps\` on the right class plus \`eps / n\` spread over all \`n\` classes. Write two functions, both stable for huge logits:
+
+1. \`smoothed_ce(logits, target, eps)\`: \`(1 - eps) * (-log p[target]) + eps * (mean over all classes i of -log p[i])\`, where \`p\` is the softmax of \`logits\`. Compute every \`log p[i]\` as \`logits[i] - logsumexp(logits)\`, never as the log of a probability.
+2. \`smoothed_ce_grad(logits, target, eps)\`: the derivative with respect to each logit, which is \`p[i] - q[i]\`, where \`q[i]\` is the smoothed target: \`(1 - eps) + eps / n\` for the right class and \`eps / n\` for the others.
+
+With \`eps = 0\` both must agree with plain cross-entropy and its gradient.
+--- starter
+import math
+
+
+def smoothed_ce(logits, target, eps):
+    exps = [math.exp(z) for z in logits]
+    return -math.log(exps[target] / sum(exps))
+
+
+def smoothed_ce_grad(logits, target, eps):
+    exps = [math.exp(z) for z in logits]
+    probs = [e / sum(exps) for e in exps]
+    return [p - (1.0 if i == target else 0.0) for i, p in enumerate(probs)]
+--- solution
+import math
+
+
+def logsumexp(xs):
+    top = max(xs)
+    return top + math.log(sum(math.exp(x - top) for x in xs))
+
+
+def smoothed_ce(logits, target, eps):
+    lse = logsumexp(logits)
+    log_p = [z - lse for z in logits]
+    return (1 - eps) * -log_p[target] + eps * sum(-lp for lp in log_p) / len(logits)
+
+
+def smoothed_ce_grad(logits, target, eps):
+    n = len(logits)
+    lse = logsumexp(logits)
+    probs = [math.exp(z - lse) for z in logits]
+    return [p - ((1 - eps if i == target else 0.0) + eps / n) for i, p in enumerate(probs)]
+--- hint
+Compute the list of \`log p[i]\` once, from one \`logsumexp\`. Both parts of the loss are built from that list.
+--- hint
+The probabilities for the gradient can come from the same \`logsumexp\`: \`p[i] = exp(logits[i] - lse)\`, which never overflows.
+--- check test | eps = 0 is plain cross-entropy
+abs(smoothed_ce([2.0, 1.0, 0.1], 0, 0.0) - 0.41703001627783376) < 1e-12
+--- check test | A known smoothed value
+abs(smoothed_ce([2.0, 1.0, 0.1], 0, 0.1) - (0.9 * 0.41703001627783376 + 0.1 * (0.41703001627783376 + 1.4170300162778338 + 2.3170300162778336) / 3)) < 1e-12
+--- check test | The gradient agrees with the measured slope, and adds up to 0
+(lambda z, t, e: (lambda g: abs(sum(g)) < 1e-12 and all(abs(g[i] - (smoothed_ce(z[:i] + [z[i] + 1e-6] + z[i + 1:], t, e) - smoothed_ce(z[:i] + [z[i] - 1e-6] + z[i + 1:], t, e)) / 2e-6) < 1e-6 for i in range(len(z))))(smoothed_ce_grad(z, t, e)))([0.3, -1.2, 2.5, 0.0], 1, 0.2)
+--- check test | Huge logits stay finite
+(lambda v, g: abs(v - (0.9 * 0.0 + 0.1 * 1000.0 / 2)) < 1e-9 and abs(g[0] - (1.0 - 0.95)) < 1e-12)(smoothed_ce([1000.0, 0.0], 0, 0.1), smoothed_ce_grad([1000.0, 0.0], 0, 0.1))
+
+=== ai-11 | Problem solving: byte-pair encoding
+--- teach
+A model reads numbers, not text, so text is first cut into **tokens** and each token gets an integer id. How you cut it matters a lot:
+
+- **Characters**: a tiny vocabulary, never an unknown word, but sequences are long, and attention (lesson 13) costs grow with the square of the length.
+- **Words**: short sequences, but a huge vocabulary, and any word not seen in training ("rocketship", a typo, a new name) has no id at all.
+
+**Byte-pair encoding (BPE)**, used by GPT-style models and most others, sits in between. Start from the **bytes** of the UTF-8 encoding: 256 possible values, so any text in any language (and any emoji) can be represented, and nothing is ever unknown. Then repeatedly find the **most frequent adjacent pair** of tokens and replace it everywhere with a **new token** (ids 256, 257, …). Common chunks ("the", "ing", " orbit") become single tokens; rare words stay as several pieces.
+
+\`\`\`python
+list("hi".encode("utf-8"))            # [104, 105]: one byte per ASCII letter
+list("é🚀".encode("utf-8"))            # [195, 169, 240, 159, 154, 128]: several bytes each
+bytes([104, 105]).decode("utf-8")      # 'hi'
+\`\`\`
+
+**Use the problem-solving approach** (from the intermediate course): restate, work examples by hand, get a simple version right, then make it fast.
+
+**Worked example.** Start from the letters of \`"banana band"\` (using letters instead of byte numbers to keep it readable):
+
+\`\`\`text
+b a n a n a _ b a n d      pairs: ba×2, an×3, na×2, a_, _b, nd
+merge (a, n) -> X:  b X X a _ b X d      pairs: bX×2, XX, Xa, a_, _b, Xd
+merge (b, X) -> Y:  Y X a _ Y d
+\`\`\`
+
+Eleven tokens became six, and the learned merges are \`{(a, n): 256, (b, X): 257}\`: the **order matters**, because the second merge uses the token the first one made.
+
+**Counting pairs** is one pass: \`zip(ids, ids[1:])\` walks every adjacent pair; count them in a dict. A dict remembers insertion order, so its keys come out in order of first appearance, which gives a deterministic way to break ties: \`max(counts, key=counts.get)\` returns the **first** of the tied pairs.
+
+**Merging** must go left to right and skip past a pair once it is replaced. In \`[5, 5, 5]\`, merging \`(5, 5)\` gives \`[X, 5]\`, not two overlapping \`X\`s. And it must be **one linear pass** building a new list. The tempting version, "find the pair, rebuild the list around it, search again from the start", is \`O(n)\` work per replacement, so \`O(n²)\` in total: on 200,000 tokens that is billions of steps, and real tokenizers train on gigabytes.
+
+**Encoding new text** applies the learned merges in the **order they were learned**: repeatedly look at the pairs present, pick the one that was learned **earliest** (the smallest new id), merge it, and stop when no present pair is in the merges. **Decoding** rebuilds each token's bytes: tokens below 256 are single bytes, and each new token is the bytes of its pair joined together. Decode with \`errors="replace"\`: an id sequence can end in the middle of a multi-byte character, and that must not crash.
+
+In practice: tokenizers like \`tiktoken\` or SentencePiece do exactly this with vocabularies of 50,000 to 200,000 tokens, plus rules that split text into words first and special tokens such as end-of-text.
+--- task
+Write:
+
+- \`pair_counts(ids)\`: a dict mapping each adjacent pair \`(a, b)\` to how many times it occurs, keys in order of first appearance.
+- \`merge(ids, pair, new_id)\`: a new list with every occurrence of \`pair\` replaced by \`new_id\`, left to right, non-overlapping. Do not change \`ids\`. It must be linear: it is tested on 200,000 tokens.
+- \`train_bpe(text, num_merges)\`: start from \`list(text.encode("utf-8"))\`; up to \`num_merges\` times, pick the most frequent pair (ties: the one that appears first), give it the next id (256, 257, …), and merge it. Stop early if the best pair occurs fewer than 2 times (or there are no pairs). Return the merges as a dict \`{pair: new_id}\` in the order they were learned.
+- \`encode(text, merges)\`: the token ids of \`text\`, applying merges earliest-learned first as described.
+- \`decode(ids, merges)\`: the text, decoding the bytes as UTF-8 with \`errors="replace"\`.
+--- starter
+def pair_counts(ids):
+    pass
+
+
+def merge(ids, pair, new_id):
+    pass
+
+
+def train_bpe(text, num_merges):
+    pass
+
+
+def encode(text, merges):
+    pass
+
+
+def decode(ids, merges):
+    pass
+--- solution
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def train_bpe(text, num_merges):
+    ids = list(text.encode("utf-8"))
+    merges = {}
+    for _ in range(num_merges):
+        counts = pair_counts(ids)
+        if not counts:
+            break
+        best = max(counts, key=counts.get)
+        if counts[best] < 2:
+            break
+        new_id = 256 + len(merges)
+        ids = merge(ids, best, new_id)
+        merges[best] = new_id
+    return merges
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def decode(ids, merges):
+    vocab = {i: bytes([i]) for i in range(256)}
+    for (a, b), new_id in sorted(merges.items(), key=lambda item: item[1]):
+        vocab[new_id] = vocab[a] + vocab[b]
+    return b"".join(vocab[i] for i in ids).decode("utf-8", errors="replace")
+--- hint
+\`merge\`: walk with an index \`i\`. If \`ids[i]\` and \`ids[i + 1]\` are the pair, append \`new_id\` and jump \`i\` by 2; otherwise append \`ids[i]\` and move by 1.
+--- hint
+\`train_bpe\`: each round, \`counts = pair_counts(ids)\`, \`best = max(counts, key=counts.get)\`, stop if \`counts[best] < 2\`, otherwise the new id is \`256 + len(merges)\`.
+--- hint
+\`encode\`: among the pairs present, the one to merge next is \`min(present, key=lambda p: merges.get(p, float("inf")))\`; if that pair is not in \`merges\`, you are done. \`decode\`: build a dict from id to \`bytes\`, filling new ids in increasing order.
+--- check case | pair_counts counts adjacent pairs
+pair_counts([1, 2, 3, 1, 2])
+=> {(1, 2): 2, (2, 3): 1, (3, 1): 1}
+--- check test | pair_counts keeps first-appearance order and handles tiny inputs
+list(pair_counts([7, 8, 9, 8, 9, 7, 8])) == [(7, 8), (8, 9), (9, 8), (9, 7)] and pair_counts([]) == {} and pair_counts([5]) == {}
+--- check case | merge replaces every occurrence
+merge([1, 2, 3, 1, 2], (1, 2), 99)
+=> [99, 3, 99]
+--- check test | merge goes left to right without overlapping, and leaves its input alone
+(lambda ids: merge(ids, (5, 5), 9) == [9, 5] and merge([5, 5, 5, 5], (5, 5), 9) == [9, 9] and ids == [5, 5, 5] and merge([], (1, 2), 3) == [])([5, 5, 5])
+--- check test | merge is linear: 200,000 tokens with 100,000 replacements
+merge([1, 2] * 100000, (1, 2), 256) == [256] * 100000
+--- check case | train_bpe on "banana band" learns (a, n) and then (b, an)
+train_bpe("banana band", 5)
+=> {(97, 110): 256, (98, 256): 257}
+--- check test | train_bpe stops when no pair repeats
+train_bpe("abcdef", 10) == {} and train_bpe("", 3) == {} and train_bpe("aaaaaaaa", 10) == {(97, 97): 256, (256, 256): 257} and train_bpe("aaaa", 10) == {(97, 97): 256}
+--- check test | Ties go to the pair that appears first
+list(train_bpe("xyab xyab abxy", 1)) == [(120, 121)]
+--- check test | encode applies merges in the order they were learned
+encode("abc", {(97, 98): 256, (256, 99): 257, (98, 99): 258}) == [257] and encode("abc", {}) == [97, 98, 99]
+--- check test | Encoding the training text compresses it, and decode gets it back
+(lambda t: (lambda m: (lambda ids: len(ids) < len(t) // 2 and decode(ids, m) == t)(encode(t, m)))(train_bpe(t, 40)))("the rocket and the lander left the launch pad; the lander landed and the rocket went on. " * 20)
+--- check test | Round trip on text never seen in training, with accents and emoji
+(lambda m: all(decode(encode(s, m), m) == s for s in ("héllo wörld 🚀", "naïve café", "", "the end")))(train_bpe("the rocket and the lander and the launch pad " * 5, 20))
+--- check test | decode of a cut-off character does not crash
+decode([0xE2, 0x82], {}) == "�" and decode([104, 105], {}) == "hi"
+--- check test | Big input: train 30 merges on about 40,000 characters
+(lambda t: (lambda m: len(m) == 30 and sorted(m.values()) == list(range(256, 286)) and decode(encode(t[:2000], m), m) == t[:2000])(train_bpe(t, 30)))((lambda r: " ".join(r.choice(["the", "rocket", "launch", "orbit", "fuel", "stage", "engine", "moon", "lander", "thrust"]) for _ in range(6000)))(__import__("random").Random(1)))
+
++++ practice | How many bytes is each character?
+--- task
+BPE starts from UTF-8 bytes, so it pays to know how many bytes text really takes. Write \`byte_lengths(text)\`, which returns a list with one pair \`(character, number_of_bytes)\` for each character of \`text\`, in order. A character's bytes are \`len(ch.encode("utf-8"))\`.
+
+So \`byte_lengths("hé")\` is \`[("h", 1), ("é", 2)]\`, and an empty string gives \`[]\`.
+--- starter
+def byte_lengths(text):
+    return [(ch, 1) for ch in text]
+--- solution
+def byte_lengths(text):
+    return [(ch, len(ch.encode("utf-8"))) for ch in text]
+--- hint
+Encode each character on its own and count the bytes.
+--- check case | Plain letters are one byte each
+byte_lengths("orbit")
+=> [("o", 1), ("r", 1), ("b", 1), ("i", 1), ("t", 1)]
+--- check case | Accents, other scripts and emoji take more
+byte_lengths("é漢🚀")
+=> [("é", 2), ("漢", 3), ("🚀", 4)]
+--- check case | Spaces and punctuation are single bytes
+byte_lengths(" !")
+=> [(" ", 1), ("!", 1)]
+--- check case | An empty string
+byte_lengths("")
+=> []
+
++++ practice | The table from token ids to bytes
+--- task
+Write \`build_vocab(merges)\`, which returns a dict mapping every token id to its bytes:
+
+- ids 0 to 255 map to the single byte with that value: \`bytes([i])\`;
+- each learned token maps to the bytes of its two parts joined together.
+
+\`merges\` maps each pair \`(a, b)\` to its new id. Do not assume the dict is in learning order: a later token can only be built after the tokens it is made of, so fill in the new ids in increasing order.
+--- starter
+def build_vocab(merges):
+    vocab = {i: bytes([i]) for i in range(256)}
+    for (a, b), new_id in merges.items():
+        vocab[new_id] = vocab[a] + vocab[b]
+    return vocab
+--- solution
+def build_vocab(merges):
+    vocab = {i: bytes([i]) for i in range(256)}
+    for (a, b), new_id in sorted(merges.items(), key=lambda item: item[1]):
+        vocab[new_id] = vocab[a] + vocab[b]
+    return vocab
+--- hint
+\`sorted(merges.items(), key=lambda item: item[1])\` walks the merges in order of their new ids.
+--- hint
+Token 257 may be built from token 256, so 256 must already be in the table when you reach 257.
+--- check test | Merges in learning order
+(lambda v: v[256] == b"hi" and v[257] == b"hi!" and v[104] == b"h" and len(v) == 258)(build_vocab({(104, 105): 256, (256, 33): 257}))
+--- check test | The same merges given out of order
+(lambda v: v[257] == b"hi!" and v[258] == b"hi!hi!")(build_vocab({(257, 257): 258, (256, 33): 257, (104, 105): 256}))
+--- check test | No merges is just the 256 bytes
+(lambda v: len(v) == 256 and v[0] == b"\\x00" and v[255] == b"\\xff")(build_vocab({}))
+
++++ practice | Train on word counts, not one long string
+--- task
+Real tokenizers first split text into words and never merge across a word boundary. They also store each distinct word once, with how often it occurs. Write two functions:
+
+1. \`word_pair_counts(word_freqs)\`. \`word_freqs\` maps each word, written as a tuple of token ids, to its frequency. Return a dict mapping each adjacent pair to its total count: a pair inside a word that occurs 5 times counts 5. Pairs never span two words. Keys in order of first appearance.
+2. \`merge_words(word_freqs, pair, new_id)\`. Return a new dict in which every word has had \`pair\` replaced by \`new_id\`, left to right and without overlapping, keeping the frequencies. If two words become the same tuple, add their frequencies.
+--- starter
+def word_pair_counts(word_freqs):
+    ids = [i for word in word_freqs for i in word]
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge_words(word_freqs, pair, new_id):
+    return dict(word_freqs)
+--- solution
+def word_pair_counts(word_freqs):
+    counts = {}
+    for word, freq in word_freqs.items():
+        for pair in zip(word, word[1:]):
+            counts[pair] = counts.get(pair, 0) + freq
+    return counts
+
+
+def merge_words(word_freqs, pair, new_id):
+    merged = {}
+    for word, freq in word_freqs.items():
+        out, i = [], 0
+        while i < len(word):
+            if i + 1 < len(word) and (word[i], word[i + 1]) == pair:
+                out.append(new_id)
+                i += 2
+            else:
+                out.append(word[i])
+                i += 1
+        key = tuple(out)
+        merged[key] = merged.get(key, 0) + freq
+    return merged
+--- hint
+Count pairs inside each word separately, adding the word's frequency each time instead of 1.
+--- hint
+In \`merge_words\`, build each new word as a list with the left-to-right merge you already know, turn it into a tuple, and add its frequency into the new dict.
+--- check case | Pairs are weighted by frequency and never cross words
+word_pair_counts({(1, 2, 3): 5, (2, 3): 2, (3, 1): 1})
+=> {(1, 2): 5, (2, 3): 7, (3, 1): 1}
+--- check case | One-token words contribute nothing
+word_pair_counts({(7,): 10, (8, 8): 2})
+=> {(8, 8): 2}
+--- check case | Merging inside each word, keeping frequencies
+merge_words({(1, 2, 3): 5, (2, 3): 2, (3, 1): 1}, (2, 3), 256)
+=> {(1, 256): 5, (256,): 2, (3, 1): 1}
+--- check case | Runs merge left to right; other words stay as they are
+merge_words({(5, 5, 5): 1, (9, 5): 3}, (5, 5), 300)
+=> {(300, 5): 1, (9, 5): 3}
+--- check case | Two words that merge into one tuple
+merge_words({(1, 2): 4, (300,): 1}, (1, 2), 300)
+=> {(300,): 5}
+
++++ practice | How many merges, really?
+--- task
+\`pair_counts\` counts overlapping pairs: in \`[5, 5, 5]\` it finds the pair \`(5, 5)\` twice. But merging can only replace it once, because the middle 5 cannot be used twice. Write \`count_merges(ids, pair)\`, which returns how many replacements a left-to-right, non-overlapping merge of \`pair\` would make, without building the merged list.
+
+So \`count_merges([5, 5, 5], (5, 5))\` is 1, \`count_merges([5, 5, 5, 5], (5, 5))\` is 2, and an empty list or a single token gives 0.
+--- starter
+def count_merges(ids, pair):
+    return sum(1 for p in zip(ids, ids[1:]) if p == pair)
+--- solution
+def count_merges(ids, pair):
+    count, i = 0, 0
+    while i + 1 < len(ids):
+        if ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            count += 1
+            i += 2
+        else:
+            i += 1
+    return count
+--- hint
+Walk with an index, as \`merge\` does. When you find the pair, count it and jump past both tokens.
+--- hint
+The loop can stop as soon as there is no room left for a pair: \`while i + 1 < len(ids)\`.
+--- check test | Runs of the same token
+count_merges([5, 5, 5], (5, 5)) == 1 and count_merges([5, 5, 5, 5], (5, 5)) == 2 and count_merges([5, 5, 5, 5, 5], (5, 5)) == 2
+--- check test | Two different tokens never overlap
+count_merges([1, 2, 1, 2, 3, 1, 2], (1, 2)) == 3
+--- check test | The pair at the very end
+count_merges([9, 9, 1, 2], (1, 2)) == 1 and count_merges([1, 2], (2, 1)) == 0
+--- check test | Empty and one-token lists
+count_merges([], (1, 2)) == 0 and count_merges([1], (1, 1)) == 0
+
++++ practice | Fix the merge that loses the last token
+--- task
+This \`merge\` drops the last token whenever that token is not part of a merged pair: \`merge([1, 2, 3], (1, 2), 9)\` returns \`[9]\` instead of \`[9, 3]\`, and \`merge([7], (1, 2), 9)\` returns \`[]\`.
+
+Fix it, keeping it a single left-to-right pass.
+--- starter
+def merge(ids, pair, new_id):
+    out = []
+    i = 0
+    while i < len(ids) - 1:
+        if ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+--- solution
+def merge(ids, pair, new_id):
+    out = []
+    i = 0
+    while i < len(ids):
+        if i + 1 < len(ids) and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+--- hint
+The loop stops one token early. Which token does it never look at?
+--- hint
+Let the loop run to the end, \`while i < len(ids)\`, and guard the pair test with \`i + 1 < len(ids)\` so it never reads past the end.
+--- check case | The last token is kept
+merge([1, 2, 3], (1, 2), 9)
+=> [9, 3]
+--- check case | A single token is kept
+merge([7], (1, 2), 9)
+=> [7]
+--- check case | A pair at the end is still merged
+merge([3, 1, 2], (1, 2), 9)
+=> [3, 9]
+--- check case | Runs and an empty list
+merge([5, 5, 5], (5, 5), 8) + merge([], (5, 5), 8)
+=> [8, 5]
+
++++ practice | Special tokens
+--- task
+Chat models mark structure with **special tokens** such as \`<|end|>\`, which must become one fixed id and must never be split by BPE. Write \`encode_with_special(text, merges, special)\`:
+
+- \`special\` maps each special string to its id.
+- Scan \`text\` from left to right. Wherever a special string starts, emit its id and continue after it. If two special strings start at the same place, use the longer one.
+- Every stretch of ordinary text between special strings is encoded with the starter's \`encode(piece, merges)\`.
+
+Return the full list of ids. With an empty \`special\`, the result is \`encode(text, merges)\`, and an empty text gives \`[]\`.
+--- starter
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def encode_with_special(text, merges, special):
+    return encode(text, merges)
+--- solution
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def encode_with_special(text, merges, special):
+    ids, piece, i = [], "", 0
+    by_length = sorted(special, key=len, reverse=True)
+    while i < len(text):
+        match = next((s for s in by_length if text.startswith(s, i)), None)
+        if match is None:
+            piece += text[i]
+            i += 1
+        else:
+            ids += encode(piece, merges)
+            piece = ""
+            ids.append(special[match])
+            i += len(match)
+    return ids + encode(piece, merges)
+--- hint
+Keep the ordinary text you have collected so far in a string. When a special string starts at position \`i\` (\`text.startswith(s, i)\`), encode the collected text, emit the special id, and jump past it.
+--- hint
+Try the special strings longest first, so \`<|end|>\` wins over a shorter one such as \`<|\`. Do not forget the ordinary text left over at the end.
+--- check test | A special token in the middle is one id, and is never split
+encode_with_special("hi<|end|>yo", {}, {"<|end|>": 1000}) == [104, 105, 1000, 121, 111]
+--- check test | Ordinary text is still compressed by the merges
+encode_with_special("aaaa<|end|>aa", {(97, 97): 256}, {"<|end|>": 1000}) == [256, 256, 1000, 256]
+--- check test | At the start, at the end, and side by side
+encode_with_special("<|a|><|end|>x<|end|>", {}, {"<|end|>": 1000, "<|a|>": 1001}) == [1001, 1000, 120, 1000]
+--- check test | The longer special string wins
+encode_with_special("<|end|>", {}, {"<|": 5, "<|end|>": 1000}) == [1000]
+--- check test | No special tokens, and no text
+encode_with_special("abc", {(97, 98): 256}, {}) == [256, 99] and encode_with_special("", {}, {"<|end|>": 1000}) == []
+
++++ practice | What tokenizing saves
+--- task
+Attention (lesson 13) compares every position with every other, so its cost grows with the **square** of the sequence length. Fewer tokens means much less work. Write \`savings(text, merges)\`, using the starter's \`encode\`, which returns a dict:
+
+- \`"bytes"\`: the number of UTF-8 bytes in \`text\`;
+- \`"tokens"\`: the number of BPE tokens \`encode\` gives;
+- \`"ratio"\`: bytes divided by tokens;
+- \`"attention"\`: how many times less attention work the tokens need than the raw bytes: the ratio squared.
+
+If \`text\` is empty, raise \`ValueError\`.
+--- starter
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def savings(text, merges):
+    n = len(text)
+    return {"bytes": n, "tokens": n, "ratio": 1.0, "attention": 1.0}
+--- solution
+def pair_counts(ids):
+    counts = {}
+    for pair in zip(ids, ids[1:]):
+        counts[pair] = counts.get(pair, 0) + 1
+    return counts
+
+
+def merge(ids, pair, new_id):
+    out = []
+    i, n = 0, len(ids)
+    while i < n:
+        if i + 1 < n and ids[i] == pair[0] and ids[i + 1] == pair[1]:
+            out.append(new_id)
+            i += 2
+        else:
+            out.append(ids[i])
+            i += 1
+    return out
+
+
+def encode(text, merges):
+    ids = list(text.encode("utf-8"))
+    while len(ids) >= 2:
+        present = pair_counts(ids)
+        pair = min(present, key=lambda p: merges.get(p, float("inf")))
+        if pair not in merges:
+            break
+        ids = merge(ids, pair, merges[pair])
+    return ids
+
+
+def savings(text, merges):
+    if not text:
+        raise ValueError("nothing to measure")
+    n_bytes = len(text.encode("utf-8"))
+    n_tokens = len(encode(text, merges))
+    ratio = n_bytes / n_tokens
+    return {"bytes": n_bytes, "tokens": n_tokens, "ratio": ratio, "attention": ratio ** 2}
+--- hint
+Count bytes with \`len(text.encode("utf-8"))\`, not \`len(text)\`: an accented letter is one character but two bytes.
+--- hint
+Attention work goes with length squared, so halving the length divides the work by four.
+--- check test | Four bytes merged into two tokens: half the length, a quarter of the work
+savings("aaaa", {(97, 97): 256}) == {"bytes": 4, "tokens": 2, "ratio": 2.0, "attention": 4.0}
+--- check test | Bytes, not characters
+(lambda r: r["bytes"] == 6 and r["tokens"] == 6)(savings("héllo", {}))
+--- check test | No merges saves nothing
+savings("orbit", {}) == {"bytes": 5, "tokens": 5, "ratio": 1.0, "attention": 1.0}
+--- check test | Empty text raises ValueError
+raises(ValueError, lambda: savings("", {}))
+
+=== ai-12 | A bigram language model
+--- teach
+A **language model** gives a probability to what comes next: given the text so far, how likely is each possible next token? Everything a chatbot does rests on that one ability, applied over and over. The simplest real language model looks at only the **previous character**: a **bigram** model.
+
+**Training is counting.** Mark the start and end of each word with a special token \`.\`, then count every adjacent pair:
+
+\`\`\`python
+from collections import Counter
+
+words = ["moon", "mars"]
+pairs = Counter()
+for w in words:
+    seq = ["."] + list(w) + ["."]
+    pairs.update(zip(seq, seq[1:]))
+pairs[(".", "m")], pairs[("o", "o")], pairs[("s", ".")]     # (2, 1, 1)
+\`\`\`
+
+\`.\` followed by \`m\` twice means both words start with \`m\`; \`s\` then \`.\` means a word ended after \`s\`.
+
+**Counts to probabilities.** For a previous character \`a\`, the counts in its row, divided by the row total, are the probabilities of each next character. They add up to 1.
+
+**Smoothing.** If \`z\` never followed \`q\` in training, the probability is 0, and a single unseen pair in new text makes the loss infinite (\`-log 0\`). **Add-k smoothing** pretends every pair was seen \`k\` extra times:
+
+\`\`\`text
+P(b | a) = (count(a, b) + k) / (row_total(a) + k * vocabulary_size)
+\`\`\`
+
+With \`k = 1\` nothing is impossible. Bigger \`k\` flattens the distribution towards uniform, trusting the data less.
+
+**How good is it? Negative log-likelihood.** Walk through some words, and for each character (including the final \`.\`) take \`-log\` of the probability the model gave it. The average is the **NLL**, in "nats per character". It is exactly the cross-entropy loss from lesson 10, which is why "loss" and "log-likelihood" mean the same thing in language modelling. Lower is better. \`exp(NLL)\` is the **perplexity**: a model with perplexity 8 is, on average, as unsure as if it were choosing uniformly among 8 characters. A model that knows nothing, over 27 symbols, has perplexity 27 (NLL \`log 27 ≈ 3.30\`).
+
+**Generating.** Start from \`.\`, pick the next character at random **in proportion to** the probabilities, append it, and repeat until you pick \`.\` again. \`rng.choices(options, weights=...)\` does the weighted pick, and a seeded \`random.Random\` makes it repeatable:
+
+\`\`\`python
+import random
+
+rng = random.Random(0)
+[rng.choices(["a", "b", "c"], weights=[1, 1, 8])[0] for _ in range(10)]   # mostly "c"
+\`\`\`
+
+Weights do not need to add up to 1: the counts plus \`k\` work directly.
+
+**Why this matters.** A neural network that takes the previous character as input and outputs 27 logits, trained with cross-entropy, ends up learning exactly these probabilities. The counting model is the target the network approaches, and a great baseline: if your fancy model cannot beat a bigram, something is wrong. Bigger models win by looking at much more context.
+
+In PyTorch: \`torch.multinomial(probs, 1, generator=g)\` samples, with \`g = torch.Generator().manual_seed(0)\`.
+--- task
+The starter has a list \`WORDS\`. Write a class \`BigramLM(words, k=1)\`:
+
+- \`chars\`: \`"."\` followed by the sorted distinct characters in \`words\`.
+- \`count(a, b)\`: how many times \`b\` followed \`a\` in training (with \`.\` at the start and end of every word).
+- \`prob(a, b)\`: the add-k smoothed probability from the formula above, with vocabulary size \`len(chars)\`.
+- \`nll(words)\`: the average of \`-log(prob)\` over every predicted character of the given words, including each final \`.\`.
+- \`perplexity(words)\`: \`exp\` of the NLL.
+- \`sample(rng, max_len=20)\`: start after \`.\`, and at each step pick \`rng.choices(self.chars, weights=[count(prev, c) + k for c in self.chars])[0]\`. Stop (without including it) at \`.\`, or when the word has \`max_len\` characters. Return the word.
+--- starter
+import math
+import random
+
+WORDS = [
+    "orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon",
+    "mars", "star", "space", "probe", "lander", "rover", "crater", "galaxy",
+    "nebula", "planet", "saturn", "venus", "meteor", "cosmos", "thrust", "booster",
+    "capsule", "module", "station", "solar", "lunar", "astro", "pilot", "hangar",
+]
+
+
+class BigramLM:
+    pass
+--- solution
+import math
+import random
+
+WORDS = [
+    "orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon",
+    "mars", "star", "space", "probe", "lander", "rover", "crater", "galaxy",
+    "nebula", "planet", "saturn", "venus", "meteor", "cosmos", "thrust", "booster",
+    "capsule", "module", "station", "solar", "lunar", "astro", "pilot", "hangar",
+]
+
+
+class BigramLM:
+    def __init__(self, words, k=1):
+        self.k = k
+        self.chars = ["."] + sorted(set("".join(words)))
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def count(self, a, b):
+        return self.counts[a][b]
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+    def perplexity(self, words):
+        return math.exp(self.nll(words))
+
+    def sample(self, rng, max_len=20):
+        out, prev = [], "."
+        while len(out) < max_len:
+            weights = [self.counts[prev][c] + self.k for c in self.chars]
+            nxt = rng.choices(self.chars, weights=weights)[0]
+            if nxt == ".":
+                break
+            out.append(nxt)
+            prev = nxt
+        return "".join(out)
+--- hint
+Store the counts as a dict of dicts: \`self.counts[a][b]\`, with every pair of \`chars\` starting at 0, then add 1 for each pair in \`["."] + list(word) + ["."]\`.
+--- hint
+\`prob(a, b)\` is \`(counts[a][b] + k) / (sum of row a + k * len(chars))\`. \`nll\` adds \`-math.log(prob(a, b))\` over the same pairs and divides by how many there were.
+--- hint
+In \`sample\`, keep the previous character (starting at \`"."\`), build the weights for its row, call \`rng.choices\` once per character, and stop at \`"."\` or at \`max_len\`.
+--- check test | chars is "." then the sorted letters
+(lambda m: m.chars[0] == "." and m.chars[1:] == sorted(set("".join(WORDS))) and len(m.chars) == 23)(BigramLM(WORDS))
+--- check test | count includes the start and end markers
+(lambda m: m.count(".", "m") == 4 and m.count("o", "o") == 2 and m.count("r", ".") == 9 and m.count(".", ".") == 0)(BigramLM(WORDS))
+--- check test | Every row of probabilities adds up to 1
+(lambda m: all(abs(sum(m.prob(a, b) for b in m.chars) - 1) < 1e-12 for a in m.chars))(BigramLM(WORDS, k=0.5))
+--- check test | prob applies add-k smoothing
+(lambda m: abs(m.prob("m", "o") - 3 / 10) < 1e-12 and abs(m.prob("m", "x") - 1 / 10) < 1e-12)(BigramLM(["moon", "mom", "max"], k=1)) and BigramLM(["ab"], k=0).prob("a", "b") == 1.0
+--- check test | nll of a tiny model, by hand
+abs(BigramLM(["ab"], k=0).nll(["ab"])) < 1e-12 and abs(BigramLM(["ab", "b"], k=0).nll(["b"]) - (-__import__("math").log(0.5) / 2)) < 1e-12
+--- check test | nll and perplexity on the training words
+(lambda m: abs(m.nll(WORDS) - 2.411853253394921) < 1e-9 and abs(m.perplexity(WORDS) - __import__("math").exp(m.nll(WORDS))) < 1e-9)(BigramLM(WORDS))
+--- check test | A model with no information has perplexity equal to its vocabulary size
+(lambda m: abs(m.perplexity(["abc", "cab"]) - 4) < 1e-6)(BigramLM(["abc"], k=10 ** 9))
+--- check test | Unseen pairs get a finite loss thanks to smoothing
+(lambda m: 0 < m.nll(["rrr", "mooon", "tsar"]) < 10)(BigramLM(WORDS))
+--- check case | Sampling (no smoothing) is deterministic for a given seed
+[BigramLM(WORDS, k=0).sample(random.Random(s)) for s in range(5)]
+=> ["stanele", "cosar", "tue", "fular", "fulachrosar"]
+--- check test | With smoothing, samples still respect max_len and use only known characters
+all(len(w) <= 3 and set(w) <= set(BigramLM(WORDS).chars[1:]) for w in [BigramLM(WORDS).sample(random.Random(s), max_len=3) for s in range(30)])
+
++++ practice | Perplexity from the probabilities
+--- task
+Write \`perplexity(probs)\`. \`probs\` lists the probability a model gave to each symbol that really came next. Return \`exp\` of the mean of \`-log(p)\`: the perplexity.
+
+- If any probability is exactly 0, the model called a real event impossible: return \`math.inf\` instead of crashing.
+- If the list is empty, or any probability is below 0 or above 1, raise \`ValueError\`.
+--- starter
+import math
+
+
+def perplexity(probs):
+    return math.exp(sum(-math.log(p) for p in probs) / len(probs))
+--- solution
+import math
+
+
+def perplexity(probs):
+    if not probs or any(p < 0 or p > 1 for p in probs):
+        raise ValueError("need probabilities between 0 and 1")
+    if any(p == 0 for p in probs):
+        return math.inf
+    return math.exp(sum(-math.log(p) for p in probs) / len(probs))
+--- hint
+Do the checks in order: bad input first, then a zero, then the formula.
+--- hint
+\`any(...)\` with a condition inside tests the whole list in one line.
+--- check test | Always giving 1/8 is perplexity 8
+abs(perplexity([0.125] * 10) - 8.0) < 1e-9
+--- check test | Mixed probabilities: the geometric mean of 1/p
+abs(perplexity([0.5, 0.25, 1.0]) - 2.0) < 1e-12
+--- check test | A certain model has perplexity 1
+perplexity([1.0, 1.0]) == 1.0
+--- check test | An impossible event gives infinity
+perplexity([0.5, 0.0, 0.5]) == __import__("math").inf
+--- check test | Empty or out-of-range input raises ValueError
+raises(ValueError, lambda: perplexity([])) and raises(ValueError, lambda: perplexity([0.5, 1.5])) and raises(ValueError, lambda: perplexity([-0.1]))
+
++++ practice | Greedy decoding gets stuck
+--- task
+Instead of sampling, a model can always pick its single most likely next symbol: **greedy decoding**. Write \`greedy_word(probs, max_len=10)\`:
+
+- \`probs\` is a dict of dicts: \`probs[a][b]\` is the probability that \`b\` follows \`a\`. Every symbol, including \`"."\`, has a row.
+- Start after \`"."\`. At each step pick the most likely next symbol; on a tie, the one that comes first when sorted (\`"."\` sorts before the letters).
+- Stop, without including it, when the pick is \`"."\`, or when the word has \`max_len\` letters. Return the word.
+
+The checks show the classic weakness: greedy text falls into loops.
+--- starter
+def greedy_word(probs, max_len=10):
+    return max(probs["."], key=probs["."].get)
+--- solution
+def greedy_word(probs, max_len=10):
+    word, prev = "", "."
+    while len(word) < max_len:
+        row = probs[prev]
+        nxt = min(row, key=lambda b: (-row[b], b))
+        if nxt == ".":
+            break
+        word += nxt
+        prev = nxt
+    return word
+--- hint
+Keep the previous symbol, starting at \`"."\`, and look up its row on each step.
+--- hint
+\`min(row, key=lambda b: (-row[b], b))\` finds the most likely symbol and, on a tie, the first in sorted order.
+--- check test | Follows the most likely path to the end
+greedy_word({".": {".": 0.0, "a": 0.7, "b": 0.3}, "a": {".": 0.2, "a": 0.0, "b": 0.8}, "b": {".": 0.9, "a": 0.1, "b": 0.0}}) == "ab"
+--- check test | A loop runs until max_len
+greedy_word({".": {".": 0.1, "a": 0.9}, "a": {".": 0.4, "a": 0.6}}, max_len=5) == "aaaaa"
+--- check test | Ties go to the symbol that sorts first
+greedy_word({".": {".": 0.0, "a": 0.5, "b": 0.5}, "a": {".": 0.5, "a": 0.0, "b": 0.5}, "b": {".": 1.0, "a": 0.0, "b": 0.0}}) == "a"
+--- check test | max_len of 0 gives an empty word
+greedy_word({".": {".": 0.0, "a": 1.0}, "a": {".": 0.0, "a": 1.0}}, max_len=0) == ""
+
++++ practice | Which words look most like the language?
+--- task
+Write \`rank_words(prob, words)\`. \`prob(a, b)\` is a function giving the probability that \`b\` follows \`a\`, with \`"."\` marking the start and end of a word. For each word, work out its NLL per prediction: the mean of \`-log(prob(a, b))\` over every pair in \`["."] + list(word) + ["."]\`. Return the words sorted from lowest NLL (most word-like) to highest. On a tie, sort alphabetically.
+--- starter
+import math
+
+
+def rank_words(prob, words):
+    return sorted(words)
+--- solution
+import math
+
+
+def rank_words(prob, words):
+    def score(word):
+        seq = ["."] + list(word) + ["."]
+        pairs = list(zip(seq, seq[1:]))
+        return sum(-math.log(prob(a, b)) for a, b in pairs) / len(pairs)
+
+    return sorted(words, key=lambda w: (score(w), w))
+--- hint
+Write a helper that scores one word, then sort with a key of \`(score, word)\`.
+--- hint
+Divide by the number of predictions, which is the word's length plus one, so long words are not punished just for being long.
+--- check test | Common patterns rank first
+rank_words(lambda a, b: {(".", "b"): 0.9, ("b", "a"): 0.8, ("a", "."): 0.7, (".", "a"): 0.1, ("a", "b"): 0.3, ("b", "."): 0.2}.get((a, b), 0.01), ["ab", "a", "ba"]) == ["ba", "a", "ab"]
+--- check test | Ties are broken alphabetically
+rank_words(lambda a, b: 0.5, ["zz", "aa", "m"]) == ["aa", "m", "zz"]
+--- check test | The empty word has one prediction, the end
+rank_words(lambda a, b: 0.9 if (a, b) == (".", ".") else 0.1, ["", "q"]) == ["", "q"]
+
++++ practice | An NLL that never crashes
+--- task
+Write \`safe_nll(prob, words)\`, the average of \`-log(prob(a, b))\` over every prediction in the given words, where each word is read as \`["."] + list(word) + ["."]\`. It must cope with what real evaluation data contains:
+
+- If any probability is 0, return \`math.inf\` instead of crashing.
+- An empty word \`""\` still makes one prediction: the end marker right after the start.
+- An empty list of words raises \`ValueError\`.
+--- starter
+import math
+
+
+def safe_nll(prob, words):
+    total, n = 0.0, 0
+    for word in words:
+        for a, b in zip(word, word[1:]):
+            total -= math.log(prob(a, b))
+            n += 1
+    return total / n
+--- solution
+import math
+
+
+def safe_nll(prob, words):
+    if not words:
+        raise ValueError("no words to score")
+    total, n = 0.0, 0
+    for word in words:
+        seq = ["."] + list(word) + ["."]
+        for a, b in zip(seq, seq[1:]):
+            p = prob(a, b)
+            if p == 0:
+                return math.inf
+            total -= math.log(p)
+            n += 1
+    return total / n
+--- hint
+Wrap each word with the \`"."\` markers before pairing; that also gives the empty word its one prediction.
+--- hint
+Check each probability before taking its log, and return \`math.inf\` at the first zero.
+--- check test | A uniform model over 4 symbols scores log 4
+abs(safe_nll(lambda a, b: 0.25, ["ab", "c"]) - __import__("math").log(4)) < 1e-12
+--- check test | The empty word is one prediction
+abs(safe_nll(lambda a, b: 0.5 if (a, b) == (".", ".") else 1.0, [""]) - __import__("math").log(2)) < 1e-12
+--- check test | A zero probability gives infinity
+safe_nll(lambda a, b: 0.0 if b == "q" else 0.5, ["ab", "aq"]) == __import__("math").inf
+--- check test | No words raises ValueError
+raises(ValueError, lambda: safe_nll(lambda a, b: 0.5, []))
+
++++ practice | Fix the NLL that is too good to be true
+--- task
+This bigram model's NLL looks better than it should. Worse, it rewards a model for never ending its words: the end of a word is never scored.
+
+Find the bug in \`nll\` and fix it, so every word is scored on each of its characters **and** on the final \`"."\`.
+--- starter
+import math
+
+
+class BigramLM:
+    def __init__(self, words, k=1):
+        self.k = k
+        self.chars = ["."] + sorted(set("".join(words)))
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word)
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+--- solution
+import math
+
+
+class BigramLM:
+    def __init__(self, words, k=1):
+        self.k = k
+        self.chars = ["."] + sorted(set("".join(words)))
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+--- hint
+Compare the sequence used for counting in \`__init__\` with the one used for scoring in \`nll\`.
+--- hint
+A word of 3 letters makes 4 predictions: 3 letters and the end.
+--- check test | A model that always ends after "a" is scored on the ending
+abs(BigramLM(["a"], k=0).nll(["a"])) < 1e-12 and abs(BigramLM(["a", "ab"], k=0).nll(["a"]) - -(__import__("math").log(1.0) + __import__("math").log(0.5)) / 2) < 1e-12
+--- check test | The number of predictions includes each end
+(lambda m: abs(m.nll(["ab"]) * 3 - -(__import__("math").log(m.prob(".", "a")) + __import__("math").log(m.prob("a", "b")) + __import__("math").log(m.prob("b", ".")))) < 1e-12)(BigramLM(["ab", "ba", "abba"]))
+--- check test | An empty word is scored on its end
+(lambda m: abs(m.nll([""]) - -__import__("math").log(m.prob(".", "."))) < 1e-12)(BigramLM(["ab"]))
+
++++ practice | A neural bigram learns the counts
+--- task
+The lesson claimed that a network trained with cross-entropy on bigrams ends up with the counting model's probabilities. Check it. Write \`train_logits(words, chars, steps=500, lr=5.0)\`:
+
+1. Keep a table of logits \`W[a][b]\` for every \`a\` and \`b\` in \`chars\`, all starting at \`0.0\`.
+2. Collect every training pair from \`["."] + list(word) + ["."]\` for each word. Call their number \`n\`.
+3. Each step, turn every row into probabilities with a softmax, then compute the gradient of the mean cross-entropy over all pairs: for each pair \`(a, b)\`, every \`W[a][c]\` gets \`p[a][c] / n\`, and \`W[a][b]\` also gets \`-1 / n\` (lesson 10's \`p - onehot\`, averaged).
+4. Move every logit by \`-lr\` times its gradient.
+
+After \`steps\` steps, return the table of probabilities (the softmax of each row) as a dict of dicts.
+--- starter
+import math
+
+
+def train_logits(words, chars, steps=500, lr=5.0):
+    return {a: {b: 1 / len(chars) for b in chars} for a in chars}
+--- solution
+import math
+
+
+def softmax_row(row):
+    top = max(row.values())
+    exps = {b: math.exp(v - top) for b, v in row.items()}
+    total = sum(exps.values())
+    return {b: e / total for b, e in exps.items()}
+
+
+def train_logits(words, chars, steps=500, lr=5.0):
+    W = {a: {b: 0.0 for b in chars} for a in chars}
+    pairs = []
+    for word in words:
+        seq = ["."] + list(word) + ["."]
+        pairs += list(zip(seq, seq[1:]))
+    n = len(pairs)
+    for _ in range(steps):
+        probs = {a: softmax_row(W[a]) for a in chars}
+        grad = {a: {b: 0.0 for b in chars} for a in chars}
+        for a, b in pairs:
+            for c in chars:
+                grad[a][c] += probs[a][c] / n
+            grad[a][b] -= 1 / n
+        for a in chars:
+            for b in chars:
+                W[a][b] -= lr * grad[a][b]
+    return {a: softmax_row(W[a]) for a in chars}
+--- hint
+A small \`softmax_row\` helper for one dict row keeps the step short. Compute all the probabilities first, then the whole gradient, then update.
+--- hint
+Each pair touches only its own row \`a\`: it adds \`p[a][c] / n\` to every entry of that row and takes \`1 / n\` off the entry for the true next symbol.
+--- check test | After training, every row with data matches the counted probabilities
+(lambda P: abs(P["."]["a"] - 0.6) < 0.01 and abs(P["."]["b"] - 0.4) < 0.01 and abs(P["a"]["b"] - 0.6) < 0.01 and abs(P["a"]["."] - 0.4) < 0.01 and abs(P["b"]["."] - 0.5) < 0.01 and abs(P["b"]["a"] - 1 / 3) < 0.01 and abs(P["b"]["b"] - 1 / 6) < 0.01)(train_logits(["ab", "abb", "ba", "a", "bab"], [".", "a", "b"]))
+--- check test | Pairs never seen get almost no probability
+(lambda P: P["a"]["a"] < 0.01 and P["."]["."] < 0.01)(train_logits(["ab", "abb", "ba", "a", "bab"], [".", "a", "b"]))
+--- check test | Zero steps is uniform, and every row adds up to 1
+(lambda P0, P: all(abs(v - 1 / 3) < 1e-12 for r in P0.values() for v in r.values()) and all(abs(sum(r.values()) - 1) < 1e-9 for r in P.values()))(train_logits(["ab"], [".", "a", "b"], steps=0), train_logits(["ab", "ba"], [".", "a", "b"], steps=50))
+--- check test | One step by hand: the "." row moves towards its only next symbol
+(lambda P: P["."]["a"] > P["."]["b"] and abs(P["."]["b"] - P["."]["."]) < 1e-12)(train_logits(["a"], [".", "a", "b"], steps=1, lr=1.0))
+
+=== ai-13 | Embeddings and causal self-attention
+--- teach
+The bigram model looks at one character. To predict well, a model must use the **whole context** and decide, for each position, which earlier tokens matter. **Attention** is the mechanism that does that, and it is the heart of the transformer, the architecture behind today's language models.
+
+**Embeddings: ids to vectors.** A token id is just a label; the number 17 is not "bigger" than 3 in any useful sense. So each id looks up a row in a learned table, its **embedding**: a vector of \`d\` numbers that training shapes so similar tokens get similar vectors. Attention on its own does not know word order, so each **position** also gets a learned vector, added on:
+
+\`\`\`python
+token_table = [[0.1, 0.2], [0.5, -0.3], [0.0, 0.9]]    # 3 tokens, d = 2
+pos_table = [[1.0, 0.0], [0.0, 1.0]]                  # 2 positions
+ids = [2, 0]
+[[t + p for t, p in zip(token_table[tok], pos_table[i])] for i, tok in enumerate(ids)]
+# [[1.0, 0.9], [0.1, 1.2]]
+\`\`\`
+
+(Looking up row \`i\` is the same as multiplying a one-hot vector by the table, which is why it can be trained like any other matrix.)
+
+**Queries, keys and values.** From each position's vector \`x\`, attention makes three vectors with three learned matrices: a **query** \`q = x @ Wq\` ("what am I looking for?"), a **key** \`k = x @ Wk\` ("what do I contain?") and a **value** \`v = x @ Wv\` ("what I pass on if chosen"). For a whole sequence \`X\` (one row per position) that is three matrix products: \`Q = X @ Wq\`, and so on.
+
+**Scores, softmax, weighted average.** Position \`i\` scores every position \`j\` with a dot product, \`q_i · k_j\` (big when they match), turns the scores into weights with softmax, and outputs the weighted average of the values:
+
+\`\`\`text
+weights[i] = softmax([q_i · k_j / sqrt(d) for every j])
+out[i]     = sum over j of weights[i][j] * v_j
+\`\`\`
+
+In matrix form: \`softmax(Q @ K.T / sqrt(d)) @ V\`, which is why attention is called **scaled dot-product attention**.
+
+**Why divide by \`sqrt(d)\`?** A dot product of two random \`d\`-long vectors grows like \`sqrt(d)\`. Without the scaling, large models get huge scores, softmax becomes almost one-hot, and its gradients vanish (lesson 10's saturation, in another place). Dividing by \`sqrt(d)\` keeps the scores in a sensible range whatever the size.
+
+**The causal mask.** A language model predicts the next token, so position \`i\` must not look at positions after it: that would be reading the answer. Before the softmax, set the scores for \`j > i\` to \`-inf\`. \`exp(-inf)\` is exactly 0, so those positions get weight 0, and the remaining weights still add up to 1. The first position can only attend to itself.
+
+\`\`\`python
+import math
+
+scores = [0.5, -math.inf, -math.inf]       # row 0 of a causal score matrix
+m = max(scores)
+exps = [math.exp(s - m) for s in scores]
+[e / sum(exps) for e in exps]              # [1.0, 0.0, 0.0]
+\`\`\`
+
+The stable softmax from lesson 10 handles \`-inf\` for free, as long as each row has at least one real score (the diagonal always is).
+
+**Common mistake:** masking **after** the softmax (zeroing weights). The row no longer adds up to 1, and the future still leaked into the other weights through the shared denominator. Mask the scores, then softmax.
+
+In PyTorch: \`nn.Embedding\`, and \`F.scaled_dot_product_attention(q, k, v, is_causal=True)\`, which does exactly this, fused into one fast GPU kernel.
+--- task
+The starter has \`matmul\` and a stable \`softmax\`. Write:
+
+- \`embed(ids, token_table, pos_table)\`: for each position \`i\`, the row \`token_table[ids[i]]\` plus \`pos_table[i]\`, element by element.
+- \`attention(Q, K, V, causal=True)\`: returns \`(out, weights)\`. \`weights[i][j]\` is the softmax over \`j\` of \`Q[i] · K[j] / sqrt(d)\`, where \`d\` is the length of a key; with \`causal\`, scores for \`j > i\` are \`-inf\` before the softmax. \`out\` is \`weights @ V\`.
+- \`self_attention(X, Wq, Wk, Wv, causal=True)\`: computes \`Q\`, \`K\`, \`V\` from \`X\` and returns only the \`out\` of \`attention\`.
+--- starter
+import math
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def embed(ids, token_table, pos_table):
+    pass
+
+
+def attention(Q, K, V, causal=True):
+    pass
+
+
+def self_attention(X, Wq, Wk, Wv, causal=True):
+    pass
+--- solution
+import math
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def embed(ids, token_table, pos_table):
+    return [[t + p for t, p in zip(token_table[tok], pos_table[i])] for i, tok in enumerate(ids)]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def self_attention(X, Wq, Wk, Wv, causal=True):
+    return attention(matmul(X, Wq), matmul(X, Wk), matmul(X, Wv), causal)[0]
+--- hint
+For each query row \`i\`, build the list of scores against every key row \`j\`: the dot product divided by \`math.sqrt(len(K[0]))\`, or \`-math.inf\` when \`causal\` and \`j > i\`. Softmax that list to get row \`i\` of the weights.
+--- hint
+Once you have all the weight rows, \`out = matmul(weights, V)\`: each output row is a weighted average of the value rows.
+--- hint
+\`self_attention\` is \`attention(matmul(X, Wq), matmul(X, Wk), matmul(X, Wv), causal)[0]\`.
+--- check case | embed adds each token's row to its position's row
+embed([2, 0], [[0.5, 1.0], [2.0, 2.0], [-1.0, 0.0]], [[0.0, 0.25], [1.0, 1.0]])
+=> [[-1.0, 0.25], [1.5, 2.0]]
+--- check test | The first position attends only to itself, and weights above the diagonal are exactly 0
+(lambda w: w[0] == [1.0, 0.0, 0.0] and w[1][2] == 0.0 and all(abs(sum(r) - 1) < 1e-12 for r in w))(attention([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], [[1.0, 2.0], [0.5, 0.5], [2.0, -1.0]], [[1.0], [2.0], [3.0]])[1])
+--- check test | With identical keys, each position spreads its weight evenly over what it may see
+(lambda w: all(abs(w[i][j] - (1 / (i + 1) if j <= i else 0)) < 1e-12 for i in range(4) for j in range(4)))(attention([[0.3, 1.0]] * 4, [[2.0, -1.0]] * 4, [[1.0]] * 4)[1])
+--- check test | out is the weighted average of the values: the causal first row is V[0]
+(lambda r: r[0][0] == [5.0, -1.0] and abs(r[0][1][0] - (r[1][1][0] * 5 + r[1][1][1] * 7)) < 1e-12)(attention([[1.0, 0.0], [0.0, 1.0]], [[1.0, 1.0], [0.0, 2.0]], [[5.0, -1.0], [7.0, 3.0]]))
+--- check test | Scores are divided by sqrt(d): d = 4 gives softmax([2, 0]), not softmax([4, 0])
+(lambda w: abs(w[0][0] - 0.8807970779778823) < 1e-12)(attention([[1.0, 1.0, 1.0, 1.0]], [[1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0]], [[1.0], [0.0]], causal=False)[1])
+--- check test | Without the mask, every position sees every other
+(lambda w: all(v > 0 for r in w for v in r))(attention([[1.0, 0.0], [0.0, 1.0]], [[1.0, 0.0], [0.0, 1.0]], [[1.0], [2.0]], causal=False)[1])
+--- check test | self_attention on a small sequence
+(lambda out: len(out) == 3 and len(out[0]) == 3 and all(abs(a - b) < 1e-9 for r, e in zip(out, [[1.0, 0.5, 1.5], [0.888201680895, 0.611798319105, 1.164605042684], [-0.204774628396, 1.284692502514, -1.694241759305]]) for a, b in zip(r, e)))(self_attention([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]], [[0.5, -1.0], [1.0, 0.0]], [[1.0, 0.5], [-0.5, 1.0]], [[1.0, 0.0, 2.0], [0.0, 1.0, -1.0]]))
+--- check test | Causal: changing the last token never changes the earlier outputs
+(lambda f: f([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]])[:2] == f([[1.0, 0.5], [-0.5, 2.0], [9.0, 9.0]])[:2] != f([[9.0, 9.0], [-0.5, 2.0], [0.0, -1.0]])[:2])(lambda X: self_attention(X, [[0.5, -1.0], [1.0, 0.0]], [[1.0, 0.5], [-0.5, 1.0]], [[1.0, 0.0], [0.0, 1.0]]))
+
++++ practice | An embedding lookup is a matrix product
+--- task
+The lesson said that looking up row \`i\` of an embedding table is the same as multiplying a **one-hot** vector (all zeros except a 1 at position \`i\`) by the table. Show it. The starter has \`matmul\`. Write \`one_hot_embed(ids, table)\`:
+
+1. Build one one-hot row per id, each as long as the table has rows (the vocabulary size).
+2. Return \`matmul(one_hot_rows, table)\`.
+
+If an id is not a valid row of the table, raise \`ValueError\`. That includes negative ids, which Python indexing would quietly accept.
+--- starter
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def one_hot_embed(ids, table):
+    return [table[i] for i in ids]
+--- solution
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def one_hot_embed(ids, table):
+    vocab = len(table)
+    rows = []
+    for i in ids:
+        if not 0 <= i < vocab:
+            raise ValueError(f"token id {i} is outside a vocabulary of {vocab}")
+        rows.append([1.0 if j == i else 0.0 for j in range(vocab)])
+    return matmul(rows, table)
+--- hint
+A one-hot row for id \`i\` is \`[1.0 if j == i else 0.0 for j in range(len(table))]\`.
+--- hint
+Check \`0 <= i < len(table)\` for every id before building anything.
+--- check test | The product equals a direct lookup, row by row
+(lambda t: one_hot_embed([2, 0, 2], t) == [t[2], t[0], t[2]])([[0.5, 1.0], [2.0, -2.0], [-1.0, 0.25]])
+--- check test | The result has shape (len(ids), d)
+(lambda r: len(r) == 4 and all(len(row) == 3 for row in r))(one_hot_embed([0, 1, 1, 0], [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]))
+--- check test | Ids out of range, including negative ones, raise ValueError
+raises(ValueError, lambda: one_hot_embed([3], [[1.0], [2.0], [3.0]])) and raises(ValueError, lambda: one_hot_embed([-1], [[1.0], [2.0]]))
+--- check test | The rows come out of the product (as floats), not copied from the table
+(lambda t: one_hot_embed([1], t)[0] == [3.0, 4.0] and all(type(v) is float for v in one_hot_embed([1], t)[0]))([[1, 2], [3, 4]])
+
++++ practice | The score matrix, for any shapes
+--- task
+In **cross-attention** (used when a model reads one sequence while writing another) the queries and keys come from different sequences, so the score matrix need not be square. Write \`score_matrix(Q, K)\`:
+
+- \`Q\` has shape \`(n_q, d)\` and \`K\` has shape \`(n_k, d)\`.
+- Return the \`(n_q, n_k)\` matrix whose entry \`[i][j]\` is \`Q[i] · K[j] / sqrt(d)\`.
+- Raise \`ValueError\` if either is empty, or if any row of \`Q\` or \`K\` does not have length \`d\`, the length of \`Q\`'s first row.
+--- starter
+import math
+
+
+def score_matrix(Q, K):
+    return [[sum(a * b for a, b in zip(q, k)) for k in K] for q in Q]
+--- solution
+import math
+
+
+def score_matrix(Q, K):
+    if not Q or not K:
+        raise ValueError("need at least one query and one key")
+    d = len(Q[0])
+    if any(len(row) != d for row in Q + K):
+        raise ValueError(f"every query and key must have length {d}")
+    scale = math.sqrt(d)
+    return [[sum(a * b for a, b in zip(q, k)) / scale for k in K] for q in Q]
+--- hint
+Check the shapes first: both non-empty, and every row of \`Q + K\` as long as \`Q[0]\`.
+--- hint
+Divide each dot product by \`math.sqrt(d)\`. The answer has one row per query and one column per key.
+--- check test | Two queries against three keys give a (2, 3) matrix
+(lambda S: len(S) == 2 and all(len(r) == 3 for r in S) and S[0] == [1.0, 0.0, 1.0] and S[1] == [0.0, 2.0, -1.0])(score_matrix([[2.0, 0.0, 0.0, 0.0], [0.0, 2.0, 0.0, 0.0]], [[1.0, 0.0, 0.0, 0.0], [0.0, 2.0, 0.0, 0.0], [1.0, -1.0, 3.0, 0.0]]))
+--- check test | Scores are divided by sqrt(d)
+abs(score_matrix([[1.0] * 9], [[1.0] * 9])[0][0] - 3.0) < 1e-12
+--- check test | Mismatched lengths raise ValueError, even when zip would not notice
+raises(ValueError, lambda: score_matrix([[1.0, 2.0]], [[1.0, 2.0, 3.0]])) and raises(ValueError, lambda: score_matrix([[1.0, 2.0], [1.0]], [[1.0, 2.0]]))
+--- check test | Empty inputs raise ValueError
+raises(ValueError, lambda: score_matrix([], [[1.0]])) and raises(ValueError, lambda: score_matrix([[1.0]], []))
+
++++ practice | How focused is each position?
+--- task
+When engineers inspect a trained model, they often measure how spread out each attention row is with its **entropy**: \`-sum(p * log(p))\` over the row. A row that puts all its weight on one position has entropy 0; a row spread evenly over \`k\` positions has entropy \`log(k)\`.
+
+Write \`attention_entropy(weights)\`, which returns one entropy per row of the weight matrix. Weights of exactly 0 (for example, masked future positions) contribute nothing, because \`p * log(p)\` goes to 0 as \`p\` does, but \`math.log(0)\` would crash.
+--- starter
+import math
+
+
+def attention_entropy(weights):
+    return [-sum(p * math.log(p) for p in row) for row in weights]
+--- solution
+import math
+
+
+def attention_entropy(weights):
+    return [-sum(p * math.log(p) for p in row if p > 0) for row in weights]
+--- hint
+Skip the zeros inside the sum with an \`if\` in the generator.
+--- check test | One-hot rows have entropy 0
+attention_entropy([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]) == [0.0, 0.0]
+--- check test | Causal rows that spread evenly have entropy log(i + 1)
+all(abs(e - __import__("math").log(i + 1)) < 1e-12 for i, e in enumerate(attention_entropy([[1.0, 0.0, 0.0], [0.5, 0.5, 0.0], [1 / 3, 1 / 3, 1 / 3]])))
+--- check test | A lopsided row is in between
+(lambda e: 0 < e[0] < __import__("math").log(2))(attention_entropy([[0.9, 0.1]]))
+--- check test | No rows gives no entropies
+attention_entropy([]) == []
+
++++ practice | A mask for padding
+--- task
+When sequences of different lengths share a batch, the short ones are **padded** with filler positions that must get no attention. Write \`masked_softmax(scores, allowed)\`:
+
+- \`scores\` and \`allowed\` have the same shape; \`allowed[i][j]\` is \`True\` where position \`i\` may look at position \`j\`.
+- For each row, disallowed entries get weight exactly \`0.0\` and the allowed ones share a stable softmax of their scores, adding up to 1.
+- A row with nothing allowed (a padding row) gets all \`0.0\`, not \`nan\` and not an error.
+--- starter
+import math
+
+
+def masked_softmax(scores, allowed):
+    out = []
+    for row, ok in zip(scores, allowed):
+        exps = [math.exp(s) if a else 0.0 for s, a in zip(row, ok)]
+        out.append([e / sum(exps) for e in exps])
+    return out
+--- solution
+import math
+
+
+def masked_softmax(scores, allowed):
+    out = []
+    for row, ok in zip(scores, allowed):
+        kept = [s for s, a in zip(row, ok) if a]
+        if not kept:
+            out.append([0.0] * len(row))
+            continue
+        top = max(kept)
+        exps = [math.exp(s - top) if a else 0.0 for s, a in zip(row, ok)]
+        total = sum(exps)
+        out.append([e / total for e in exps])
+    return out
+--- hint
+Take the maximum over the allowed scores only. If there are none, the row is all zeros and you can move on.
+--- hint
+Give the disallowed entries an "exponential" of exactly \`0.0\`, so they add nothing to the total.
+--- check test | Padding columns get nothing, the rest add up to 1
+(lambda w: w[0][2] == 0.0 and abs(w[0][0] + w[0][1] - 1) < 1e-12 and abs(w[0][0] - 0.2689414213699951) < 1e-12)(masked_softmax([[1.0, 2.0, 50.0]], [[True, True, False]]))
+--- check test | A row with nothing allowed is all zeros
+masked_softmax([[1.0, 2.0]], [[False, False]]) == [[0.0, 0.0]]
+--- check test | One allowed entry gets everything, even with a huge score elsewhere
+masked_softmax([[-3.0, 1000.0]], [[True, False]]) == [[1.0, 0.0]]
+--- check test | Big allowed scores do not overflow
+(lambda w: abs(w[0][0] - 0.5) < 1e-12 and abs(w[0][1] - 0.5) < 1e-12)(masked_softmax([[900.0, 900.0, 0.0]], [[True, True, False]]))
+
++++ practice | Fix the mask that leaks
+--- task
+This attention function hides the future by zeroing weights **after** the softmax. Two symptoms show it is wrong: the rows of \`weights\` no longer add up to 1, and changing the **last** key changes the weights of **earlier** positions, so the future still leaks in through the softmax's shared total.
+
+Fix \`attention\` so it masks the scores (with \`-math.inf\`) before the softmax.
+--- starter
+import math
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [sum(a * b for a, b in zip(q, k)) / scale for k in K]
+        row = softmax(scores)
+        weights.append([w if j <= i else 0.0 for j, w in enumerate(row)])
+    out = [[sum(w * v[c] for w, v in zip(row, V)) for c in range(len(V[0]))] for row in weights]
+    return out, weights
+--- solution
+import math
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [sum(a * b for a, b in zip(q, k)) / scale if j <= i else -math.inf for j, k in enumerate(K)]
+        weights.append(softmax(scores))
+    out = [[sum(w * v[c] for w, v in zip(row, V)) for c in range(len(V[0]))] for row in weights]
+    return out, weights
+--- hint
+Each row's softmax divides by a total that includes every score in the row, future ones too. Zeroing afterwards cannot undo that.
+--- hint
+Put \`-math.inf\` into the scores for \`j > i\` before calling \`softmax\`; \`math.exp(-math.inf)\` is exactly 0.
+--- check test | Every row adds up to 1, with zeros above the diagonal
+(lambda w: all(abs(sum(r) - 1) < 1e-12 for r in w) and w[0][1] == 0.0 and w[0][2] == 0.0 and w[1][2] == 0.0)(attention([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], [[1.0, 2.0], [0.5, 0.5], [2.0, -1.0]], [[1.0], [2.0], [3.0]])[1])
+--- check test | Changing the last key never changes earlier rows
+(lambda f: f([[1.0, 2.0], [0.5, 0.5], [2.0, -1.0]])[:2] == f([[1.0, 2.0], [0.5, 0.5], [-7.0, 9.0]])[:2])(lambda K: attention([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], K, [[1.0], [2.0], [3.0]])[1])
+--- check test | The first output is exactly the first value
+attention([[3.0, 1.0], [0.0, 1.0]], [[1.0, 1.0], [5.0, 5.0]], [[4.0, -2.0], [9.0, 9.0]])[0][0] == [4.0, -2.0]
+
++++ practice | A KV cache for fast generation
+--- task
+When a model generates text one token at a time, recomputing attention over the whole sequence at every step wastes work: the earlier keys and values never change. Real systems keep a **KV cache**. Write a class \`KVCache\`:
+
+- It starts with empty lists \`keys\` and \`values\`.
+- \`step(q, k, v)\` takes the new position's query, key and value vectors. It appends \`k\` and \`v\` to the cache, then returns the new position's output: the softmax over all cached keys of \`q · key / sqrt(d)\` (with \`d\` the length of \`k\`), used to take the weighted average of all cached values.
+
+No mask is needed: the cache only ever holds the past and the present. Feeding the rows of \`Q\`, \`K\` and \`V\` one at a time must give exactly the outputs of full causal attention. The starter has \`softmax\` and the lesson's \`attention\` to compare with.
+--- starter
+import math
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    out = [[sum(w * v[c] for w, v in zip(row, V)) for c in range(len(V[0]))] for row in weights]
+    return out, weights
+
+
+class KVCache:
+    def __init__(self):
+        self.keys = []
+        self.values = []
+
+    def step(self, q, k, v):
+        return v
+--- solution
+import math
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    out = [[sum(w * v[c] for w, v in zip(row, V)) for c in range(len(V[0]))] for row in weights]
+    return out, weights
+
+
+class KVCache:
+    def __init__(self):
+        self.keys = []
+        self.values = []
+
+    def step(self, q, k, v):
+        self.keys.append(k)
+        self.values.append(v)
+        scale = math.sqrt(len(k))
+        weights = softmax([sum(a * b for a, b in zip(q, key)) / scale for key in self.keys])
+        return [sum(w * value[c] for w, value in zip(weights, self.values)) for c in range(len(v))]
+--- hint
+Append first, so the new position can attend to itself. Then one row of scores against every cached key, one softmax, one weighted average.
+--- hint
+The weighted average is taken column by column: column \`c\` of the output is the sum of \`weight * value[c]\` over the cached values.
+--- check test | Step by step equals full causal attention
+(lambda Q, K, V: (lambda c: all(abs(a - b) < 1e-12 for i in range(3) for a, b in zip(c.step(Q[i], K[i], V[i]), attention(Q, K, V)[0][i])))(KVCache()))([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]], [[0.3, 1.0], [1.2, -0.4], [0.5, 0.5]], [[1.0, 0.0, 2.0], [0.0, 1.0, -1.0], [3.0, 3.0, 3.0]])
+--- check test | The cache grows by one key and one value per step
+(lambda c: (c.step([1.0], [1.0], [5.0]), c.step([1.0], [2.0], [6.0]), len(c.keys), len(c.values))[2:] == (2, 2))(KVCache())
+--- check test | The first step returns the first value exactly
+KVCache().step([0.3, -0.2], [1.0, 1.0], [4.0, -2.0]) == [4.0, -2.0]
+--- check test | Two caches are independent
+(lambda a, b: (a.step([1.0], [1.0], [1.0]), len(b.keys))[1] == 0)(KVCache(), KVCache())
+
++++ practice | What attention costs
+--- task
+Attention's cost grows with the square of the sequence length, which is why long contexts are expensive. For a sequence of \`n\` positions and head size \`d\`, per layer:
+
+- computing the scores \`Q @ K.T\` takes \`n * n * d\` multiply-adds, and the weighted average \`weights @ V\` takes another \`n * n * d\`;
+- the weight matrix holds \`n * n\` numbers;
+- a KV cache holds the keys and the values: \`2 * n * d\` numbers.
+
+Write \`attention_cost(n, d, n_layers=1, bytes_per_number=2)\`, which returns a dict with the totals over all layers:
+
+- \`"macs"\`: multiply-adds for the scores and the weighted average;
+- \`"weights_bytes"\`: memory for the weight matrices;
+- \`"kv_cache_bytes"\`: memory for the KV cache.
+
+Raise \`ValueError\` if any argument is below 1.
+--- starter
+def attention_cost(n, d, n_layers=1, bytes_per_number=2):
+    return {"macs": n * d, "weights_bytes": n * bytes_per_number, "kv_cache_bytes": n * d * bytes_per_number}
+--- solution
+def attention_cost(n, d, n_layers=1, bytes_per_number=2):
+    if min(n, d, n_layers, bytes_per_number) < 1:
+        raise ValueError("every size must be at least 1")
+    return {
+        "macs": 2 * n * n * d * n_layers,
+        "weights_bytes": n * n * n_layers * bytes_per_number,
+        "kv_cache_bytes": 2 * n * d * n_layers * bytes_per_number,
+    }
+--- hint
+Write each quantity for one layer from the list in the task, then multiply by \`n_layers\` and, for memory, by the bytes per number.
+--- hint
+The score work and the weight matrix both have \`n * n\` in them; the KV cache only has \`n\`.
+--- check case | A small example
+attention_cost(4, 2)
+=> {"macs": 64, "weights_bytes": 32, "kv_cache_bytes": 32}
+--- check test | Doubling the length quadruples the compute and the weights, but only doubles the cache
+(lambda a, b: b["macs"] == 4 * a["macs"] and b["weights_bytes"] == 4 * a["weights_bytes"] and b["kv_cache_bytes"] == 2 * a["kv_cache_bytes"])(attention_cost(1024, 64, 12), attention_cost(2048, 64, 12))
+--- check test | A 131,072-token context: one layer's weight matrix alone is over 34 billion bytes
+attention_cost(131072, 128)["weights_bytes"] == 34359738368
+--- check test | Sizes below 1 raise ValueError
+raises(ValueError, lambda: attention_cost(0, 64)) and raises(ValueError, lambda: attention_cost(8, 64, n_layers=0))
+
+=== ai-14 | A transformer block, forward pass
+--- teach
+A transformer is a stack of identical **blocks**. Each block lets the positions exchange information (attention), then lets each position think on its own (an MLP), with two pieces of plumbing that make deep stacks trainable: **layer normalisation** and **residual connections**. This lesson builds one block's forward pass, the way GPT-style models arrange it.
+
+**Layer normalisation** rescales each position's vector to mean 0 and variance 1, then applies a learned scale \`gamma\` and shift \`beta\` (one per dimension):
+
+\`\`\`python
+import math
+
+x = [1.0, 2.0, 3.0, 4.0]
+mean = sum(x) / len(x)
+var = sum((v - mean) ** 2 for v in x) / len(x)
+[round((v - mean) / math.sqrt(var + 1e-5), 3) for v in x]     # [-1.342, -0.447, 0.447, 1.342]
+\`\`\`
+
+Without it, the size of the numbers drifts from layer to layer, and training becomes unstable. The small \`eps\` (\`1e-5\`) under the square root protects against a vector whose values are all equal (variance 0). The variance divides by \`n\`, not \`n - 1\`.
+
+**The MLP** works on each position separately: expand to a wider hidden size (4× in GPT models), apply a nonlinearity, project back. GPT models use **GELU**, a smooth cousin of ReLU, usually in this tanh form:
+
+\`\`\`text
+gelu(x) = 0.5 * x * (1 + tanh(sqrt(2 / pi) * (x + 0.044715 * x ** 3)))
+\`\`\`
+
+**Multi-head attention.** One attention pattern per layer is limiting: a token may need to look at the previous word for grammar and at a name far back for meaning. So the \`d\` columns of \`Q\`, \`K\` and \`V\` are split into \`n_heads\` groups of \`d / n_heads\` columns; each **head** runs attention (lesson 13) on its own group; the heads' outputs are joined side by side again, and a final matrix \`Wo\` mixes them. Same cost as one big head, many patterns. (Each head's scale uses its own size, \`sqrt(d / n_heads)\`, which your \`attention\` already does, because it measures the key length.)
+
+\`\`\`python
+row = [1, 2, 3, 4, 5, 6]         # one position, d = 6, n_heads = 3, head size 2
+[row[h * 2:(h + 1) * 2] for h in range(3)]     # [[1, 2], [3, 4], [5, 6]]
+\`\`\`
+
+**Residual connections.** Each sub-layer **adds** its result to its input instead of replacing it. The block is:
+
+\`\`\`text
+x = x + attention(layer_norm_1(x))      # for every position
+x = x + mlp(layer_norm_2(x))            # for every position, separately
+\`\`\`
+
+(normalising **before** each sub-layer, "pre-norm", as GPT-2 onwards do). The sum means information and gradients have a straight path from the bottom of the stack to the top; each block only learns a *correction*. A neat consequence you can test: if a block's output weights are all zero, the block returns its input unchanged.
+
+**The whole model** is: embeddings (lesson 13), N blocks, a final layer norm, then a matrix from \`d\` to the vocabulary size giving logits, then softmax and cross-entropy (lesson 10). Training is lessons 5 to 9, at scale. GPT-2 small had \`d = 768\`, 12 heads, 12 blocks and 124 million parameters; frontier models are vastly larger, trained on thousands of GPUs in 16-bit precision with AdamW. The block you write here is the same computation, with dimensions of 4 instead of thousands.
+
+A note on conventions: here every matrix \`W\` has shape \`(inputs, outputs)\` and you compute \`x @ W\`. PyTorch's \`nn.Linear\` stores the transpose, \`(outputs, inputs)\`, and computes \`x @ W.T\`. Same maths; watch for it when you read real code.
+--- task
+The starter has \`matmul\`, \`softmax\`, \`attention\` from the last lesson and \`random_params(d, n_heads, hidden, seed)\`, which builds a dict of block weights. Write:
+
+- \`layer_norm(x, gamma, beta, eps=1e-5)\` for one vector.
+- \`gelu(x)\` for one number, the tanh form above.
+- \`mlp(x, W1, b1, W2, b2)\` for one vector: \`gelu\` applied to each entry of \`x @ W1 + b1\`, then \`@ W2 + b2\`.
+- \`multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads)\`: split \`Q\`, \`K\`, \`V\`'s columns into \`n_heads\` equal groups, run causal \`attention\` on each, join each position's head outputs in head order, multiply by \`Wo\`. Raise \`ValueError\` if \`n_heads\` does not divide the width of \`Q\`.
+- \`transformer_block(X, p)\`: the pre-norm block above, with the dict \`p\` holding \`"ln1_g"\`, \`"ln1_b"\`, \`"Wq"\`, \`"Wk"\`, \`"Wv"\`, \`"Wo"\`, \`"n_heads"\`, \`"ln2_g"\`, \`"ln2_b"\`, \`"W1"\`, \`"b1"\`, \`"W2"\`, \`"b2"\`. Return the new list of rows; do not modify \`X\`.
+--- starter
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    pass
+
+
+def gelu(x):
+    pass
+
+
+def mlp(x, W1, b1, W2, b2):
+    pass
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    pass
+
+
+def transformer_block(X, p):
+    pass
+--- solution
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append([a + b for a, b in zip(x, h)])
+    return out
+--- hint
+\`layer_norm\`: compute the mean, then the variance (divide by \`n\`), then \`gamma[i] * (x[i] - mean) / sqrt(var + eps) + beta[i]\` for each \`i\`.
+--- hint
+For multi-head attention, head \`h\` uses columns \`h * size\` to \`(h + 1) * size\` of each row of \`Q\`, \`K\` and \`V\`. After running \`attention\` for every head, position \`t\`'s joined row is head 0's row \`t\`, then head 1's row \`t\`, and so on.
+--- hint
+The block: \`normed = [layer_norm(x, ...) for x in X]\`, add \`multi_head_attention(normed, ...)\` to \`X\` row by row, then for each row add \`mlp(layer_norm(row, ...), ...)\` to it.
+--- check test | layer_norm gives mean 0 and variance 1 (with gamma 1, beta 0)
+(lambda y: abs(sum(y) / 4) < 1e-12 and abs(sum(v * v for v in y) / 4 - 1) < 1e-4)(layer_norm([1.0, 2.0, 3.0, 4.0], [1.0] * 4, [0.0] * 4))
+--- check test | layer_norm applies gamma and beta, and uses eps
+(lambda a, b: all(abs(y - (2 * x + 1)) < 1e-12 for x, y in zip(a, b)))(layer_norm([1.0, 2.0, 3.0, 4.0], [1.0] * 4, [0.0] * 4), layer_norm([1.0, 2.0, 3.0, 4.0], [2.0] * 4, [1.0] * 4)) and all(abs(a - b) < 1e-12 for a, b in zip(layer_norm([0.0, 2.0], [1.0, 1.0], [0.0, 0.0], eps=1.0), [-0.5 ** 0.5, 0.5 ** 0.5]))
+--- check test | layer_norm of a constant vector is just beta (no division by zero)
+layer_norm([5.0, 5.0, 5.0], [1.0, 2.0, 3.0], [0.5, -0.5, 0.0]) == [0.5, -0.5, 0.0]
+--- check test | gelu matches the tanh formula
+gelu(0.0) == 0.0 and abs(gelu(1.0) - 0.8411919906082768) < 1e-12 and abs(gelu(-3.0) - -0.0036373920817729943) < 1e-12
+--- check test | mlp on one vector
+all(abs(a - b) < 1e-12 for a, b in zip(mlp([1.0, -2.0], [[0.5, -1.0, 2.0], [1.0, 0.5, 0.0]], [0.1, 0.0, -0.1], [[1.0, 0.0], [0.0, 1.0], [2.0, -1.0]], [0.0, 0.5]), [3.57761053607186, -1.39085354036756]))
+--- check test | One head is plain self-attention followed by Wo
+(lambda p, X: all(abs(a - b) < 1e-12 for r, e in zip(multi_head_attention(X, p["Wq"], p["Wk"], p["Wv"], p["Wo"], 1), matmul(attention(matmul(X, p["Wq"]), matmul(X, p["Wk"]), matmul(X, p["Wv"]))[0], p["Wo"])) for a, b in zip(r, e)))(random_params(4, 1, 8, seed=3), [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]])
+--- check test | Two heads on a small sequence
+(lambda p: all(abs(a - b) < 1e-9 for r, e in zip(multi_head_attention([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]], p["Wq"], p["Wk"], p["Wv"], p["Wo"], 2), [[0.52548261581, 0.338383940322, -0.054366641016, -0.702477333552], [0.118149174294, 0.230007722128, -0.236039634078, -0.300683910893], [0.505348379938, 0.112846035778, 0.290356920922, -0.866726876303]]) for a, b in zip(r, e)))(random_params(4, 2, 8, seed=1))
+--- check test | Heads must divide the width
+raises(ValueError, lambda: multi_head_attention([[1.0, 2.0, 3.0]], [[1.0] * 3] * 3, [[1.0] * 3] * 3, [[1.0] * 3] * 3, [[1.0] * 3] * 3, 2))
+--- check test | A block whose output weights are zero returns its input unchanged (residuals)
+(lambda p, X: (p.update(Wo=[[0.0] * 4 for _ in range(4)], W2=[[0.0] * 4 for _ in range(8)], b2=[0.0] * 4), transformer_block(X, p) == X)[1])(random_params(4, 2, 8, seed=2), [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4]])
+--- check test | transformer_block on a small sequence, without changing X
+(lambda X: (lambda out: X == [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]] and all(abs(a - b) < 1e-9 for r, e in zip(out, [[2.878484185969, 1.86744645543, -1.55655834136, -0.491522897056], [2.218398589489, 2.872733263397, -1.508623708077, -1.126211526583], [2.903735348143, 0.317513785212, -0.364146823338, 0.117514086952]]) for a, b in zip(r, e)))(transformer_block(X, random_params(4, 2, 8, seed=1))))([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]])
+--- check test | The block is causal: a later token never changes earlier outputs
+(lambda p: transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]], p)[:2] == transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [-3.0, 3.0, 1.0, 0.0]], p)[:2])(random_params(4, 2, 8, seed=1))
+
++++ practice | RMSNorm, the leaner layer norm
+--- task
+Many recent models (Llama among them) replace layer normalisation with **RMSNorm**: it skips subtracting the mean and has no shift \`beta\`, only a scale \`gamma\`. For one vector \`x\`:
+
+\`\`\`text
+rms = sqrt(mean of x[i] ** 2 + eps)
+out[i] = gamma[i] * x[i] / rms
+\`\`\`
+
+Write \`rms_norm(x, gamma, eps=1e-5)\`. A vector of zeros must give zeros, not a division by zero (that is what \`eps\` is for).
+--- starter
+import math
+
+
+def rms_norm(x, gamma, eps=1e-5):
+    rms = math.sqrt(sum(v * v for v in x) / len(x))
+    return [g * v / rms for v, g in zip(x, gamma)]
+--- solution
+import math
+
+
+def rms_norm(x, gamma, eps=1e-5):
+    rms = math.sqrt(sum(v * v for v in x) / len(x) + eps)
+    return [g * v / rms for v, g in zip(x, gamma)]
+--- hint
+\`eps\` goes inside the square root, added to the mean of the squares.
+--- check test | With gamma 1, the mean square of the output is about 1
+(lambda y: abs(sum(v * v for v in y) / 3 - 1) < 1e-5)(rms_norm([1.0, -2.0, 3.0], [1.0, 1.0, 1.0]))
+--- check test | The mean is not removed: an all-positive vector stays all-positive
+all(v > 0 for v in rms_norm([1.0, 2.0, 3.0], [1.0, 1.0, 1.0]))
+--- check test | gamma scales each position, and eps is used
+(lambda y: all(abs(a - b) < 1e-12 for a, b in zip(y, [2.0 * 3.0 / (9.0 + 1.0) ** 0.5, -3.0 / (9.0 + 1.0) ** 0.5])))(rms_norm([3.0, -3.0], [2.0, 1.0], eps=1.0))
+--- check test | Zeros give zeros
+rms_norm([0.0, 0.0, 0.0], [1.0, 2.0, 3.0]) == [0.0, 0.0, 0.0]
+
++++ practice | Split into heads and join them back
+--- task
+Multi-head attention splits each row's columns into equal groups and later joins them again. Write both directions:
+
+- \`split_heads(M, n_heads)\`: \`M\` is a list of rows of width \`d\`. Return a list of \`n_heads\` matrices; head \`h\` holds columns \`h * size\` to \`(h + 1) * size\` of every row, where \`size = d // n_heads\`. Raise \`ValueError\` if \`n_heads\` is below 1 or does not divide \`d\`.
+- \`merge_heads(heads)\`: the inverse. Join each row's pieces back side by side, head 0 first.
+
+\`merge_heads(split_heads(M, n))\` must give back \`M\`.
+--- starter
+def split_heads(M, n_heads):
+    return [M] * n_heads
+
+
+def merge_heads(heads):
+    return heads[0]
+--- solution
+def split_heads(M, n_heads):
+    d = len(M[0])
+    if n_heads < 1 or d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    return [[row[h * size:(h + 1) * size] for row in M] for h in range(n_heads)]
+
+
+def merge_heads(heads):
+    return [[v for head in heads for v in head[t]] for t in range(len(heads[0]))]
+--- hint
+Head \`h\` is a slice of every row: \`row[h * size:(h + 1) * size]\`.
+--- hint
+To merge, build row \`t\` by walking the heads in order and taking each one's row \`t\`.
+--- check test | Two heads of width 2
+split_heads([[1, 2, 3, 4], [5, 6, 7, 8]], 2) == [[[1, 2], [5, 6]], [[3, 4], [7, 8]]]
+--- check test | Merging undoes splitting
+(lambda M: all(merge_heads(split_heads(M, n)) == M for n in (1, 2, 3, 6)))([[float(i * 6 + j) for j in range(6)] for i in range(3)])
+--- check test | One head is the whole matrix, and each head has the right shape
+split_heads([[1, 2, 3]], 1) == [[[1, 2, 3]]] and all(len(h) == 4 and len(h[0]) == 2 for h in split_heads([[0] * 8] * 4, 4))
+--- check test | Heads that do not divide the width raise ValueError
+raises(ValueError, lambda: split_heads([[1, 2, 3]], 2)) and raises(ValueError, lambda: split_heads([[1, 2]], 0))
+
++++ practice | Count a GPT's parameters
+--- task
+Use the block layout of this lesson's \`random_params\` to count a whole model. Write two functions:
+
+1. \`block_params(d, hidden)\`: the number of parameters in one block: the four \`(d, d)\` attention matrices, \`W1\` \`(d, hidden)\` with \`b1\` (\`hidden\`), \`W2\` \`(hidden, d)\` with \`b2\` (\`d\`), and two layer norms with a \`gamma\` and a \`beta\` of \`d\` numbers each.
+2. \`model_params(vocab, n_ctx, d, n_blocks, hidden, tied=False)\`: the token table \`(vocab, d)\`, the position table \`(n_ctx, d)\`, the blocks, a final layer norm (\`gamma\` and \`beta\`), and an output matrix \`(d, vocab)\`. With \`tied=True\` the output matrix reuses the token table, so it adds nothing.
+
+For GPT-2 small (\`vocab\` 50257, \`n_ctx\` 1024, \`d\` 768, 12 blocks, \`hidden\` 3072, tied) this gives 124,402,944. The real GPT-2 also has a bias on each attention matrix, 36,864 numbers more, which makes its famous 124 million (124,439,808).
+--- starter
+def block_params(d, hidden):
+    return 4 * d * d
+
+
+def model_params(vocab, n_ctx, d, n_blocks, hidden, tied=False):
+    return n_blocks * block_params(d, hidden)
+--- solution
+def block_params(d, hidden):
+    attention = 4 * d * d
+    mlp = d * hidden + hidden + hidden * d + d
+    norms = 2 * 2 * d
+    return attention + mlp + norms
+
+
+def model_params(vocab, n_ctx, d, n_blocks, hidden, tied=False):
+    total = vocab * d + n_ctx * d + n_blocks * block_params(d, hidden) + 2 * d
+    if not tied:
+        total += d * vocab
+    return total
+--- hint
+Add the pieces one group at a time: attention, then the MLP with its two biases, then the two layer norms.
+--- hint
+The final layer norm adds \`2 * d\`. The output matrix adds \`d * vocab\` only when it is not tied.
+--- check test | One block of this lesson's size, and one of GPT-2 small's
+block_params(4, 8) == 156 and block_params(768, 3072) == 7084800
+--- check test | GPT-2 small, tied: 124,402,944
+model_params(50257, 1024, 768, 12, 3072, tied=True) == 124402944
+--- check test | Untied, the output matrix adds vocab * d
+model_params(50257, 1024, 768, 12, 3072) - model_params(50257, 1024, 768, 12, 3072, tied=True) == 50257 * 768
+--- check test | A model with no blocks is embeddings, a final norm and the head
+model_params(10, 4, 2, 0, 8) == 10 * 2 + 4 * 2 + 2 * 2 + 2 * 10
+
++++ practice | A variance that survives big numbers
+--- task
+Layer norm needs the variance of each vector. A tempting shortcut is "the mean of the squares minus the square of the mean", but when the numbers are large and close together, the two terms are huge and nearly equal, and subtracting them leaves only rounding noise, sometimes even a negative "variance".
+
+Write \`variance(xs)\`, the population variance (dividing by \`n\`), with the **two-pass** method: first compute the mean, then the mean of \`(x - mean) ** 2\`.
+
+- A single number or a list of equal numbers has variance \`0.0\`.
+- An empty list raises \`ValueError\`.
+--- starter
+def variance(xs):
+    n = len(xs)
+    return sum(x * x for x in xs) / n - (sum(xs) / n) ** 2
+--- solution
+def variance(xs):
+    if not xs:
+        raise ValueError("variance of nothing")
+    mean = sum(xs) / len(xs)
+    return sum((x - mean) ** 2 for x in xs) / len(xs)
+--- hint
+Subtract the mean from each number before squaring: then the numbers you square are small, and nothing huge is cancelled.
+--- check test | An ordinary list
+abs(variance([1.0, 2.0, 3.0, 4.0]) - 1.25) < 1e-12
+--- check test | Big numbers close together: the shortcut gets this badly wrong
+abs(variance([1e9 + 1, 1e9 + 2, 1e9 + 3]) - 2 / 3) < 1e-6
+--- check test | Never negative, even for equal big numbers
+0.0 <= variance([1e8 + 0.1] * 3) < 1e-6 and variance([7.0]) == 0.0
+--- check test | An empty list raises ValueError
+raises(ValueError, lambda: variance([]))
+
++++ practice | Fix the block that forgets its input
+--- task
+This \`transformer_block\` runs, and its attention half is right. But a block whose output weights (\`Wo\`, \`W2\`, \`b2\`) are all zero should return its input unchanged, and this one returns rows of zeros instead. Deep stacks of it also refuse to train.
+
+Find the bug in \`transformer_block\` and fix it. The other functions are correct.
+--- starter
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append(h)
+    return out
+--- solution
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append([a + b for a, b in zip(x, h)])
+    return out
+--- hint
+Look at the two sub-layers. Each one should add its result to what came in. Does the second one?
+--- hint
+After the MLP, each output row must be the row that went in, plus the MLP's result.
+--- check test | Zero output weights return the input unchanged
+(lambda p, X: (p.update(Wo=[[0.0] * 4 for _ in range(4)], W2=[[0.0] * 4 for _ in range(8)], b2=[0.0] * 4), transformer_block(X, p) == X)[1])(random_params(4, 2, 8, seed=2), [[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4]])
+--- check test | The block on a small sequence
+(lambda X: (lambda out: all(abs(a - b) < 1e-9 for r, e in zip(out, [[2.878484185969, 1.86744645543, -1.55655834136, -0.491522897056], [2.218398589489, 2.872733263397, -1.508623708077, -1.126211526583], [2.903735348143, 0.317513785212, -0.364146823338, 0.117514086952]]) for a, b in zip(r, e)))(transformer_block(X, random_params(4, 2, 8, seed=1))))([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]])
+--- check test | Still causal
+(lambda p: transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [2.0, -1.0, 0.0, 1.0]], p)[:2] == transformer_block([[1.0, 0.0, -1.0, 0.5], [0.2, 0.3, 0.1, -0.4], [-3.0, 3.0, 1.0, 0.0]], p)[:2])(random_params(4, 2, 8, seed=1))
+
++++ practice | The whole model's loss
+--- task
+Put the course together into a tiny language model's loss. The starter has every function from this lesson. Write \`lm_loss(ids, token_table, pos_table, blocks, lnf_g, lnf_b, W_out)\`:
+
+1. **Embed** (lesson 13): row \`t\` is \`token_table[ids[t]]\` plus \`pos_table[t]\`, element by element.
+2. Pass the rows through each block in \`blocks\` (a list of parameter dicts), in order, with \`transformer_block\`.
+3. Apply \`layer_norm\` with \`lnf_g\` and \`lnf_b\` to every row.
+4. **Logits**: multiply the rows by \`W_out\`, of shape \`(d, vocab)\`.
+5. Position \`t\` predicts the next token, \`ids[t + 1]\`. Return the mean cross-entropy over positions \`0\` to \`len(ids) - 2\`, each computed stably as \`logsumexp(row) - row[target]\` (lesson 10).
+
+If \`ids\` has fewer than 2 tokens there is nothing to predict: raise \`ValueError\`.
+--- starter
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append([a + b for a, b in zip(x, h)])
+    return out
+
+
+def lm_loss(ids, token_table, pos_table, blocks, lnf_g, lnf_b, W_out):
+    return 0.0
+--- solution
+import math
+import random
+
+
+def matmul(a, b):
+    columns = list(zip(*b))
+    return [[sum(x * y for x, y in zip(row, col)) for col in columns] for row in a]
+
+
+def softmax(xs):
+    m = max(xs)
+    exps = [math.exp(x - m) for x in xs]
+    total = sum(exps)
+    return [e / total for e in exps]
+
+
+def attention(Q, K, V, causal=True):
+    scale = math.sqrt(len(K[0]))
+    weights = []
+    for i, q in enumerate(Q):
+        scores = [
+            -math.inf if causal and j > i else sum(a * b for a, b in zip(q, k)) / scale
+            for j, k in enumerate(K)
+        ]
+        weights.append(softmax(scores))
+    return matmul(weights, V), weights
+
+
+def random_params(d, n_heads, hidden, seed=0):
+    """Small random weights for one block, every matrix shaped (inputs, outputs)."""
+    rng = random.Random(seed)
+
+    def mat(rows, cols):
+        return [[rng.gauss(0, 0.5) for _ in range(cols)] for _ in range(rows)]
+
+    def vec(n, centre):
+        return [centre + rng.gauss(0, 0.1) for _ in range(n)]
+
+    return {
+        "n_heads": n_heads,
+        "ln1_g": vec(d, 1.0), "ln1_b": vec(d, 0.0),
+        "Wq": mat(d, d), "Wk": mat(d, d), "Wv": mat(d, d), "Wo": mat(d, d),
+        "ln2_g": vec(d, 1.0), "ln2_b": vec(d, 0.0),
+        "W1": mat(d, hidden), "b1": vec(hidden, 0.0),
+        "W2": mat(hidden, d), "b2": vec(d, 0.0),
+    }
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def gelu(x):
+    return 0.5 * x * (1 + math.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * x ** 3)))
+
+
+def mlp(x, W1, b1, W2, b2):
+    hidden = [gelu(h + b) for h, b in zip(matmul([x], W1)[0], b1)]
+    return [o + b for o, b in zip(matmul([hidden], W2)[0], b2)]
+
+
+def multi_head_attention(X, Wq, Wk, Wv, Wo, n_heads):
+    Q, K, V = matmul(X, Wq), matmul(X, Wk), matmul(X, Wv)
+    d = len(Q[0])
+    if d % n_heads:
+        raise ValueError(f"{n_heads} heads do not divide width {d}")
+    size = d // n_heads
+    heads = []
+    for h in range(n_heads):
+        cols = slice(h * size, (h + 1) * size)
+        out, _ = attention([r[cols] for r in Q], [r[cols] for r in K], [r[cols] for r in V])
+        heads.append(out)
+    joined = [[v for head in heads for v in head[t]] for t in range(len(X))]
+    return matmul(joined, Wo)
+
+
+def transformer_block(X, p):
+    normed = [layer_norm(x, p["ln1_g"], p["ln1_b"]) for x in X]
+    attn = multi_head_attention(normed, p["Wq"], p["Wk"], p["Wv"], p["Wo"], p["n_heads"])
+    X = [[a + b for a, b in zip(x, y)] for x, y in zip(X, attn)]
+    out = []
+    for x in X:
+        h = mlp(layer_norm(x, p["ln2_g"], p["ln2_b"]), p["W1"], p["b1"], p["W2"], p["b2"])
+        out.append([a + b for a, b in zip(x, h)])
+    return out
+
+
+def lm_loss(ids, token_table, pos_table, blocks, lnf_g, lnf_b, W_out):
+    if len(ids) < 2:
+        raise ValueError("need at least two tokens to predict one")
+    X = [[t + p for t, p in zip(token_table[tok], pos_table[i])] for i, tok in enumerate(ids)]
+    for p in blocks:
+        X = transformer_block(X, p)
+    X = [layer_norm(x, lnf_g, lnf_b) for x in X]
+    logits = matmul(X, W_out)
+    total = 0.0
+    for t in range(len(ids) - 1):
+        row = logits[t]
+        top = max(row)
+        lse = top + math.log(sum(math.exp(v - top) for v in row))
+        total += lse - row[ids[t + 1]]
+    return total / (len(ids) - 1)
+--- hint
+Follow the five steps in order; each is one or two lines with the functions you already have.
+--- hint
+There are \`len(ids) - 1\` predictions: the last position has no next token to predict.
+--- check test | Two blocks on a five-token sequence
+(lambda r: (lambda tok, pos, W: abs(lm_loss([0, 3, 5, 1, 2], tok, pos, [random_params(4, 2, 8, seed=1), random_params(4, 2, 8, seed=2)], [1.0] * 4, [0.0] * 4, W) - 2.0454857149441783) < 1e-9)([[r.gauss(0, 1) for _ in range(4)] for _ in range(6)], [[r.gauss(0, 0.5) for _ in range(4)] for _ in range(5)], [[r.gauss(0, 1) for _ in range(6)] for _ in range(4)]))(random.Random(5))
+--- check test | No blocks still works
+(lambda r: (lambda tok, pos, W: abs(lm_loss([0, 3, 5, 1, 2], tok, pos, [], [1.0] * 4, [0.0] * 4, W) - 1.8696981865086242) < 1e-9)([[r.gauss(0, 1) for _ in range(4)] for _ in range(6)], [[r.gauss(0, 0.5) for _ in range(4)] for _ in range(5)], [[r.gauss(0, 1) for _ in range(6)] for _ in range(4)]))(random.Random(5))
+--- check test | An output matrix of zeros knows nothing: the loss is log(vocab)
+abs(lm_loss([1, 0, 2], [[0.5, -1.0], [2.0, 0.0], [0.0, 1.0]], [[0.0, 0.1], [0.2, 0.0], [0.3, 0.3]], [], [1.0, 1.0], [0.0, 0.0], [[0.0] * 3, [0.0] * 3]) - __import__("math").log(3)) < 1e-12
+--- check test | Fewer than two tokens raise ValueError
+raises(ValueError, lambda: lm_loss([1], [[0.0, 0.0], [1.0, 1.0]], [[0.0, 0.0]], [], [1.0, 1.0], [0.0, 0.0], [[0.0, 0.0], [0.0, 0.0]]))
+
+=== ai-15 | Debugging: leakage, overfitting and early stopping
+--- teach
+Training loss tells you how well a model fits the data it has seen. What you care about is how it does on data it has **not** seen: **generalisation**. A model can drive its training loss to zero by memorising, and be useless on anything new. So every serious training setup holds data back:
+
+- the **training set**: what the model learns from;
+- the **validation set**: never trained on; used to compare models, pick hyperparameters (learning rate, smoothing, size) and decide when to stop;
+- the **test set**: looked at **once**, at the end, for the number you report. If you choose anything based on it, it has become a validation set, and your reported number is optimistic.
+
+**Leakage** is any path by which validation information gets into training. It makes validation scores look great and then the model disappoints in the real world. The classic causes:
+
+- **Overlap from a sloppy split**, for example shuffling one copy of the data for validation but taking training from the unshuffled original.
+- **Duplicates.** The same example appears twice, lands on both sides of the split, and the model is "tested" on something it memorised. Web text is full of duplicates, so labs **deduplicate before splitting**. The same worry at scale is **benchmark contamination**: test questions that leaked into the pretraining data.
+- **Choosing on the wrong data.** Picking a hyperparameter by **training** loss always favours the option that memorises best (the least smoothing, the biggest model). Choose on validation loss.
+
+\`\`\`python
+items = ["moon", "mars", "moon", "venus", "mars"]
+unique = list(dict.fromkeys(items))          # keeps first occurrences, in order
+unique                                        # ['moon', 'mars', 'venus']
+train, val = unique[1:], unique[:1]
+set(train) & set(val)                         # set(): nothing shared, which you should assert
+\`\`\`
+
+**Overfitting and early stopping.** Train long enough and the curves split: training loss keeps falling, validation loss bottoms out and starts rising, because the model has begun to memorise noise. **Early stopping** evaluates on validation regularly, remembers the step with the **lowest** validation loss (keeping that checkpoint), and stops after \`patience\` evaluations in a row fail to beat it. Patience matters because validation loss is noisy: one bad evaluation is not a trend. The checkpoint you keep is the best one, not the last.
+
+**Debugging suspicious evaluations.** When results look too good (validation as low as training, or a model that aces validation but flops for real users), suspect leakage first and test for it directly: assert the splits share nothing, count duplicates, and read the code that picks hyperparameters to see which data it scores on.
+
+**At a lab,** evaluation is its own discipline: held-out sets for every capability, contamination checks against pretraining data, and **safety evaluations** that probe for harmful or unintended behaviour before a model is released. A model is only as trustworthy as the evaluation behind it, which is why these bugs matter so much.
+--- task
+**Bug report:** "Our validation NLL is nearly the same as training NLL, which seemed great until the model did badly on new users' words. Also, hyperparameter search always picks the smallest smoothing \`k\` we offer, and early stopping keeps the last checkpoint rather than the best one."
+
+The \`BigramLM\` class is correct (its vocabulary is fixed to \`.\` and \`a\` to \`z\`, so validation words can contain letters training lacked). Fix these three functions:
+
+- \`train_val_split(items, val_fraction=0.2, seed=0)\`: remove duplicates (keep first occurrences, in order), shuffle that list with \`random.Random(seed).shuffle\`, and return \`(train, val)\` where \`val\` is the first \`round(len(unique) * val_fraction)\` items and \`train\` is the rest. No item may be in both.
+- \`best_step(val_losses, patience=3)\`: return the index of the lowest loss (the earliest, on ties), scanning from the start and stopping as soon as \`patience\` losses in a row after the current best have failed to go below it; later losses are never looked at. Raise \`ValueError\` for an empty list.
+- \`choose_k(train, val, ks)\`: return the \`k\` from \`ks\` whose \`BigramLM(train, k)\` has the lowest NLL on \`val\` (the first, on ties).
+--- starter
+import math
+import random
+
+ALPHABET = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class BigramLM:
+    def __init__(self, words, k=1.0):
+        self.k = k
+        self.chars = list(ALPHABET)
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+
+def train_val_split(items, val_fraction=0.2, seed=0):
+    shuffled = list(items)
+    random.Random(seed).shuffle(shuffled)
+    n_val = round(len(items) * val_fraction)
+    val = shuffled[:n_val]
+    train = items[n_val:]
+    return train, val
+
+
+def best_step(val_losses, patience=3):
+    best, waited = 0, 0
+    for i, loss in enumerate(val_losses):
+        if loss < val_losses[best]:
+            best = i
+        else:
+            waited += 1
+        if waited >= patience:
+            break
+    return i
+
+
+def choose_k(train, val, ks):
+    return min(ks, key=lambda k: BigramLM(train, k).nll(train))
+--- solution
+import math
+import random
+
+ALPHABET = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class BigramLM:
+    def __init__(self, words, k=1.0):
+        self.k = k
+        self.chars = list(ALPHABET)
+        self.counts = {a: {b: 0 for b in self.chars} for a in self.chars}
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        return (row[b] + self.k) / (sum(row.values()) + self.k * len(self.chars))
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            seq = ["."] + list(word) + ["."]
+            for a, b in zip(seq, seq[1:]):
+                total -= math.log(self.prob(a, b))
+                n += 1
+        return total / n
+
+
+def train_val_split(items, val_fraction=0.2, seed=0):
+    unique = list(dict.fromkeys(items))
+    random.Random(seed).shuffle(unique)
+    n_val = round(len(unique) * val_fraction)
+    return unique[n_val:], unique[:n_val]
+
+
+def best_step(val_losses, patience=3):
+    if not val_losses:
+        raise ValueError("no validation losses")
+    best, waited = 0, 0
+    for i in range(1, len(val_losses)):
+        if val_losses[i] < val_losses[best]:
+            best, waited = i, 0
+        else:
+            waited += 1
+            if waited >= patience:
+                break
+    return best
+
+
+def choose_k(train, val, ks):
+    return min(ks, key=lambda k: BigramLM(train, k).nll(val))
+--- hint
+Reproduce each symptom: check \`set(train) & set(val)\` after a split of a list with duplicates; trace \`best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], 3)\` by hand; and look at which words \`choose_k\` scores on.
+--- hint
+Split: \`unique = list(dict.fromkeys(items))\`, shuffle \`unique\`, then slice both halves from that same shuffled list.
+--- hint
+\`best_step\`: compare each loss with the best so far; on an improvement, move \`best\` and reset the wait counter to 0; otherwise count up and stop at \`patience\`. Return \`best\`, not the index where you stopped.
+--- check test | The split shares nothing and drops duplicates
+(lambda items: (lambda tr, va: not set(tr) & set(va) and sorted(tr + va) == sorted(set(items)) and len(tr) + len(va) == 8)(*train_val_split(items, 0.25, seed=1)))(["moon", "mars", "moon", "venus", "star", "mars", "comet", "orbit", "probe", "rover", "star"])
+--- check test | The split is the seeded shuffle of the unique items: validation first
+(lambda items: train_val_split(items, 0.3, seed=4) == (lambda u: (__import__("random").Random(4).shuffle(u), (u[3:], u[:3]))[1])(list(dict.fromkeys(items))))([f"w{i % 10}" for i in range(25)])
+--- check test | The split is deterministic, and the seed changes it
+train_val_split(list(range(50)), 0.2, seed=7) == train_val_split(list(range(50)), 0.2, seed=7) != train_val_split(list(range(50)), 0.2, seed=8) and len(train_val_split(list(range(50)), 0.2)[1]) == 10
+--- check test | best_step keeps the best checkpoint and stops after patience evaluations
+best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], patience=3) == 2 and best_step([5, 4, 3, 3.5, 3.6, 3.7, 2.0], patience=4) == 6
+--- check test | best_step resets its patience after every improvement
+best_step([5, 4, 4.5, 3.9, 4.2, 4.1, 4.3], patience=2) == 3 and best_step([5, 4, 4.5, 3.9, 4.2, 4.1, 3.0], patience=3) == 6
+--- check test | best_step: ties keep the earliest; one loss; empty raises
+best_step([3, 2, 2, 4], patience=5) == 1 and best_step([1.0]) == 0 and best_step([3, 3, 3]) == 0 and raises(ValueError, lambda: best_step([]))
+--- check test | choose_k picks by validation NLL, not training NLL
+(lambda tr, va, ks: choose_k(tr, va, ks) == min(ks, key=lambda k: BigramLM(tr, k).nll(va)) and choose_k(tr, va, ks) != min(ks))(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"], ["rockets", "orbiter", "landing", "boosters", "astronaut", "moonbase", "galactic", "planets"], [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0])
+--- check case | choose_k on a small example
+choose_k(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"], ["rockets", "orbiter", "landing", "boosters", "astronaut", "moonbase", "galactic", "planets"], [0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0])
+=> 0.1
+
++++ practice | Near-duplicates count as duplicates
+--- task
+Web text is full of copies that differ only in capitals or spacing, and they leak across a split just as exact copies do. Write \`normalize_dedupe(texts)\`:
+
+- Two texts are the same if they match after lowercasing and collapsing every run of whitespace into one space, with none at the ends: \`" ".join(t.lower().split())\`.
+- Keep the **first** occurrence of each, exactly as it was written, in the original order.
+
+An empty list gives \`[]\`.
+--- starter
+def normalize_dedupe(texts):
+    return list(dict.fromkeys(texts))
+--- solution
+def normalize_dedupe(texts):
+    seen = set()
+    kept = []
+    for t in texts:
+        key = " ".join(t.lower().split())
+        if key not in seen:
+            seen.add(key)
+            kept.append(t)
+    return kept
+--- hint
+Compare the normalised form, but keep the original text.
+--- hint
+A set of the normalised forms seen so far tells you whether a text is new.
+--- check case | Case and spacing differences are duplicates
+normalize_dedupe(["The Moon", "the  moon", "Mars", " THE MOON ", "mars"])
+=> ["The Moon", "Mars"]
+--- check case | Different texts stay
+normalize_dedupe(["moon", "moons", "mo on"])
+=> ["moon", "moons", "mo on"]
+--- check case | An empty list
+normalize_dedupe([])
+=> []
+--- check case | Whitespace-only texts are all the same empty text
+normalize_dedupe(["", "   ", "a"])
+=> ["", "a"]
+
++++ practice | How much of validation leaked?
+--- task
+Write \`leak_report(train, val)\`, which returns a pair:
+
+1. the sorted list of distinct items that appear in both \`train\` and \`val\`;
+2. the fraction of \`val\` entries (counting repeats) whose item also appears in \`train\`.
+
+If \`val\` is empty, return \`([], 0.0)\`.
+--- starter
+def leak_report(train, val):
+    shared = sorted(set(train) & set(val))
+    return shared, len(shared) / len(val)
+--- solution
+def leak_report(train, val):
+    if not val:
+        return [], 0.0
+    train_set = set(train)
+    shared = sorted(train_set & set(val))
+    leaked = sum(1 for item in val if item in train_set)
+    return shared, leaked / len(val)
+--- hint
+The fraction counts every \`val\` entry, repeats included, so loop over \`val\` rather than over the shared set.
+--- hint
+Handle the empty \`val\` first, before any division.
+--- check test | Two of four validation entries leaked
+leak_report(["moon", "mars", "venus"], ["mars", "comet", "moon", "orbit"]) == (["mars", "moon"], 0.5)
+--- check test | Repeats in val count each time
+leak_report(["moon"], ["moon", "moon", "star"]) == (["moon"], 2 / 3)
+--- check test | No overlap
+leak_report(["a", "b"], ["c"]) == ([], 0.0)
+--- check test | An empty validation set
+leak_report(["a"], []) == ([], 0.0)
+
++++ practice | K-fold cross-validation
+--- task
+With little data, a single validation split is noisy. **K-fold cross-validation** splits the data into \`k\` parts and uses each part once as validation. Write \`k_fold(items, k, seed=0)\`:
+
+1. Remove duplicates (keep first occurrences, in order) and shuffle that list with \`random.Random(seed).shuffle\`.
+2. Cut it into \`k\` consecutive folds as equal as possible: with \`n\` items, the first \`n % k\` folds get one extra item.
+3. Return a list of \`k\` pairs \`(train, val)\`: for fold \`i\`, \`val\` is fold \`i\` and \`train\` is all the other items, in shuffled order.
+
+Raise \`ValueError\` if \`k\` is below 2 or larger than the number of distinct items.
+--- starter
+import random
+
+
+def k_fold(items, k, seed=0):
+    size = len(items) // k
+    return [(items[:i * size] + items[(i + 1) * size:], items[i * size:(i + 1) * size]) for i in range(k)]
+--- solution
+import random
+
+
+def k_fold(items, k, seed=0):
+    unique = list(dict.fromkeys(items))
+    if k < 2 or k > len(unique):
+        raise ValueError(f"k must be between 2 and {len(unique)}")
+    random.Random(seed).shuffle(unique)
+    n = len(unique)
+    folds, start = [], 0
+    for i in range(k):
+        size = n // k + (1 if i < n % k else 0)
+        folds.append(unique[start:start + size])
+        start += size
+    return [([x for j, f in enumerate(folds) if j != i for x in f], folds[i]) for i in range(k)]
+--- hint
+Work out each fold's size first: \`n // k\`, plus one for the first \`n % k\` folds. Then slice the shuffled list fold by fold.
+--- hint
+For fold \`i\`, the training items are all the other folds joined in order.
+--- check test | Every item is validation exactly once, and never in its own training set
+(lambda folds: len(folds) == 3 and sorted(x for _, v in folds for x in v) == list(range(10)) and all(not set(t) & set(v) and len(t) + len(v) == 10 for t, v in folds))(k_fold(list(range(10)), 3))
+--- check test | Fold sizes are as equal as possible, bigger ones first
+[len(v) for _, v in k_fold(list(range(10)), 3)] == [4, 3, 3] and [len(v) for _, v in k_fold(list(range(9)), 3)] == [3, 3, 3]
+--- check test | Duplicates are removed first, so they cannot leak between folds
+(lambda folds: all(not set(t) & set(v) for t, v in folds) and sum(len(v) for _, v in folds) == 4)(k_fold(["a", "b", "a", "c", "d", "b"], 2))
+--- check test | The folds follow the seeded shuffle
+k_fold(list(range(6)), 2, seed=3)[0][1] == (lambda u: (__import__("random").Random(3).shuffle(u), u[:3])[1])(list(range(6)))
+--- check test | k below 2 or above the number of distinct items raises ValueError
+raises(ValueError, lambda: k_fold([1, 2, 3], 1)) and raises(ValueError, lambda: k_fold([1, 1, 2], 3))
+
++++ practice | When to stop, with a minimum improvement
+--- task
+Real early stopping often ignores tiny improvements: a loss must beat the best so far by more than \`min_delta\` to count. Write \`should_stop(history, patience, min_delta=0.0)\`. \`history\` holds the validation losses so far. Return \`True\` when the last \`patience\` losses **all** failed to improve on the best loss before them by more than \`min_delta\`, that is, none of them is below \`best - min_delta\`. Otherwise return \`False\`.
+
+- With \`patience\` losses or fewer, there is nothing to compare against yet: return \`False\`.
+- A \`nan\` loss (a broken evaluation) never counts as an improvement, and is ignored when finding the best. Careful: every comparison with \`nan\` is \`False\`, so \`min\` and \`<\` do not behave as you might hope.
+- If no loss before the last \`patience\` is a real number, the best is \`math.inf\`, so any real loss is an improvement.
+--- starter
+def should_stop(history, patience, min_delta=0.0):
+    best = min(history[:-patience])
+    return all(loss >= best for loss in history[-patience:])
+--- solution
+import math
+
+
+def should_stop(history, patience, min_delta=0.0):
+    if len(history) <= patience:
+        return False
+    earlier = [x for x in history[:-patience] if not math.isnan(x)]
+    best = min(earlier) if earlier else math.inf
+    recent = history[-patience:]
+    return not any(not math.isnan(x) and x < best - min_delta for x in recent)
+--- hint
+Split the history into the part before the last \`patience\` losses and the last \`patience\` losses. Find the best of the first part, skipping \`nan\`.
+--- hint
+Stop when no recent loss is a real number below \`best - min_delta\`.
+--- check test | Three losses in a row without improvement: stop
+should_stop([1.0, 0.8, 0.7, 0.75, 0.72, 0.71], 3) is True and should_stop([1.0, 0.8, 0.7, 0.75, 0.69, 0.71], 3) is False
+--- check test | Improvements smaller than min_delta do not count
+should_stop([1.0, 0.7, 0.699, 0.6995, 0.6992], 3, min_delta=0.01) is True and should_stop([1.0, 0.7, 0.68, 0.71, 0.72], 3, min_delta=0.01) is False
+--- check test | Too short a history never stops
+should_stop([1.0, 2.0, 3.0], 3) is False and should_stop([], 2) is False
+--- check test | nan never improves, and is skipped when finding the best
+should_stop([0.5, float("nan"), float("nan")], 2) is True and should_stop([float("nan"), 0.9, 1.2], 2) is False
+
++++ practice | Fix the scaling that peeks at validation
+--- task
+Feature scaling is a classic hidden leak. This function standardises a list of numbers and splits it: the first \`n_val\` values are validation, the rest training. It computes the mean and standard deviation over **all** the values, so validation numbers shape how training data is scaled, and the validation scores come out optimistic.
+
+Fix \`scale_split(values, n_val)\` so the mean and standard deviation come from the **training** values only, and are then applied to both parts. Return \`(train_scaled, val_scaled)\`.
+--- starter
+import math
+
+
+def scale_split(values, n_val):
+    mean = sum(values) / len(values)
+    std = math.sqrt(sum((v - mean) ** 2 for v in values) / len(values))
+    scaled = [(v - mean) / std for v in values]
+    return scaled[n_val:], scaled[:n_val]
+--- solution
+import math
+
+
+def scale_split(values, n_val):
+    train, val = values[n_val:], values[:n_val]
+    mean = sum(train) / len(train)
+    std = math.sqrt(sum((v - mean) ** 2 for v in train) / len(train))
+    return [(v - mean) / std for v in train], [(v - mean) / std for v in val]
+--- hint
+Split first, then compute the statistics from the training part only.
+--- hint
+Apply the training mean and standard deviation to the validation values too: in real use, new data is always scaled with the numbers learned in training.
+--- check test | The training part has mean 0 and standard deviation 1
+(lambda tr, va: abs(sum(tr) / len(tr)) < 1e-12 and abs(sum(v * v for v in tr) / len(tr) - 1) < 1e-12)(*scale_split([100.0, 2.0, 4.0, 6.0, 8.0], 1))
+--- check test | Validation is scaled with the training numbers
+(lambda tr, va: abs(va[0] - (100.0 - 5.0) / 5 ** 0.5) < 1e-12)(*scale_split([100.0, 2.0, 4.0, 6.0, 8.0], 1))
+--- check test | Changing a validation value never changes the training values
+scale_split([1.0, 2.0, 4.0, 6.0], 1)[0] == scale_split([999.0, 2.0, 4.0, 6.0], 1)[0]
+
++++ practice | Split by user, not by record
+--- task
+If one user's words appear in both training and validation, the model is tested partly on that user's habits, which it has already seen. Real evaluations split by **group**. Write \`group_split(records, val_fraction, seed=0)\`:
+
+1. \`records\` is a list of pairs \`(user, word)\`.
+2. Take the sorted list of distinct users and shuffle it with \`random.Random(seed).shuffle\`.
+3. The first \`round(len(users) * val_fraction)\` users of the shuffled list are validation users; the rest are training users.
+4. Return \`(train_records, val_records)\`, each keeping the records in their original order.
+--- starter
+import random
+
+
+def group_split(records, val_fraction, seed=0):
+    shuffled = list(records)
+    random.Random(seed).shuffle(shuffled)
+    n_val = round(len(records) * val_fraction)
+    return shuffled[n_val:], shuffled[:n_val]
+--- solution
+import random
+
+
+def group_split(records, val_fraction, seed=0):
+    users = sorted({user for user, _ in records})
+    random.Random(seed).shuffle(users)
+    val_users = set(users[:round(len(users) * val_fraction)])
+    train = [r for r in records if r[0] not in val_users]
+    val = [r for r in records if r[0] in val_users]
+    return train, val
+--- hint
+Decide which users go where first, then send each record to its user's side.
+--- hint
+Sort the distinct users before shuffling, so the same seed always gives the same split whatever order the records came in.
+--- check test | No user appears on both sides, and no record is lost
+(lambda tr, va: not {u for u, _ in tr} & {u for u, _ in va} and len(tr) + len(va) == 8)(*group_split([("ann", "moon"), ("bob", "star"), ("ann", "mars"), ("cy", "orbit"), ("dee", "comet"), ("bob", "probe"), ("ann", "rover"), ("eve", "lander")], 0.4))
+--- check test | Validation users are the first of the seeded shuffle
+(lambda recs: {u for u, _ in group_split(recs, 0.4, seed=2)[1]} == set((lambda us: (__import__("random").Random(2).shuffle(us), us[:2])[1])(sorted({u for u, _ in recs}))))([("ann", "moon"), ("bob", "star"), ("ann", "mars"), ("cy", "orbit"), ("dee", "comet"), ("bob", "probe"), ("ann", "rover"), ("eve", "lander")])
+--- check test | Records keep their original order
+(lambda tr, va: tr == sorted(tr, key=[("a", 1), ("b", 2), ("a", 3), ("c", 4)].index) and va == sorted(va, key=[("a", 1), ("b", 2), ("a", 3), ("c", 4)].index))(*group_split([("a", 1), ("b", 2), ("a", 3), ("c", 4)], 0.34))
+--- check test | A fraction of 0 sends everyone to training
+group_split([("a", 1), ("b", 2)], 0.0) == ([("a", 1), ("b", 2)], [])
+
+=== ai-16 | Capstone: a language model that generalizes
+--- teach
+This is the capstone: a specification, a corpus and an empty design. The checks test only behaviour, so every decision is yours. It pulls together the whole course: probabilities and cross-entropy (lessons 3, 10, 12), smoothing and held-out evaluation (12, 15), sampling with a seeded generator (12), and the discipline of measuring before believing.
+
+**The job.** Build a character-level language model of English words that does well on words it has **never seen**. The starter holds \`TRAIN_WORDS\`, about 800 common English words. The checks hold back another 150 and measure your model's average negative log-likelihood on them (nats per character, counting the end of each word, exactly as in lesson 12). To pass, it must be **below 2.40**. For reference, a model that knows nothing scores \`log 27 ≈ 3.30\`, and the best add-k bigram model scores about 2.43 on these held-out words, so a bigram will not do: you need more context, used carefully.
+
+**Approaches that work** (choose, combine, invent):
+
+- **Longer context.** Condition on the previous two (or more) characters: a **trigram**. More context predicts better, but most long contexts are rare, so their counts are unreliable or zero.
+- **Interpolation.** Mix models: \`P = a * P_trigram + b * P_bigram + c * P_unigram\` with \`a + b + c = 1\`. The trigram is sharp when it has data; the lower orders fill the gaps, so nothing is ever impossible.
+- **Backoff.** Use the longest context that was seen often enough, and fall back to shorter ones otherwise.
+- **Tune on validation, not on the hidden test.** Carve a validation set out of \`TRAIN_WORDS\` with your \`train_val_split\` idea from lesson 15, choose mixing weights or smoothing on it, then refit on all the training words.
+
+A neural model would also work in principle (an MLP over the previous few characters' embeddings, trained with your autograd engine and Adam), but in pure Python it would train for minutes, and the checker stops long before that. Counting models are the right tool here, and the target a neural model would approach anyway.
+
+**Keep it honest.** Your \`next_distribution\` must be a real probability distribution over the 27 symbols (\`.\` and \`a\` to \`z\`): every value positive, all adding up to 1. Your \`nll\` must be computed from those same probabilities, and the checks confirm that it is. Otherwise a "model" could report any loss it liked. This is the same reason real labs define evaluations precisely and independently of the model being evaluated.
+
+**How to approach it** (as in the projects capstones): write down each behaviour as an example, choose your data model (count tables keyed by context strings work well), build a skeleton with every method, make one behaviour work at a time, and measure the held-out NLL on your own validation split as you go.
+
+**Where this goes next.** Real language models replace the count tables with a transformer (lessons 13 and 14), the characters with BPE tokens (lesson 11), 800 words with trillions of tokens, and a laptop with thousands of GPUs running for months. The quantities they watch are the ones you have built: training loss, validation loss, perplexity, and the evaluations that decide whether a model is good and safe enough to release.
+--- task
+Build a class \`CharLM\`:
+
+- \`CharLM()\` must work with no arguments (any settings you add need defaults).
+- \`fit(words)\` trains on a list of lowercase words (letters \`a\` to \`z\` only) and returns \`self\`.
+- \`next_distribution(context)\` returns a dict with exactly 27 keys, \`"."\` and \`"a"\` to \`"z"\`, giving the probability of each next symbol after the word-so-far \`context\` (\`""\` at the start of a word; any string of letters, seen in training or not). Every probability is positive and they add up to 1.
+- \`nll(words)\` returns the average of \`-log(next_distribution(prefix)[symbol])\` over every symbol of every word, including the final \`"."\`, where \`prefix\` is the part of the word before that symbol. It must be finite for any words of letters \`a\` to \`z\`.
+- \`generate(rng, max_len=12)\` samples a word, one symbol at a time from \`next_distribution\`, using only the random generator \`rng\` it is given. It stops at \`"."\` (not included) or at \`max_len\` letters. The same seed must give the same word.
+
+After \`CharLM().fit(TRAIN_WORDS)\`, the NLL on the hidden held-out words must be below **2.40**, and a trained model should generate varied words, mostly not empty.
+--- starter
+# Capstone: design and build CharLM to the specification in the task.
+import math
+import random
+
+TRAIN_WORDS = [
+    "about", "above", "across", "act", "action", "add", "after", "again", "age", "ago", "air",
+    "almost", "alone", "along", "already", "also", "always", "among", "amount", "any", "appear",
+    "apple", "area", "arm", "army", "around", "arrive", "art", "ask", "attack", "away", "baby",
+    "back", "bad", "bag", "ball", "bank", "basket", "beat", "become", "bed", "before", "behind",
+    "believe", "bell", "below", "best", "better", "between", "big", "bird", "birth", "black",
+    "blood", "blow", "blue", "board", "boat", "body", "bone", "book", "born", "bottom", "box",
+    "boy", "branch", "break", "bright", "bring", "broad", "brother", "busy", "but", "buy", "camp",
+    "can", "captain", "car", "card", "care", "case", "catch", "cause", "cell", "center", "century",
+    "certain", "chair", "change", "charge", "check", "chief", "child", "circle", "city", "claim",
+    "class", "clean", "clear", "clock", "close", "cloud", "coast", "coat", "cold", "collect",
+    "college", "color", "column", "come", "common", "company", "compare", "complete", "condition",
+    "connect", "consider", "continue", "control", "cook", "copy", "corn", "corner", "correct",
+    "could", "count", "course", "cover", "cow", "create", "crop", "crowd", "cry", "current", "dad",
+    "dance", "danger", "dark", "day", "dead", "deal", "dear", "death", "decide", "deep", "degree",
+    "depend", "describe", "detail", "develop", "dictionary", "did", "die", "differ", "direct",
+    "discuss", "divide", "doctor", "does", "dog", "dollar", "done", "door", "down", "draw", "dream",
+    "dress", "drive", "dry", "duck", "during", "each", "ear", "early", "ease", "east", "eat",
+    "edge", "egg", "eight", "either", "electric", "element", "else", "end", "enemy", "engine",
+    "enough", "enter", "equal", "even", "evening", "event", "ever", "every", "example", "except",
+    "excite", "exercise", "expect", "experience", "experiment", "eye", "face", "fact", "fair",
+    "fall", "famous", "farm", "fast", "father", "favor", "fear", "feed", "feel", "feet", "fell",
+    "few", "field", "fight", "figure", "fill", "final", "find", "fine", "finish", "fire", "first",
+    "fish", "five", "flat", "flow", "flower", "fly", "follow", "food", "foot", "force", "forest",
+    "form", "forward", "four", "free", "fresh", "friend", "fruit", "full", "fun", "game", "garden",
+    "gather", "gave", "general", "give", "glad", "glass", "gold", "gone", "good", "got", "govern",
+    "grand", "grass", "gray", "great", "grew", "ground", "group", "grow", "guess", "guide", "gun",
+    "hair", "hand", "happen", "happy", "hard", "hat", "have", "head", "hear", "heard", "heart",
+    "heat", "heavy", "help", "here", "high", "hill", "him", "his", "history", "hole", "home",
+    "hope", "horse", "hot", "hour", "house", "how", "human", "hundred", "hunt", "hurry", "ice",
+    "idea", "imagine", "include", "industry", "insect", "instant", "instrument", "invent", "iron",
+    "island", "job", "joy", "jump", "just", "keep", "kept", "key", "kill", "kind", "king",
+    "kitchen", "knew", "know", "lake", "language", "large", "last", "late", "laugh", "law", "least",
+    "led", "left", "leg", "let", "level", "lie", "life", "light", "like", "line", "liquid", "list",
+    "listen", "little", "live", "locate", "log", "lone", "long", "look", "lost", "lot", "loud",
+    "love", "low", "machine", "made", "magnet", "main", "make", "many", "map", "market", "master",
+    "match", "material", "matter", "may", "mean", "measure", "meat", "meet", "member", "men",
+    "metal", "middle", "might", "mile", "million", "mind", "mine", "miss", "modern", "molecule",
+    "moment", "money", "month", "moon", "more", "morning", "most", "mother", "motion", "mount",
+    "mountain", "mouth", "much", "must", "name", "natural", "near", "neck", "need", "neighbor",
+    "never", "new", "next", "night", "nine", "noise", "none", "noon", "nor", "north", "nose",
+    "nothing", "now", "number", "numeral", "object", "observe", "occur", "ocean", "offer", "office",
+    "often", "oil", "once", "one", "only", "open", "operate", "opposite", "order", "organ",
+    "original", "other", "our", "out", "over", "own", "oxygen", "page", "pair", "paper",
+    "paragraph", "particular", "party", "pass", "past", "path", "pattern", "people", "perhaps",
+    "period", "phrase", "pick", "picture", "place", "plain", "plan", "plane", "planet", "plant",
+    "play", "please", "plural", "poem", "point", "poor", "pose", "position", "possible", "post",
+    "pound", "power", "practice", "prepare", "present", "press", "pretty", "print", "probable",
+    "problem", "process", "produce", "product", "proper", "protect", "prove", "pull", "put",
+    "quart", "question", "quick", "quiet", "quite", "quotient", "race", "rail", "rain", "raise",
+    "ran", "range", "rather", "reach", "read", "ready", "real", "reason", "receive", "record",
+    "remember", "repeat", "reply", "represent", "require", "rest", "result", "rich", "ride",
+    "right", "ring", "rise", "river", "road", "rock", "roll", "room", "root", "rope", "rose",
+    "round", "row", "rub", "rule", "run", "safe", "said", "sail", "same", "sand", "sat", "save",
+    "saw", "say", "scale", "school", "science", "score", "search", "season", "seat", "section",
+    "see", "seed", "seem", "segment", "select", "self", "sell", "send", "sense", "sentence",
+    "separate", "serve", "set", "seven", "several", "shape", "share", "sharp", "sheet", "shell",
+    "shine", "ship", "shoe", "shop", "short", "should", "shoulder", "shout", "show", "side", "sign",
+    "silent", "silver", "similar", "since", "sing", "single", "sister", "sit", "six", "size",
+    "skill", "skin", "sky", "sleep", "slip", "slow", "small", "smell", "smile", "snow", "soft",
+    "soil", "soldier", "solution", "some", "son", "song", "sound", "south", "space", "speak",
+    "special", "speech", "speed", "spell", "spoke", "spread", "spring", "square", "star", "start",
+    "state", "station", "stay", "stead", "steam", "steel", "step", "stick", "still", "stood",
+    "stop", "store", "story", "straight", "strange", "street", "stretch", "string", "strong",
+    "student", "study", "subject", "subtract", "success", "such", "sudden", "suffix", "sugar",
+    "suggest", "suit", "summer", "sun", "support", "sure", "surface", "surprise", "swim", "system",
+    "table", "tail", "take", "talk", "tall", "teach", "team", "tell", "temperature", "ten", "test",
+    "thank", "that", "thick", "think", "third", "this", "those", "though", "thousand", "three",
+    "throw", "thus", "tie", "time", "tire", "together", "told", "tone", "took", "tool", "top",
+    "touch", "toward", "town", "track", "trade", "train", "travel", "tree", "triangle", "trip",
+    "trouble", "truck", "true", "try", "tube", "turn", "twenty", "type", "under", "until", "upon",
+    "use", "usual", "valley", "vary", "verb", "very", "view", "village", "visit", "voice", "wait",
+    "walk", "wall", "warm", "wash", "watch", "water", "wave", "way", "wear", "weather", "week",
+    "weight", "well", "went", "west", "what", "wheel", "when", "where", "whether", "while", "white",
+    "who", "whole", "whose", "wide", "wife", "wild", "will", "win", "wind", "window", "wing",
+    "winter", "wire", "wish", "with", "woman", "wonder", "work", "world", "would", "write", "wrong",
+    "yard", "year", "yellow", "yes", "yet", "you", "young"
+]
+--- solution
+import math
+import random
+
+TRAIN_WORDS = [
+    "about", "above", "across", "act", "action", "add", "after", "again", "age", "ago", "air",
+    "almost", "alone", "along", "already", "also", "always", "among", "amount", "any", "appear",
+    "apple", "area", "arm", "army", "around", "arrive", "art", "ask", "attack", "away", "baby",
+    "back", "bad", "bag", "ball", "bank", "basket", "beat", "become", "bed", "before", "behind",
+    "believe", "bell", "below", "best", "better", "between", "big", "bird", "birth", "black",
+    "blood", "blow", "blue", "board", "boat", "body", "bone", "book", "born", "bottom", "box",
+    "boy", "branch", "break", "bright", "bring", "broad", "brother", "busy", "but", "buy", "camp",
+    "can", "captain", "car", "card", "care", "case", "catch", "cause", "cell", "center", "century",
+    "certain", "chair", "change", "charge", "check", "chief", "child", "circle", "city", "claim",
+    "class", "clean", "clear", "clock", "close", "cloud", "coast", "coat", "cold", "collect",
+    "college", "color", "column", "come", "common", "company", "compare", "complete", "condition",
+    "connect", "consider", "continue", "control", "cook", "copy", "corn", "corner", "correct",
+    "could", "count", "course", "cover", "cow", "create", "crop", "crowd", "cry", "current", "dad",
+    "dance", "danger", "dark", "day", "dead", "deal", "dear", "death", "decide", "deep", "degree",
+    "depend", "describe", "detail", "develop", "dictionary", "did", "die", "differ", "direct",
+    "discuss", "divide", "doctor", "does", "dog", "dollar", "done", "door", "down", "draw", "dream",
+    "dress", "drive", "dry", "duck", "during", "each", "ear", "early", "ease", "east", "eat",
+    "edge", "egg", "eight", "either", "electric", "element", "else", "end", "enemy", "engine",
+    "enough", "enter", "equal", "even", "evening", "event", "ever", "every", "example", "except",
+    "excite", "exercise", "expect", "experience", "experiment", "eye", "face", "fact", "fair",
+    "fall", "famous", "farm", "fast", "father", "favor", "fear", "feed", "feel", "feet", "fell",
+    "few", "field", "fight", "figure", "fill", "final", "find", "fine", "finish", "fire", "first",
+    "fish", "five", "flat", "flow", "flower", "fly", "follow", "food", "foot", "force", "forest",
+    "form", "forward", "four", "free", "fresh", "friend", "fruit", "full", "fun", "game", "garden",
+    "gather", "gave", "general", "give", "glad", "glass", "gold", "gone", "good", "got", "govern",
+    "grand", "grass", "gray", "great", "grew", "ground", "group", "grow", "guess", "guide", "gun",
+    "hair", "hand", "happen", "happy", "hard", "hat", "have", "head", "hear", "heard", "heart",
+    "heat", "heavy", "help", "here", "high", "hill", "him", "his", "history", "hole", "home",
+    "hope", "horse", "hot", "hour", "house", "how", "human", "hundred", "hunt", "hurry", "ice",
+    "idea", "imagine", "include", "industry", "insect", "instant", "instrument", "invent", "iron",
+    "island", "job", "joy", "jump", "just", "keep", "kept", "key", "kill", "kind", "king",
+    "kitchen", "knew", "know", "lake", "language", "large", "last", "late", "laugh", "law", "least",
+    "led", "left", "leg", "let", "level", "lie", "life", "light", "like", "line", "liquid", "list",
+    "listen", "little", "live", "locate", "log", "lone", "long", "look", "lost", "lot", "loud",
+    "love", "low", "machine", "made", "magnet", "main", "make", "many", "map", "market", "master",
+    "match", "material", "matter", "may", "mean", "measure", "meat", "meet", "member", "men",
+    "metal", "middle", "might", "mile", "million", "mind", "mine", "miss", "modern", "molecule",
+    "moment", "money", "month", "moon", "more", "morning", "most", "mother", "motion", "mount",
+    "mountain", "mouth", "much", "must", "name", "natural", "near", "neck", "need", "neighbor",
+    "never", "new", "next", "night", "nine", "noise", "none", "noon", "nor", "north", "nose",
+    "nothing", "now", "number", "numeral", "object", "observe", "occur", "ocean", "offer", "office",
+    "often", "oil", "once", "one", "only", "open", "operate", "opposite", "order", "organ",
+    "original", "other", "our", "out", "over", "own", "oxygen", "page", "pair", "paper",
+    "paragraph", "particular", "party", "pass", "past", "path", "pattern", "people", "perhaps",
+    "period", "phrase", "pick", "picture", "place", "plain", "plan", "plane", "planet", "plant",
+    "play", "please", "plural", "poem", "point", "poor", "pose", "position", "possible", "post",
+    "pound", "power", "practice", "prepare", "present", "press", "pretty", "print", "probable",
+    "problem", "process", "produce", "product", "proper", "protect", "prove", "pull", "put",
+    "quart", "question", "quick", "quiet", "quite", "quotient", "race", "rail", "rain", "raise",
+    "ran", "range", "rather", "reach", "read", "ready", "real", "reason", "receive", "record",
+    "remember", "repeat", "reply", "represent", "require", "rest", "result", "rich", "ride",
+    "right", "ring", "rise", "river", "road", "rock", "roll", "room", "root", "rope", "rose",
+    "round", "row", "rub", "rule", "run", "safe", "said", "sail", "same", "sand", "sat", "save",
+    "saw", "say", "scale", "school", "science", "score", "search", "season", "seat", "section",
+    "see", "seed", "seem", "segment", "select", "self", "sell", "send", "sense", "sentence",
+    "separate", "serve", "set", "seven", "several", "shape", "share", "sharp", "sheet", "shell",
+    "shine", "ship", "shoe", "shop", "short", "should", "shoulder", "shout", "show", "side", "sign",
+    "silent", "silver", "similar", "since", "sing", "single", "sister", "sit", "six", "size",
+    "skill", "skin", "sky", "sleep", "slip", "slow", "small", "smell", "smile", "snow", "soft",
+    "soil", "soldier", "solution", "some", "son", "song", "sound", "south", "space", "speak",
+    "special", "speech", "speed", "spell", "spoke", "spread", "spring", "square", "star", "start",
+    "state", "station", "stay", "stead", "steam", "steel", "step", "stick", "still", "stood",
+    "stop", "store", "story", "straight", "strange", "street", "stretch", "string", "strong",
+    "student", "study", "subject", "subtract", "success", "such", "sudden", "suffix", "sugar",
+    "suggest", "suit", "summer", "sun", "support", "sure", "surface", "surprise", "swim", "system",
+    "table", "tail", "take", "talk", "tall", "teach", "team", "tell", "temperature", "ten", "test",
+    "thank", "that", "thick", "think", "third", "this", "those", "though", "thousand", "three",
+    "throw", "thus", "tie", "time", "tire", "together", "told", "tone", "took", "tool", "top",
+    "touch", "toward", "town", "track", "trade", "train", "travel", "tree", "triangle", "trip",
+    "trouble", "truck", "true", "try", "tube", "turn", "twenty", "type", "under", "until", "upon",
+    "use", "usual", "valley", "vary", "verb", "very", "view", "village", "visit", "voice", "wait",
+    "walk", "wall", "warm", "wash", "watch", "water", "wave", "way", "wear", "weather", "week",
+    "weight", "well", "went", "west", "what", "wheel", "when", "where", "whether", "while", "white",
+    "who", "whole", "whose", "wide", "wife", "wild", "will", "win", "wind", "window", "wing",
+    "winter", "wire", "wish", "with", "woman", "wonder", "work", "world", "would", "write", "wrong",
+    "yard", "year", "yellow", "yes", "yet", "you", "young"
+]
+
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class CharLM:
+    """An interpolated trigram model: a mix of trigram, bigram, unigram and uniform."""
+
+    def __init__(self, weights=(0.55, 0.3, 0.13, 0.02), k=0.01):
+        self.weights = weights
+        self.k = k
+        self.tables = [{}, {}, {}]      # context length 0, 1, 2 -> {context: {symbol: count}}
+
+    def fit(self, words):
+        self.tables = [{}, {}, {}]
+        for word in words:
+            padded = ".." + word + "."
+            for i in range(2, len(padded)):
+                symbol = padded[i]
+                for n in range(3):
+                    context = padded[i - n:i]
+                    row = self.tables[n].setdefault(context, {})
+                    row[symbol] = row.get(symbol, 0) + 1
+        return self
+
+    def _order_probs(self, n, context):
+        row = self.tables[n].get(context)
+        if not row:
+            return None
+        total = sum(row.values()) + self.k * len(SYMBOLS)
+        return {s: (row.get(s, 0) + self.k) / total for s in SYMBOLS}
+
+    def next_distribution(self, context):
+        padded = (".." + context)[-2:]
+        uniform = 1 / len(SYMBOLS)
+        dist = {s: self.weights[3] * uniform for s in SYMBOLS}
+        leftover = 0.0
+        for n, weight in zip((2, 1, 0), self.weights[:3]):
+            probs = self._order_probs(n, padded[2 - n:])
+            if probs is None:
+                leftover += weight
+                continue
+            for s in SYMBOLS:
+                dist[s] += weight * probs[s]
+        for s in SYMBOLS:
+            dist[s] += leftover * uniform
+        return dist
+
+    def nll(self, words):
+        total, n = 0.0, 0
+        for word in words:
+            for i, symbol in enumerate(word + "."):
+                total -= math.log(self.next_distribution(word[:i])[symbol])
+                n += 1
+        return total / n
+
+    def generate(self, rng, max_len=12):
+        word = ""
+        while len(word) < max_len:
+            dist = self.next_distribution(word)
+            symbol = rng.choices(list(dist), weights=list(dist.values()))[0]
+            if symbol == ".":
+                break
+            word += symbol
+        return word
+--- hint
+Start by writing a model you already know (a smoothed bigram) to the interface, and measure it on a validation split carved from \`TRAIN_WORDS\`. It will score around 2.43: correct, but not good enough.
+--- hint
+Keep counts for several context lengths (0, 1 and 2 previous characters, padding the start of each word with \`..\`) and mix their probabilities with weights that add up to 1. Include a small uniform share so no symbol is ever impossible.
+--- hint
+When a context was never seen, give its share of the weight to the other parts of the mix. Tune the weights on your validation split, not on the hidden words.
+--- check test | fit returns the model itself
+(lambda m: m.fit(["moon", "mars"]) is m)(CharLM())
+--- check test | next_distribution is a real distribution over "." and a to z
+(lambda m: all(sorted(d) == sorted(".abcdefghijklmnopqrstuvwxyz") and all(p > 0 for p in d.values()) and abs(sum(d.values()) - 1) < 1e-9 for d in (m.next_distribution(c) for c in ("", "t", "th", "the", "qzx", "xylophone"))))(CharLM().fit(TRAIN_WORDS))
+--- check test | nll is computed from next_distribution
+(lambda m: abs(m.nll(["ab", "q"]) - -(__import__("math").log(m.next_distribution("")["a"]) + __import__("math").log(m.next_distribution("a")["b"]) + __import__("math").log(m.next_distribution("ab")["."]) + __import__("math").log(m.next_distribution("")["q"]) + __import__("math").log(m.next_distribution("q")["."])) / 5) < 1e-9)(CharLM().fit(TRAIN_WORDS))
+--- check test | nll is finite for strange and empty words
+(lambda m: all(0 < m.nll([w]) < 20 for w in ("zzzzqx", "q", "", "xylophone")))(CharLM().fit(TRAIN_WORDS))
+--- check test | The model learned something: training words score far better than uniform
+CharLM().fit(TRAIN_WORDS).nll(TRAIN_WORDS) < 2.4
+--- check test | Held-out words: NLL below 2.40 (a bigram model scores about 2.43)
+CharLM().fit(TRAIN_WORDS).nll(["against", "agree", "all", "allow", "animal", "answer", "base", "bear", "beauty", "because", "begin", "both", "bread", "brown", "build", "burn", "call", "came", "capital", "carry", "cat", "chance", "choose", "church", "climb", "colony", "contain", "cool", "cost", "cotton", "country", "cross", "cut", "desert", "design", "distant", "double", "drink", "drop", "earth", "effect", "energy", "exact", "family", "far", "finger", "fit", "floor", "found", "from", "front", "gas", "gentle", "get", "girl", "green", "half", "held", "hit", "hold", "huge", "inch", "indicate", "interest", "join", "lady", "land", "lay", "lead", "learn", "leave", "length", "less", "letter", "lift", "major", "man", "mark", "mass", "melody", "method", "milk", "minute", "move", "music", "nation", "nature", "necessary", "note", "notice", "noun", "off", "old", "paint", "parent", "part", "pay", "person", "piece", "pitch", "populate", "port", "property", "provide", "push", "radio", "red", "region", "salt", "sea", "second", "settle", "shall", "shore", "sight", "simple", "solve", "soon", "spend", "spot", "stand", "stone", "stream", "substance", "supply", "syllable", "symbol", "teeth", "term", "than", "thin", "thing", "thought", "through", "tiny", "too", "total", "two", "unit", "value", "vowel", "want", "war", "were", "which", "why", "wood", "word", "written", "wrote"]) < 2.40
+--- check test | Generation is deterministic for a seed and stays within the rules
+(lambda m: all(m.generate(random.Random(s)) == m.generate(random.Random(s)) for s in range(5)) and all(len(w) <= 6 and set(w) <= set("abcdefghijklmnopqrstuvwxyz") for w in (m.generate(random.Random(s), max_len=6) for s in range(40))))(CharLM().fit(TRAIN_WORDS))
+--- check test | Generated words vary and are mostly not empty
+(lambda ws: len(set(ws)) >= 12 and sum(1 for w in ws if w) >= 15)([CharLM().fit(TRAIN_WORDS).generate(random.Random(s)) for s in range(20)])
+
++++ practice | Contexts for an n-gram model
+--- task
+An n-gram model predicts each symbol from the \`n - 1\` symbols before it. Write \`ngram_events(word, n)\`, which returns the list of \`(context, symbol)\` pairs for one word:
+
+- The symbols are the word's letters followed by \`"."\` (the end).
+- Each context is the \`n - 1\` symbols just before, as a string, with the start padded by \`"."\` characters.
+- For \`n = 1\` every context is the empty string.
+
+So \`ngram_events("ab", 3)\` is \`[("..", "a"), (".a", "b"), ("ab", ".")]\`. If \`n\` is below 1, raise \`ValueError\`.
+--- starter
+def ngram_events(word, n):
+    return [(word[:i], ch) for i, ch in enumerate(word + ".")]
+--- solution
+def ngram_events(word, n):
+    if n < 1:
+        raise ValueError("n must be at least 1")
+    padded = "." * (n - 1) + word + "."
+    return [(padded[i - (n - 1):i], padded[i]) for i in range(n - 1, len(padded))]
+--- hint
+Pad the front with \`n - 1\` dots and add one dot at the end. Then every symbol after the padding has exactly \`n - 1\` symbols before it.
+--- hint
+The context of the symbol at position \`i\` of the padded string is the slice \`padded[i - (n - 1):i]\`.
+--- check case | Trigrams of "ab"
+ngram_events("ab", 3)
+=> [("..", "a"), (".a", "b"), ("ab", ".")]
+--- check case | Bigrams of "moon"
+ngram_events("moon", 2)
+=> [(".", "m"), ("m", "o"), ("o", "o"), ("o", "n"), ("n", ".")]
+--- check case | Unigrams have empty contexts
+ngram_events("hi", 1)
+=> [("", "h"), ("", "i"), ("", ".")]
+--- check case | The empty word predicts only its end
+ngram_events("", 3)
+=> [("..", ".")]
+--- check test | n below 1 raises ValueError
+raises(ValueError, lambda: ngram_events("ab", 0))
+
++++ practice | Mixing distributions
+--- task
+Interpolation mixes several probability distributions with weights. Write \`mix(dists, weights)\`:
+
+- \`dists\` is a list of dicts over the same symbols, each a probability distribution.
+- Return the dict whose value for each symbol is the weighted sum of that symbol's values.
+- Raise \`ValueError\` if the two lists have different lengths, if any weight is negative, or if the weights do not add up to 1 (allow a difference of \`1e-9\`).
+--- starter
+def mix(dists, weights):
+    return {s: sum(d[s] for d in dists) / len(dists) for s in dists[0]}
+--- solution
+def mix(dists, weights):
+    if len(dists) != len(weights) or not dists:
+        raise ValueError("need one weight per distribution")
+    if any(w < 0 for w in weights) or abs(sum(weights) - 1) > 1e-9:
+        raise ValueError("weights must be non-negative and add up to 1")
+    return {s: sum(w * d[s] for w, d in zip(weights, dists)) for s in dists[0]}
+--- hint
+Check the weights first. Then each symbol's value is \`sum(w * d[s] ...)\` over the pairs of weight and distribution.
+--- hint
+Comparing floats: \`abs(sum(weights) - 1) > 1e-9\`, never \`!= 1\`.
+--- check test | A 70/30 mix
+(lambda m: abs(m["a"] - 0.58) < 1e-12 and abs(m["b"] - 0.42) < 1e-12)(mix([{"a": 0.7, "b": 0.3}, {"a": 0.3, "b": 0.7}], [0.7, 0.3]))
+--- check test | The result is still a distribution
+(lambda m: abs(sum(m.values()) - 1) < 1e-12)(mix([{"x": 0.1, "y": 0.2, "z": 0.7}, {"x": 1.0, "y": 0.0, "z": 0.0}, {"x": 1 / 3, "y": 1 / 3, "z": 1 / 3}], [0.5, 0.25, 0.25]))
+--- check test | Weights like 0.1 + 0.2 + 0.7 are accepted despite rounding
+(lambda m: abs(m["a"] - 1.0) < 1e-12)(mix([{"a": 1.0}] * 3, [0.1, 0.2, 0.7]))
+--- check test | Bad weights raise ValueError
+raises(ValueError, lambda: mix([{"a": 1.0}], [0.9])) and raises(ValueError, lambda: mix([{"a": 1.0}, {"a": 1.0}], [1.5, -0.5])) and raises(ValueError, lambda: mix([{"a": 1.0}], [0.5, 0.5]))
+
++++ practice | Tune a mixing weight on validation
+--- task
+Write \`best_lambda(p_big, p_small, val_words, lambdas)\`. \`p_big(prefix, symbol)\` and \`p_small(prefix, symbol)\` are two models: each gives the probability of \`symbol\` after the word-so-far \`prefix\`. For a weight \`lam\`, the mixed model gives \`lam * p_big(...) + (1 - lam) * p_small(...)\`.
+
+For each \`lam\` in \`lambdas\`, compute the mixed model's NLL on \`val_words\`: the mean of \`-log(prob)\` over every symbol of every word, including the final \`"."\`, where the prefix is the part of the word before that symbol. Return the \`lam\` with the lowest NLL (the first, on a tie).
+--- starter
+import math
+
+
+def best_lambda(p_big, p_small, val_words, lambdas):
+    return max(lambdas)
+--- solution
+import math
+
+
+def best_lambda(p_big, p_small, val_words, lambdas):
+    def nll(lam):
+        total, n = 0.0, 0
+        for word in val_words:
+            for i, symbol in enumerate(word + "."):
+                prefix = word[:i]
+                p = lam * p_big(prefix, symbol) + (1 - lam) * p_small(prefix, symbol)
+                total -= math.log(p)
+                n += 1
+        return total / n
+
+    return min(lambdas, key=nll)
+--- hint
+Write the NLL of one weight as a helper, then let \`min(lambdas, key=...)\` pick; \`min\` keeps the first of equal scores.
+--- hint
+The symbols of a word are its letters and then \`"."\`; the prefix before symbol \`i\` is \`word[:i]\`.
+--- check test | When the big model is right, trust it fully
+best_lambda(lambda c, s: 0.95 if s in "a." else 0.05, lambda c, s: 0.25, ["aa", "a", "aaa"], [0.0, 0.5, 1.0]) == 1.0
+--- check test | When the big model rules out something that happens, a mix wins
+best_lambda(lambda c, s: 0.9 if s in "a." else 0.0, lambda c, s: 0.25, ["aa", "a", "ab"], [0.0, 0.25, 0.5, 0.75, 0.99]) == 0.75
+--- check test | A single candidate is returned as it is
+best_lambda(lambda c, s: 0.5, lambda c, s: 0.5, ["ab"], [0.3]) == 0.3
+--- check test | Ties go to the first candidate
+best_lambda(lambda c, s: 0.5, lambda c, s: 0.5, ["ab"], [0.8, 0.2]) == 0.8
+
++++ practice | A probability row from counts, safely
+--- task
+Write \`smoothed_row(counts, symbols, k)\`, which turns a dict of counts for one context into a probability for every symbol in \`symbols\` with add-k smoothing: \`(count + k) / (total + k * len(symbols))\`. Symbols missing from \`counts\` have count 0.
+
+It must cope with awkward rows:
+
+- A row with no counts at all and \`k = 0\` has no information: return the uniform distribution.
+- A negative count, or a symbol in \`counts\` that is not in \`symbols\`, raises \`ValueError\`.
+--- starter
+def smoothed_row(counts, symbols, k):
+    total = sum(counts.values())
+    return {s: (counts.get(s, 0) + k) / (total + k * len(symbols)) for s in symbols}
+--- solution
+def smoothed_row(counts, symbols, k):
+    if any(c < 0 for c in counts.values()):
+        raise ValueError("counts cannot be negative")
+    if any(s not in symbols for s in counts):
+        raise ValueError("a counted symbol is not in the vocabulary")
+    total = sum(counts.values())
+    bottom = total + k * len(symbols)
+    if bottom == 0:
+        return {s: 1 / len(symbols) for s in symbols}
+    return {s: (counts.get(s, 0) + k) / bottom for s in symbols}
+--- hint
+Check the counts before any arithmetic. The only way the bottom of the fraction is 0 is an empty row with \`k = 0\`.
+--- check test | Add-one smoothing of a small row
+(lambda r: abs(r["a"] - 3 / 6) < 1e-12 and abs(r["b"] - 2 / 6) < 1e-12 and abs(r["."] - 1 / 6) < 1e-12)(smoothed_row({"a": 2, "b": 1}, [".", "a", "b"], 1))
+--- check test | k = 0 is the plain fraction, zero for unseen symbols
+smoothed_row({"a": 3, "b": 1}, [".", "a", "b"], 0) == {".": 0.0, "a": 0.75, "b": 0.25}
+--- check test | An empty row with k = 0 is uniform, not a crash
+smoothed_row({}, [".", "a", "b", "c"], 0) == {".": 0.25, "a": 0.25, "b": 0.25, "c": 0.25}
+--- check test | Negative counts and unknown symbols raise ValueError
+raises(ValueError, lambda: smoothed_row({"a": -1}, [".", "a"], 1)) and raises(ValueError, lambda: smoothed_row({"z": 1}, [".", "a"], 1))
+
++++ practice | Fix the mixture that loses probability
+--- task
+This interpolated model mixes a bigram and a unigram distribution with a small uniform share. It works on contexts it has seen. But after a character it never saw in training (such as \`"q"\` when no training word has a \`q\`), its \`next_distribution\` adds up to well below 1, so its "probabilities" are not a distribution at all, and its NLL looks better than it really is.
+
+Fix \`next_distribution\` so the weight of a part that has no data goes to the uniform share, and every distribution adds up to 1.
+--- starter
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class MixLM:
+    def __init__(self, words, weights=(0.6, 0.35, 0.05)):
+        self.weights = weights
+        self.bigram = {}
+        self.unigram = {}
+        for word in words:
+            seq = "." + word + "."
+            for a, b in zip(seq, seq[1:]):
+                row = self.bigram.setdefault(a, {})
+                row[b] = row.get(b, 0) + 1
+                self.unigram[b] = self.unigram.get(b, 0) + 1
+
+    def next_distribution(self, context):
+        prev = context[-1] if context else "."
+        w_bi, w_uni, w_flat = self.weights
+        dist = {s: w_flat / len(SYMBOLS) for s in SYMBOLS}
+        row = self.bigram.get(prev)
+        if row:
+            total = sum(row.values())
+            for s in SYMBOLS:
+                dist[s] += w_bi * row.get(s, 0) / total
+        total = sum(self.unigram.values())
+        for s in SYMBOLS:
+            dist[s] += w_uni * self.unigram.get(s, 0) / total
+        return dist
+--- solution
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class MixLM:
+    def __init__(self, words, weights=(0.6, 0.35, 0.05)):
+        self.weights = weights
+        self.bigram = {}
+        self.unigram = {}
+        for word in words:
+            seq = "." + word + "."
+            for a, b in zip(seq, seq[1:]):
+                row = self.bigram.setdefault(a, {})
+                row[b] = row.get(b, 0) + 1
+                self.unigram[b] = self.unigram.get(b, 0) + 1
+
+    def next_distribution(self, context):
+        prev = context[-1] if context else "."
+        w_bi, w_uni, w_flat = self.weights
+        row = self.bigram.get(prev)
+        if not row:
+            w_flat += w_bi
+            w_bi = 0.0
+        dist = {s: w_flat / len(SYMBOLS) for s in SYMBOLS}
+        if row:
+            total = sum(row.values())
+            for s in SYMBOLS:
+                dist[s] += w_bi * row.get(s, 0) / total
+        total = sum(self.unigram.values())
+        for s in SYMBOLS:
+            dist[s] += w_uni * self.unigram.get(s, 0) / total
+        return dist
+--- hint
+Add up the values of \`next_distribution("q")\`. Which weight never gets spent?
+--- hint
+When the bigram row is missing, move its weight onto the uniform share before you build the distribution.
+--- check test | An unseen context gives a real distribution
+(lambda d: abs(sum(d.values()) - 1) < 1e-12 and all(v > 0 for v in d.values()))(MixLM(["moon", "mars", "star"]).next_distribution("q"))
+--- check test | Seen contexts are unchanged
+(lambda m: abs(m.next_distribution("m")["o"] - (0.6 * 0.5 + 0.35 * 2 / 15 + 0.05 / 27)) < 1e-12)(MixLM(["moon", "mars", "star"]))
+--- check test | Every context adds up to 1
+(lambda m: all(abs(sum(m.next_distribution(c).values()) - 1) < 1e-12 for c in ("", "mo", "sta", "xyz", "q")))(MixLM(["moon", "mars", "star"]))
+
++++ practice | Absolute discounting
+--- task
+**Absolute discounting** is a smarter way to make room for unseen pairs than add-k: it takes a fixed amount \`D\` off every seen count and hands the freed probability to a backup distribution. Write a class \`DiscountBigram(words, D=0.75)\` over the 27 symbols \`"."\` and \`"a"\` to \`"z"\`:
+
+- Count the bigrams of every word, with \`"."\` at the start and end, as in lesson 12. Let \`c(a, b)\` be a pair's count, \`c(a)\` the total of row \`a\`, and \`seen(a)\` the number of different symbols \`b\` with \`c(a, b) > 0\`.
+- The backup is an add-one unigram: \`uni(b) = (count of b as a next symbol + 1) / (number of pairs + 27)\`.
+- \`prob(a, b)\` is \`max(c(a, b) - D, 0) / c(a) + (D * seen(a) / c(a)) * uni(b)\`. If \`c(a)\` is 0, it is \`uni(b)\`.
+
+Every row of \`prob\` must add up to 1 and every value must be positive (for \`D\` above 0).
+--- starter
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class DiscountBigram:
+    def __init__(self, words, D=0.75):
+        self.D = D
+
+    def prob(self, a, b):
+        return 1 / len(SYMBOLS)
+--- solution
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+class DiscountBigram:
+    def __init__(self, words, D=0.75):
+        self.D = D
+        self.counts = {a: {b: 0 for b in SYMBOLS} for a in SYMBOLS}
+        self.next_counts = {b: 0 for b in SYMBOLS}
+        pairs = 0
+        for word in words:
+            seq = "." + word + "."
+            for a, b in zip(seq, seq[1:]):
+                self.counts[a][b] += 1
+                self.next_counts[b] += 1
+                pairs += 1
+        self.pairs = pairs
+
+    def uni(self, b):
+        return (self.next_counts[b] + 1) / (self.pairs + len(SYMBOLS))
+
+    def prob(self, a, b):
+        row = self.counts[a]
+        total = sum(row.values())
+        if total == 0:
+            return self.uni(b)
+        seen = sum(1 for c in row.values() if c > 0)
+        return max(row[b] - self.D, 0) / total + (self.D * seen / total) * self.uni(b)
+--- hint
+Keep a full table of counts for every pair of symbols, plus the count of each symbol as a next symbol and the number of pairs.
+--- hint
+The freed probability in row \`a\` is exactly \`D\` for each seen symbol, \`D * seen(a)\` in all, divided by \`c(a)\`; spreading it with \`uni\`, which adds up to 1, makes the row add up to 1.
+--- check test | Every row adds up to 1, seen or not
+(lambda m: all(abs(sum(m.prob(a, b) for b in SYMBOLS) - 1) < 1e-12 for a in SYMBOLS))(DiscountBigram(["moon", "mars", "star", "rover"]))
+--- check test | Every probability is positive
+(lambda m: all(m.prob(a, b) > 0 for a in SYMBOLS for b in SYMBOLS))(DiscountBigram(["moon", "mars"]))
+--- check test | A value by hand: after "m" in ["moon", "mars"]
+(lambda m: abs(m.prob("m", "o") - ((1 - 0.75) / 2 + (0.75 * 2 / 2) * (2 + 1) / (10 + 27))) < 1e-12)(DiscountBigram(["moon", "mars"]))
+--- check test | With D = 0 a seen row is the plain fraction
+(lambda m: m.prob("o", "o") == 0.5 and m.prob("o", "n") == 0.5 and m.prob("o", "z") == 0.0)(DiscountBigram(["moon"], D=0.0))
+--- check test | An unseen row falls back to the unigram
+(lambda m: abs(m.prob("q", "o") - (2 + 1) / (5 + 27)) < 1e-12)(DiscountBigram(["moon"]))
+
+=== ai-gate | AI from scratch: mastery gate
+--- teach
+The gate covers the whole course: shapes and matrix products, gradients by hand and by autograd, gradient checks, training loops and optimizers, numerically stable softmax and cross-entropy, tokenization and sampling, attention and the transformer block, and honest evaluation. Its ten problems are new, most of them combine several lessons, and there are no hints. Twelve questions after them check that you understand why the code behaves as it does. To get ready, redo the practice problems of the lessons that felt hardest, especially the gradient-by-hand and debugging ones, without looking at the hints.
+--- gate
+pass 7
+questions 10
+minutes 112
+
++++ problem | Broadcasting by hand
+--- task
+NumPy and PyTorch **broadcast**: when two matrices have different shapes, a dimension of size 1 is stretched to match the other. Write \`broadcast_add(A, B)\` for two matrices given as lists of rows:
+
+- Work out each shape \`(rows, columns)\`. If a matrix is ragged (rows of different lengths) or empty, raise \`ValueError\`.
+- For each of the two dimensions, the sizes must be equal, or one of them must be 1. The result's size is the larger one. Otherwise raise \`ValueError\`.
+- Entry \`[i][j]\` of the result is \`A[i'][j'] + B[i''][j'']\`, where a dimension of size 1 always uses index 0.
+
+So a \`(2, 3)\` matrix plus a \`(1, 3)\` row adds that row to both rows, and a \`(2, 1)\` column plus a \`(1, 3)\` row gives a \`(2, 3)\` table of sums.
+--- starter
+def broadcast_add(A, B):
+    return [[a + b for a, b in zip(ra, rb)] for ra, rb in zip(A, B)]
+--- solution
+def shape_of(m):
+    if not m or not m[0]:
+        raise ValueError("empty matrix")
+    cols = len(m[0])
+    if any(len(row) != cols for row in m):
+        raise ValueError("ragged matrix")
+    return len(m), cols
+
+
+def broadcast_add(A, B):
+    (ra, ca), (rb, cb) = shape_of(A), shape_of(B)
+    if ra != rb and 1 not in (ra, rb):
+        raise ValueError(f"rows {ra} and {rb} do not broadcast")
+    if ca != cb and 1 not in (ca, cb):
+        raise ValueError(f"columns {ca} and {cb} do not broadcast")
+    rows, cols = max(ra, rb), max(ca, cb)
+    return [
+        [A[i if ra > 1 else 0][j if ca > 1 else 0] + B[i if rb > 1 else 0][j if cb > 1 else 0] for j in range(cols)]
+        for i in range(rows)
+    ]
+--- check case | A row is added to every row
+broadcast_add([[1, 2, 3], [4, 5, 6]], [[10, 20, 30]])
+=> [[11, 22, 33], [14, 25, 36]]
+--- check case | A column is added to every column
+broadcast_add([[1, 2, 3], [4, 5, 6]], [[100], [200]])
+=> [[101, 102, 103], [204, 205, 206]]
+--- check case | A column plus a row is a table of sums
+broadcast_add([[1], [2]], [[10, 20, 30]])
+=> [[11, 21, 31], [12, 22, 32]]
+--- check case | A (1, 1) matrix is added everywhere
+broadcast_add([[5]], [[1, 2], [3, 4]])
+=> [[6, 7], [8, 9]]
+--- check test | Shapes that do not broadcast raise ValueError
+raises(ValueError, lambda: broadcast_add([[1, 2, 3], [4, 5, 6]], [[1, 2], [3, 4], [5, 6]])) and raises(ValueError, lambda: broadcast_add([[1, 2, 3], [4, 5, 6]], [[1, 2], [3, 4]]))
+--- check test | Ragged or empty matrices raise ValueError
+raises(ValueError, lambda: broadcast_add([[1, 2], [3]], [[1]])) and raises(ValueError, lambda: broadcast_add([], [[1]]))
+
++++ problem | A softmax classifier's gradients by hand
+--- task
+A linear layer followed by softmax and cross-entropy is the last layer of almost every classifier. Write \`softmax_layer_grads(W, b, x, target)\` with plain floats:
+
+- \`W\` has one row per class (each row as long as \`x\`), \`b\` one bias per class. The logits are \`logits[i] = dot(W[i], x) + b[i]\`.
+- The loss is the cross-entropy of \`target\`, computed stably as \`logsumexp(logits) - logits[target]\`.
+
+Return \`(loss, dW, db, dx)\`: the loss, and its gradients with respect to \`W\` (same shape as \`W\`), \`b\` and the input \`x\`. Use \`g = softmax(logits) - onehot(target)\`, then the chain rule through \`logits[i] = dot(W[i], x) + b[i]\`. It must work for logits in the thousands.
+--- starter
+import math
+
+
+def softmax_layer_grads(W, b, x, target):
+    logits = [sum(w * v for w, v in zip(row, x)) + bi for row, bi in zip(W, b)]
+    exps = [math.exp(z) for z in logits]
+    loss = -math.log(exps[target] / sum(exps))
+    return loss, [[0.0] * len(x) for _ in W], [0.0] * len(b), [0.0] * len(x)
+--- solution
+import math
+
+
+def softmax_layer_grads(W, b, x, target):
+    logits = [sum(w * v for w, v in zip(row, x)) + bi for row, bi in zip(W, b)]
+    top = max(logits)
+    lse = top + math.log(sum(math.exp(z - top) for z in logits))
+    loss = lse - logits[target]
+    g = [math.exp(z - lse) - (1.0 if i == target else 0.0) for i, z in enumerate(logits)]
+    dW = [[gi * v for v in x] for gi in g]
+    db = g
+    dx = [sum(W[i][j] * g[i] for i in range(len(W))) for j in range(len(x))]
+    return loss, dW, db, dx
+--- check test | Every gradient agrees with the measured slope
+(lambda W, b, x, t: (lambda r, L: all(abs(r[1][i][j] - (L([[v + (1e-6 if (a, c) == (i, j) else 0) for c, v in enumerate(row)] for a, row in enumerate(W)], b, x) - L([[v - (1e-6 if (a, c) == (i, j) else 0) for c, v in enumerate(row)] for a, row in enumerate(W)], b, x)) / 2e-6) < 1e-6 for i in range(3) for j in range(2)) and all(abs(r[2][i] - (L(W, [v + (1e-6 if a == i else 0) for a, v in enumerate(b)], x) - L(W, [v - (1e-6 if a == i else 0) for a, v in enumerate(b)], x)) / 2e-6) < 1e-6 for i in range(3)) and all(abs(r[3][j] - (L(W, b, [v + (1e-6 if a == j else 0) for a, v in enumerate(x)]) - L(W, b, [v - (1e-6 if a == j else 0) for a, v in enumerate(x)])) / 2e-6) < 1e-6 for j in range(2)))(softmax_layer_grads(W, b, x, t), lambda W2, b2, x2: softmax_layer_grads(W2, b2, x2, t)[0]))([[0.5, -1.0], [1.5, 0.2], [-0.3, 0.8]], [0.1, -0.2, 0.0], [1.2, -0.7], 2)
+--- check test | A known loss: equal logits over 4 classes cost log 4
+abs(softmax_layer_grads([[0.0, 0.0]] * 4, [0.0] * 4, [3.0, -1.0], 1)[0] - __import__("math").log(4)) < 1e-12
+--- check test | Logits in the thousands stay finite
+(lambda r: abs(r[0] - 1000.0) < 1e-9 and abs(r[2][0] - 1.0) < 1e-12 and abs(r[2][1] + 1.0) < 1e-12)(softmax_layer_grads([[1.0], [0.0]], [0.0, 0.0], [1000.0], 1))
+--- check test | The bias gradient adds up to 0
+abs(sum(softmax_layer_grads([[0.5, -1.0], [1.5, 0.2], [-0.3, 0.8]], [0.1, -0.2, 0.0], [1.2, -0.7], 0)[2])) < 1e-12
+
++++ problem | A stable softplus primitive
+--- task
+**Softplus** is \`log(1 + exp(x))\`, a smooth version of relu. The starter has the course's \`Value\` class. Add a primitive method \`softplus()\`:
+
+- Its output's \`data\` must be computed stably for any float: \`max(x, 0) + log(1 + exp(-abs(x)))\`, which is the same number but never overflows.
+- Its child is \`self\` and its \`_op\` is \`"softplus"\`.
+- Its local derivative is the sigmoid of \`x\`, which must also be computed without overflow. The \`_backward\` adds it times \`out.grad\` into \`self.grad\`.
+--- starter
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+    def softplus(self):
+        out = Value(math.log(1 + math.exp(self.data)), (self,), "softplus")
+        return out
+--- solution
+import math
+
+
+class Value:
+    def __init__(self, data, _children=(), _op=""):
+        self.data = data
+        self.grad = 0.0
+        self._prev = set(_children)
+        self._op = _op
+        self._backward = lambda: None
+
+    def __repr__(self):
+        return f"Value(data={self.data}, grad={self.grad})"
+
+    def __add__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data + other.data, (self, other), "+")
+
+        def _backward():
+            self.grad += out.grad
+            other.grad += out.grad
+
+        out._backward = _backward
+        return out
+
+    def __mul__(self, other):
+        other = other if isinstance(other, Value) else Value(other)
+        out = Value(self.data * other.data, (self, other), "*")
+
+        def _backward():
+            self.grad += other.data * out.grad
+            other.grad += self.data * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __pow__(self, n):
+        out = Value(self.data ** n, (self,), f"**{n}")
+
+        def _backward():
+            self.grad += n * self.data ** (n - 1) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def exp(self):
+        e = math.exp(self.data)
+        out = Value(e, (self,), "exp")
+
+        def _backward():
+            self.grad += e * out.grad
+
+        out._backward = _backward
+        return out
+
+    def tanh(self):
+        t = math.tanh(self.data)
+        out = Value(t, (self,), "tanh")
+
+        def _backward():
+            self.grad += (1 - t * t) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def relu(self):
+        out = Value(self.data if self.data > 0 else 0.0, (self,), "relu")
+
+        def _backward():
+            self.grad += (1.0 if self.data > 0 else 0.0) * out.grad
+
+        out._backward = _backward
+        return out
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
+    def __truediv__(self, other):
+        return self * other ** -1
+
+    def __rtruediv__(self, other):
+        return other * self ** -1
+
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def backward(self):
+        order, visited = [], set()
+
+        def visit(node):
+            if node not in visited:
+                visited.add(node)
+                for child in node._prev:
+                    visit(child)
+                order.append(node)
+
+        visit(self)
+        self.grad = 1.0
+        for node in reversed(order):
+            node._backward()
+
+    def softplus(self):
+        x = self.data
+        out = Value(max(x, 0.0) + math.log(1 + math.exp(-abs(x))), (self,), "softplus")
+        if x >= 0:
+            s = 1 / (1 + math.exp(-x))
+        else:
+            e = math.exp(x)
+            s = e / (1 + e)
+
+        def _backward():
+            self.grad += s * out.grad
+
+        out._backward = _backward
+        return out
+--- check test | Value and label at 0
+(lambda y: abs(y.data - __import__("math").log(2)) < 1e-12 and y._op == "softplus" and len(y._prev) == 1)(Value(0.0).softplus())
+--- check test | Huge inputs: no overflow, the right values
+abs(Value(1000.0).softplus().data - 1000.0) < 1e-9 and Value(-1000.0).softplus().data < 1e-300
+--- check test | The gradient agrees with the measured slope inside a bigger expression
+(lambda f: (lambda x: (f(x).backward(), abs(x.grad - (f(Value(0.4 + 1e-6)).data - f(Value(0.4 - 1e-6)).data) / 2e-6) < 1e-6)[1])(Value(0.4)))(lambda v: (v * 2 - 1).softplus() * v.softplus())
+--- check test | Gradients at huge inputs are 1 and 0, without overflow
+(lambda a, b: (a.softplus().backward(), b.softplus().backward(), abs(a.grad - 1.0) < 1e-12 and b.grad < 1e-300)[2])(Value(1000.0), Value(-1000.0))
+--- check test | A value used twice accumulates
+(lambda x: ((x.softplus() + x.softplus()).backward(), abs(x.grad - 1.0) < 1e-12)[1])(Value(0.0))
+
++++ problem | Find the wrong gradient entries
+--- task
+A model's parameters often live in a dict of named lists. Write \`wrong_entries(f, params, grads, h=1e-6, tol=1e-5)\`:
+
+- \`params\` maps each name to a list of floats; \`f(params)\` returns the loss as a float.
+- \`grads\` has the same shape: someone's claimed gradient for every entry.
+- For every entry, nudge only that one number by \`+h\` and by \`-h\`, measure the central-difference slope, and compare it with the claim using the relative error \`abs(a - n) / max(abs(a) + abs(n), 1e-8)\`.
+- Return the sorted list of \`(name, index)\` pairs whose relative error is above \`tol\`.
+
+When you return, \`params\` must hold exactly the numbers it started with.
+--- starter
+def wrong_entries(f, params, grads, h=1e-6, tol=1e-5):
+    return []
+--- solution
+def wrong_entries(f, params, grads, h=1e-6, tol=1e-5):
+    wrong = []
+    for name, values in params.items():
+        for i in range(len(values)):
+            original = values[i]
+            values[i] = original + h
+            up = f(params)
+            values[i] = original - h
+            down = f(params)
+            values[i] = original
+            numerical = (up - down) / (2 * h)
+            claimed = grads[name][i]
+            if abs(claimed - numerical) / max(abs(claimed) + abs(numerical), 1e-8) > tol:
+                wrong.append((name, i))
+    return sorted(wrong)
+--- check test | Finds the one wrong entry in each list
+wrong_entries(lambda p: p["w"][0] * p["w"][1] + p["b"][0] ** 2, {"w": [2.0, 3.0], "b": [1.5]}, {"w": [3.0, 1.0], "b": [3.0]}) == [("w", 1)]
+--- check test | Several wrong entries come back sorted
+wrong_entries(lambda p: sum(v * v for v in p["z"]) + sum(p["a"]), {"z": [1.0, -2.0], "a": [0.5, 0.5]}, {"z": [2.0, 4.0], "a": [0.0, 1.0]}) == [("a", 0), ("z", 1)]
+--- check test | A correct gradient gives an empty list
+wrong_entries(lambda p: p["x"][0] ** 3, {"x": [2.0]}, {"x": [12.0]}) == []
+--- check test | params ends exactly as it began
+(lambda p: (wrong_entries(lambda q: q["x"][0] * q["x"][1], p, {"x": [0.0, 0.0]}), p == {"x": [0.1, 0.7]})[1])({"x": [0.1, 0.7]})
+
++++ problem | AdamW
+--- task
+Large language models are trained with **AdamW**: Adam plus **decoupled weight decay**, which shrinks every weight a little each step, separately from the gradient. The starter has \`Param\` and the course's \`Adam\`. Write a class \`AdamW(params, lr=0.01, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.01)\` with \`zero_grad()\` and \`step()\`. Each \`step()\`, for each parameter:
+
+1. first shrink it: \`p.data -= lr * weight_decay * p.data\`;
+2. then make exactly the Adam update (with its own \`m\`, \`v\` and a step counter that goes up once per \`step()\`).
+
+With \`weight_decay=0\` it must behave exactly like \`Adam\`.
+--- starter
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Adam:
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        self.params = list(params)
+        self.lr = lr
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+class AdamW(Adam):
+    pass
+--- solution
+import math
+
+
+class Param:
+    def __init__(self, data):
+        self.data, self.grad = data, 0.0
+
+
+class Adam:
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8):
+        self.params = list(params)
+        self.lr = lr
+        self.beta1, self.beta2 = betas
+        self.eps = eps
+        self.m = [0.0] * len(self.params)
+        self.v = [0.0] * len(self.params)
+        self.t = 0
+
+    def zero_grad(self):
+        for p in self.params:
+            p.grad = 0.0
+
+    def step(self):
+        self.t += 1
+        for i, p in enumerate(self.params):
+            self.m[i] = self.beta1 * self.m[i] + (1 - self.beta1) * p.grad
+            self.v[i] = self.beta2 * self.v[i] + (1 - self.beta2) * p.grad ** 2
+            m_hat = self.m[i] / (1 - self.beta1 ** self.t)
+            v_hat = self.v[i] / (1 - self.beta2 ** self.t)
+            p.data -= self.lr * m_hat / (math.sqrt(v_hat) + self.eps)
+
+
+class AdamW(Adam):
+    def __init__(self, params, lr=0.01, betas=(0.9, 0.999), eps=1e-8, weight_decay=0.01):
+        super().__init__(params, lr, betas, eps)
+        self.weight_decay = weight_decay
+
+    def step(self):
+        for p in self.params:
+            p.data -= self.lr * self.weight_decay * p.data
+        super().step()
+--- check test | A parameter with no gradient only shrinks
+(lambda p: (lambda o: (o.step(), o.step(), abs(p.data - 2.0 * (1 - 0.1 * 0.5) ** 2) < 1e-12)[2])(AdamW([p], lr=0.1, weight_decay=0.5)))(Param(2.0))
+--- check test | With weight_decay = 0 it matches Adam exactly
+(lambda a, b: (lambda oa, ob: ([(setattr(a, "grad", g), setattr(b, "grad", g), oa.step(), ob.step()) for g in (2.0, -1.0, 0.5)], a.data == b.data)[1])(AdamW([a], weight_decay=0.0), Adam([b])))(Param(1.0), Param(1.0))
+--- check test | One step with both: shrink first, then the Adam step of about lr
+(lambda p: (lambda o: (setattr(p, "grad", 4.0), o.step(), abs(p.data - (3.0 * (1 - 0.01 * 0.1) - 0.01)) < 1e-6)[2])(AdamW([p], lr=0.01, weight_decay=0.1)))(Param(3.0))
+--- check test | Each optimizer keeps its own state, and the counter goes up once per step
+(lambda o1, o2: (o1.step(), o1.step(), o1.t, o2.t)[2:] == (2, 0))(AdamW([Param(1.0), Param(2.0)]), AdamW([Param(1.0)]))
+
++++ problem | Cross-entropy with padding ignored
+--- task
+In a batch of sequences, padding positions have no real target. Training code marks them with a special target, by convention \`-100\`, and leaves them out of the loss. Write \`masked_mean_ce(rows, targets, ignore_index=-100)\`:
+
+- \`rows\` holds one list of logits per position and \`targets\` one class index per position.
+- Positions whose target is \`ignore_index\` are skipped entirely.
+- Every other target must be a valid index for its row (\`0 <= t < len(row)\`), or raise \`ValueError\`.
+- Return the mean of the stable cross-entropy \`logsumexp(row) - row[t]\` over the positions that count.
+- If the lists have different lengths, or no position counts, raise \`ValueError\`.
+--- starter
+import math
+
+
+def masked_mean_ce(rows, targets, ignore_index=-100):
+    total = 0.0
+    for row, t in zip(rows, targets):
+        top = max(row)
+        total += top + math.log(sum(math.exp(z - top) for z in row)) - row[t]
+    return total / len(rows)
+--- solution
+import math
+
+
+def masked_mean_ce(rows, targets, ignore_index=-100):
+    if len(rows) != len(targets):
+        raise ValueError("need one target per row")
+    total, count = 0.0, 0
+    for row, t in zip(rows, targets):
+        if t == ignore_index:
+            continue
+        if not 0 <= t < len(row):
+            raise ValueError(f"target {t} is not a class of this row")
+        top = max(row)
+        total += top + math.log(sum(math.exp(z - top) for z in row)) - row[t]
+        count += 1
+    if count == 0:
+        raise ValueError("every position is ignored")
+    return total / count
+--- check test | Padding positions are left out of the mean
+abs(masked_mean_ce([[2.0, 1.0, 0.1], [5.0, -5.0, 0.0], [0.0, 0.0, 0.0]], [0, -100, 2]) - (0.41703001627783376 + __import__("math").log(3)) / 2) < 1e-12
+--- check test | Huge logits are fine
+abs(masked_mean_ce([[1000.0, 0.0]], [1]) - 1000.0) < 1e-9
+--- check test | A custom ignore index
+abs(masked_mean_ce([[0.0, 0.0], [9.0, 0.0]], [1, 0], ignore_index=0) - __import__("math").log(2)) < 1e-12
+--- check test | Everything ignored, a bad target, or a length mismatch raise ValueError
+raises(ValueError, lambda: masked_mean_ce([[1.0, 2.0]], [-100])) and raises(ValueError, lambda: masked_mean_ce([[1.0, 2.0]], [-1])) and raises(ValueError, lambda: masked_mean_ce([[1.0, 2.0]], [0, 1]))
+
++++ problem | Sampling with temperature and top-k
+--- task
+Write \`sample_next(logits, rng, temperature=1.0, k=None)\`, the way chat models pick their next token:
+
+1. The candidates are the \`k\` indices with the largest logits (on a tie, the smaller index wins a place). With \`k=None\`, every index is a candidate.
+2. Put the candidates in increasing index order.
+3. Divide each candidate's logit by \`temperature\` and take a stable softmax over the candidates only.
+4. Return \`rng.choices(candidates, weights=probabilities)[0]\`, calling \`rng.choices\` exactly once.
+
+Raise \`ValueError\` if \`temperature\` is not above 0, or if \`k\` is given and is below 1. A \`k\` larger than the number of logits means every index.
+--- starter
+import math
+import random
+
+
+def sample_next(logits, rng, temperature=1.0, k=None):
+    return rng.choices(range(len(logits)), weights=logits)[0]
+--- solution
+import math
+import random
+
+
+def sample_next(logits, rng, temperature=1.0, k=None):
+    if temperature <= 0:
+        raise ValueError("temperature must be positive")
+    if k is not None and k < 1:
+        raise ValueError("k must be at least 1")
+    order = sorted(range(len(logits)), key=lambda i: (-logits[i], i))
+    candidates = sorted(order if k is None else order[:k])
+    scaled = [logits[i] / temperature for i in candidates]
+    top = max(scaled)
+    exps = [math.exp(s - top) for s in scaled]
+    total = sum(exps)
+    return rng.choices(candidates, weights=[e / total for e in exps])[0]
+--- check test | k = 1 always picks the largest logit
+all(sample_next([0.5, 3.0, 2.9, -1.0], random.Random(s), k=1) == 1 for s in range(50))
+--- check test | Only top-k candidates are ever chosen
+set(sample_next([0.5, 3.0, 2.9, -1.0, 2.0], random.Random(s), k=3) for s in range(300)) <= {1, 2, 4}
+--- check test | The draw is the seeded weighted choice over the candidates
+all(sample_next([1.0, 2.0, 0.0, 2.0], random.Random(s), temperature=0.5, k=2) == random.Random(s).choices([1, 3], weights=[0.5, 0.5])[0] for s in range(20))
+--- check test | Huge logits and a low temperature do not overflow
+sample_next([1000.0, 999.0], random.Random(0), temperature=0.01) == 0
+--- check test | A bad temperature or k raises ValueError
+raises(ValueError, lambda: sample_next([1.0, 2.0], random.Random(0), temperature=0)) and raises(ValueError, lambda: sample_next([1.0, 2.0], random.Random(0), k=0))
+
++++ problem | Sliding-window attention
+--- task
+Some long-context models let each position attend only to the last few positions: **sliding-window attention**. Its cost grows with \`n * window\` instead of \`n * n\`. Write \`window_attention(Q, K, V, window)\`:
+
+- Position \`i\` may attend to position \`j\` only when \`i - window < j <= i\`: itself and the \`window - 1\` positions before it.
+- Scores are \`Q[i] · K[j] / sqrt(d)\`, with \`d\` the length of a key; scores outside the window are \`-math.inf\` before a stable softmax.
+- Return the output rows: each the weighted average of the value rows.
+
+Raise \`ValueError\` if \`window\` is below 1. A window as long as the sequence is plain causal attention.
+--- starter
+import math
+
+
+def window_attention(Q, K, V, window):
+    return [list(v) for v in V]
+--- solution
+import math
+
+
+def window_attention(Q, K, V, window):
+    if window < 1:
+        raise ValueError("window must be at least 1")
+    scale = math.sqrt(len(K[0]))
+    out = []
+    for i, q in enumerate(Q):
+        scores = [
+            sum(a * b for a, b in zip(q, k)) / scale if i - window < j <= i else -math.inf
+            for j, k in enumerate(K)
+        ]
+        top = max(scores)
+        exps = [math.exp(s - top) for s in scores]
+        total = sum(exps)
+        weights = [e / total for e in exps]
+        out.append([sum(w * v[c] for w, v in zip(weights, V)) for c in range(len(V[0]))])
+    return out
+--- check test | A window of 1 returns the values themselves
+window_attention([[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]], [[1.0, 2.0], [0.5, 0.5], [2.0, -1.0]], [[1.0, 0.0], [2.0, 5.0], [3.0, -1.0]], 1) == [[1.0, 0.0], [2.0, 5.0], [3.0, -1.0]]
+--- check test | A window of 2 by hand: the last position mixes only the last two values
+(lambda out: abs(out[2][0] - (2.0 * __import__("math").exp(0.0) + 3.0 * __import__("math").exp(1.0)) / (__import__("math").exp(0.0) + __import__("math").exp(1.0))) < 1e-12)(window_attention([[0.0], [0.0], [1.0]], [[5.0], [0.0], [1.0]], [[100.0], [2.0], [3.0]], 2))
+--- check test | A window as long as the sequence equals any longer window (plain causal attention)
+(lambda Q, K, V: window_attention(Q, K, V, 3) == window_attention(Q, K, V, 50))([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]], [[0.3, 1.0], [1.2, -0.4], [0.5, 0.5]], [[1.0, 0.0], [0.0, 1.0], [3.0, 3.0]])
+--- check test | Later tokens never change earlier outputs
+(lambda f: f([[0.3, 1.0], [1.2, -0.4], [0.5, 0.5]])[:2] == f([[0.3, 1.0], [1.2, -0.4], [-9.0, 9.0]])[:2])(lambda K: window_attention([[1.0, 0.5], [-0.5, 2.0], [0.0, -1.0]], K, [[1.0, 0.0], [0.0, 1.0], [3.0, 3.0]], 2))
+--- check test | A window below 1 raises ValueError
+raises(ValueError, lambda: window_attention([[1.0]], [[1.0]], [[1.0]], 0))
+
++++ problem | Held-out perplexity, honestly
+--- task
+Write \`heldout_perplexity(words, k=1.0, val_fraction=0.25, seed=0)\`, which returns the pair \`(train_perplexity, val_perplexity)\` of an add-k bigram model:
+
+1. Remove duplicate words (keep first occurrences, in order) and shuffle with \`random.Random(seed).shuffle\`.
+2. The first \`round(len(unique) * val_fraction)\` words are validation; the rest are training. If either part is empty, raise \`ValueError\`.
+3. Count bigrams on the training words only, with \`"."\` at the start and end of each word. The vocabulary is fixed: \`"."\` and \`"a"\` to \`"z"\`, 27 symbols. \`P(b | a) = (count(a, b) + k) / (row_total(a) + 27 * k)\`.
+4. A part's perplexity is \`exp\` of the mean of \`-log P\` over every prediction of its words, including each final \`"."\`.
+--- starter
+import math
+import random
+
+
+def heldout_perplexity(words, k=1.0, val_fraction=0.25, seed=0):
+    return (1.0, 1.0)
+--- solution
+import math
+import random
+
+SYMBOLS = ".abcdefghijklmnopqrstuvwxyz"
+
+
+def heldout_perplexity(words, k=1.0, val_fraction=0.25, seed=0):
+    unique = list(dict.fromkeys(words))
+    random.Random(seed).shuffle(unique)
+    n_val = round(len(unique) * val_fraction)
+    val, train = unique[:n_val], unique[n_val:]
+    if not val or not train:
+        raise ValueError("both parts need at least one word")
+    counts = {a: {b: 0 for b in SYMBOLS} for a in SYMBOLS}
+    for word in train:
+        seq = "." + word + "."
+        for a, b in zip(seq, seq[1:]):
+            counts[a][b] += 1
+    totals = {a: sum(row.values()) for a, row in counts.items()}
+
+    def perplexity(part):
+        nll, n = 0.0, 0
+        for word in part:
+            seq = "." + word + "."
+            for a, b in zip(seq, seq[1:]):
+                nll -= math.log((counts[a][b] + k) / (totals[a] + 27 * k))
+                n += 1
+        return math.exp(nll / n)
+
+    return perplexity(train), perplexity(val)
+--- check test | Known values on a small vocabulary
+(lambda r: abs(r[0] - 14.172493308895568) < 1e-9 and abs(r[1] - 22.048673518001763) < 1e-9)(heldout_perplexity(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"]))
+--- check test | Validation is harder than training, and duplicates do not change the answer
+(lambda ws: (lambda r: r[1] > r[0] and heldout_perplexity(ws + ws[:5]) == r)(heldout_perplexity(ws)))(["orbit", "rocket", "launch", "engine", "stage", "fuel", "comet", "moon", "mars", "star", "space", "probe"])
+--- check test | A huge k knows nothing: both perplexities are close to 27
+(lambda r: abs(r[0] - 27) < 0.01 and abs(r[1] - 27) < 0.01)(heldout_perplexity(["ab", "ba", "abc", "cab"], k=1e9, val_fraction=0.5))
+--- check test | An empty part raises ValueError
+raises(ValueError, lambda: heldout_perplexity(["moon", "mars"], val_fraction=0.0)) and raises(ValueError, lambda: heldout_perplexity(["moon"], val_fraction=1.0))
+
++++ problem | Layer norm's backward pass
+--- task
+Write the backward pass of layer normalisation for one vector. The forward pass, in the starter, is:
+
+\`\`\`text
+mean = sum(x) / n,   var = sum((x[i] - mean) ** 2) / n
+xhat[i] = (x[i] - mean) / sqrt(var + eps)
+y[i] = gamma[i] * xhat[i] + beta[i]
+\`\`\`
+
+Write \`layer_norm_backward(x, gamma, dy, eps=1e-5)\`. \`dy\` is the gradient of the loss with respect to each \`y[i]\`. Return \`(dx, dgamma, dbeta)\`, the gradients with respect to \`x\`, \`gamma\` and \`beta\`, each a list.
+
+\`dgamma[i]\` is \`dy[i] * xhat[i]\` and \`dbeta[i]\` is \`dy[i]\`. For \`dx\`, remember that every \`x[i]\` also moves the mean and the variance, so it affects every output. With \`g[i] = dy[i] * gamma[i]\` and \`inv = 1 / sqrt(var + eps)\`, the result is:
+
+\`\`\`text
+dx[i] = inv / n * (n * g[i] - sum(g) - xhat[i] * sum(g[j] * xhat[j]))
+\`\`\`
+--- starter
+import math
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def layer_norm_backward(x, gamma, dy, eps=1e-5):
+    return [d * g for d, g in zip(dy, gamma)], list(dy), list(dy)
+--- solution
+import math
+
+
+def layer_norm(x, gamma, beta, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    return [g * (v - mean) * inv + b for v, g, b in zip(x, gamma, beta)]
+
+
+def layer_norm_backward(x, gamma, dy, eps=1e-5):
+    n = len(x)
+    mean = sum(x) / n
+    var = sum((v - mean) ** 2 for v in x) / n
+    inv = 1 / math.sqrt(var + eps)
+    xhat = [(v - mean) * inv for v in x]
+    g = [d * gm for d, gm in zip(dy, gamma)]
+    sum_g = sum(g)
+    sum_gx = sum(gi * xi for gi, xi in zip(g, xhat))
+    dx = [inv / n * (n * gi - sum_g - xi * sum_gx) for gi, xi in zip(g, xhat)]
+    dgamma = [d * xi for d, xi in zip(dy, xhat)]
+    return dx, dgamma, list(dy)
+--- check test | dx agrees with the measured slope of sum(dy[i] * y[i])
+(lambda x, gm, bt, dy: (lambda L, r: all(abs(r[0][i] - (L([v + (1e-6 if j == i else 0) for j, v in enumerate(x)]) - L([v - (1e-6 if j == i else 0) for j, v in enumerate(x)])) / 2e-6) < 1e-6 for i in range(4)))(lambda xx: sum(d * y for d, y in zip(dy, layer_norm(xx, gm, bt))), layer_norm_backward(x, gm, dy)))([1.0, -0.5, 2.0, 0.3], [1.2, 0.8, -0.5, 1.0], [0.1, 0.0, -0.2, 0.3], [0.4, -1.1, 0.7, 0.25])
+--- check test | dgamma and dbeta agree with the measured slopes
+(lambda x, gm, bt, dy: (lambda L, r: all(abs(r[1][i] - (L([v + (1e-6 if j == i else 0) for j, v in enumerate(gm)], bt) - L([v - (1e-6 if j == i else 0) for j, v in enumerate(gm)], bt)) / 2e-6) < 1e-6 and abs(r[2][i] - (L(gm, [v + (1e-6 if j == i else 0) for j, v in enumerate(bt)]) - L(gm, [v - (1e-6 if j == i else 0) for j, v in enumerate(bt)])) / 2e-6) < 1e-6 for i in range(4)))(lambda g2, b2: sum(d * y for d, y in zip(dy, layer_norm(x, g2, b2))), layer_norm_backward(x, gm, dy)))([1.0, -0.5, 2.0, 0.3], [1.2, 0.8, -0.5, 1.0], [0.1, 0.0, -0.2, 0.3], [0.4, -1.1, 0.7, 0.25])
+--- check test | dx always adds up to 0: shifting every input by the same amount changes nothing
+abs(sum(layer_norm_backward([3.0, 1.0, -2.0], [1.0, 2.0, 0.5], [0.3, -0.7, 1.1])[0])) < 1e-12
+--- check test | A gradient equal at every output gives dx of 0 when gamma is constant
+all(abs(v) < 1e-12 for v in layer_norm_backward([3.0, 1.0, -2.0], [2.0, 2.0, 2.0], [1.0, 1.0, 1.0])[0])
+
++++ question | Shapes through two layers
+--- ask
+A batch \`X\` of shape \`(32, 128)\` goes through \`X @ W1\` with \`W1\` of shape \`(128, 512)\`, and the result through \`@ W2\` with \`W2\` of shape \`(512, 10)\`. What is the shape of the final result? Answer as \`(rows, columns)\`.
+--- answer
+(32, 10)
+(32,10)
+32, 10
+32,10
+32x10
+32 x 10
+--- why
+Each product keeps the outer sizes and uses up the matching inner size: \`(32, 128) @ (128, 512)\` is \`(32, 512)\`, and \`(32, 512) @ (512, 10)\` is \`(32, 10)\`. One row of 10 outputs for each of the 32 examples.
+
++++ question | A silent shape
+--- ask
+In NumPy, \`a\` has shape \`(3,)\` (three numbers) and \`b\` has shape \`(3, 1)\` (a column of three). What is the shape of \`a + b\`?
+--- choice
+\`(3,)\`: the numbers are added position by position.
+--- choice
+It raises an error, because the shapes differ.
+--- choice correct
+\`(3, 3)\`: broadcasting stretches both into a 3 by 3 table.
+--- choice
+\`(3, 1)\`: the result takes the shape of the larger array.
+--- why
+Broadcasting treats \`a\` as a row \`(1, 3)\` and stretches it down, and stretches the column \`b\` across, giving nine sums. It runs without complaint, which is why a loss accidentally computed over a \`(3, 3)\` table instead of three numbers is such a common silent bug.
+
++++ question | Two uses of one value
+--- ask
+With the course's \`Value\` class, what does this print?
+
+\`\`\`python
+x = Value(3.0)
+y = x * x + x
+y.backward()
+print(x.grad)
+\`\`\`
+--- answer
+7.0
+7
+--- why
+\`x\` is used three times: twice in \`x * x\`, giving \`3 + 3\`, and once in \`+ x\`, giving 1. The contributions add up because every backward rule uses \`+=\`: 6 + 1 is 7, which is the derivative of \`x² + x\` at 3.
+
++++ question | Why add, never overwrite
+--- ask
+Why does every \`_backward\` rule add into \`grad\` with \`+=\` instead of setting it with \`=\`?
+--- choice
+Because floats cannot be overwritten once they have a gradient.
+--- choice correct
+A value used in several places affects the result along each path, and the chain rule adds those effects; \`=\` would keep only the last one.
+--- choice
+To make gradients grow each step, which speeds up training.
+--- choice
+Because PyTorch requires it, although the maths would be the same either way.
+--- why
+The total derivative is the sum over every path from the value to the result. Overwriting silently drops all but the last path. The side effect of adding is that gradients pile up across calls, which is why training zeroes them every step.
+
++++ question | A factor of two in a gradient check
+--- ask
+A hand-derived gradient is exactly twice the true one. What relative error does \`|a - n| / (|a| + |n|)\` report? Give it as a fraction or a decimal.
+--- answer
+1/3
+0.333
+0.33
+0.3333
+--- why
+With \`a = 2n\`, the top is \`n\` and the bottom is \`3n\`, so the error is one third whatever the size of the gradient. Recognising 0.333 at a glance points straight to a missing or extra factor of 2.
+
++++ question | The loss that does not move
+--- ask
+This training loop runs, but the loss stays exactly the same every step. Which line is the bug?
+
+\`\`\`python
+for step in range(100):
+    loss = loss_fn(model)
+    loss.backward()
+    optimizer.zero_grad()
+    optimizer.step()
+\`\`\`
+--- choice
+\`loss = loss_fn(model)\`: the loss should be computed after the step.
+--- choice correct
+\`optimizer.zero_grad()\`: it clears the gradients that \`backward()\` just computed, so \`step()\` always moves by zero.
+--- choice
+\`loss.backward()\`: it should be called after \`step()\`.
+--- choice
+\`optimizer.step()\`: it must be called twice per loop.
+--- why
+Zeroing belongs before \`backward()\`. Placed between \`backward()\` and \`step()\`, it wipes the fresh gradients, and every update is zero, so the loss is perfectly flat.
+
++++ question | The cost of a longer context
+--- ask
+You double a transformer's context length from 4,096 to 8,192 tokens. Roughly what happens to the memory needed for one layer's attention weight matrices?
+--- choice
+It stays the same: the weights do not depend on the input.
+--- choice
+It doubles, like everything else that grows with the sequence.
+--- choice correct
+It grows about four times, because the weight matrix has one entry for every pair of positions.
+--- choice
+It grows about eight times, because there are also keys and values.
+--- why
+The attention weights are an \`n\` by \`n\` matrix, so doubling \`n\` quadruples them, and the score computation too. The KV cache, by contrast, grows only in proportion to \`n\`. This square is the reason long contexts are expensive and why tricks like sliding windows exist.
+
++++ question | Why divide by sqrt(d)
+--- ask
+Why does scaled dot-product attention divide the scores by \`sqrt(d)\`?
+--- choice
+To make the attention weights add up to 1.
+--- choice correct
+Dot products of longer vectors grow about like \`sqrt(d)\`; without scaling, softmax becomes nearly one-hot and its gradients vanish.
+--- choice
+To stop \`math.exp\` overflowing, which subtracting the maximum cannot prevent.
+--- choice
+Because the keys are normalised to length \`sqrt(d)\` by layer norm.
+--- why
+The softmax already makes the weights add to 1, and subtracting the maximum already prevents overflow. The scaling keeps the size of the scores the same whatever the head size, so the softmax stays soft enough to learn from.
+
++++ question | Masking too late
+--- ask
+An attention function computes the softmax of every score and then sets the weights of future positions to 0. What goes wrong?
+--- choice
+Nothing: zero weights mean the future has no effect.
+--- choice correct
+The rows no longer add up to 1, and future scores still changed the other weights through the softmax's shared total.
+--- choice
+It raises an error, because \`math.log(0)\` is taken.
+--- choice
+Only the first position is affected.
+--- why
+Every weight in a row is divided by the same total, which included the future scores. Zeroing afterwards cannot remove their influence. The scores must be set to \`-inf\` before the softmax, so the future never enters the total.
+
++++ question | The first loss
+--- ask
+A freshly initialised character model with 27 symbols gives every symbol the same logit. What cross-entropy loss should its first step report, to two decimal places?
+--- answer
+3.30
+3.3
+3.296
+3.2958
+--- why
+With equal logits every symbol has probability 1/27, so the loss is \`-log(1/27) = log 27\`, about 3.30. A first loss much higher than this means the initialisation is overconfident, which is worth fixing before a long run.
+
++++ question | Choosing k on the wrong data
+--- ask
+A hyperparameter search for the smoothing \`k\` of a bigram model always picks the smallest \`k\` on offer. What is the most likely cause?
+--- choice
+Smaller \`k\` is always better for language models.
+--- choice correct
+It scores each candidate on the training words, where the least smoothing always fits best because it trusts the counts it was built from.
+--- choice
+The validation set is too large.
+--- choice
+The candidates are sorted, and \`min\` always returns the first.
+--- why
+On its own training data, a model with less smoothing always scores better: nothing it is tested on is unseen. Only held-out data shows the cost of trusting rare counts. Choose hyperparameters on validation loss, never on training loss.
+
++++ question | The memory of Adam
+--- ask
+Compared with plain SGD, how much extra memory per parameter does Adam keep during training?
+--- choice
+None: it only changes how the step is computed.
+--- choice
+One number per parameter, its velocity.
+--- choice correct
+Two numbers per parameter: the running averages \`m\` and \`v\`.
+--- choice
+A full copy of the model for every step it has taken.
+--- why
+Adam keeps \`m\`, the average gradient, and \`v\`, the average squared gradient, for every parameter. With the value and the gradient, that is four numbers per parameter, which for large models is a big share of GPU memory and one reason labs split optimizer state across many GPUs.
+`;export{e as default};

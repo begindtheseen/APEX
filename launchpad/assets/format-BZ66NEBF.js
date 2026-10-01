@@ -1,0 +1,1 @@
+function e(e){if(!Number.isFinite(e)||e<=0)return`0 B`;let t=[`B`,`KB`,`MB`,`GB`],n=Math.min(t.length-1,Math.floor(Math.log(e)/Math.log(1024)));return`${(e/1024**n).toFixed(n===0?0:1)} ${t[n]}`}function t(e){let t=Date.parse(e);return Number.isFinite(t)?new Date(t).toLocaleDateString(void 0,{day:`numeric`,month:`short`,year:`numeric`}):null}export{t as n,e as t};

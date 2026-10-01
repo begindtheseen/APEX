@@ -15,7 +15,7 @@ const home=await LP.text(p);
 ok('11 the creed quote is attributed to the creed', /— the creed/.test(home) && !/— Rule 1/.test(home));
 ok('12 the chain itself is printed', /M0 → M1 [\s\S]*\[hard gate\][\s\S]*M40/.test(home), (home.match(/That chain[\s\S]{0,90}/)||[''])[0].replace(/\n/g,' '));
 // Derived from what the Build steps render, not hardcoded.
-ok('27 checkpoints are in the headline numbers', /Checkpoints ticked\s*0 \/ 196/.test(home), (home.match(/Checkpoints ticked[^\n]*\n?[^\n]*/)||[''])[0]);
+ok('27 checkpoints are in the headline numbers', /Checkpoints ticked\s*0 \/ 207/.test(home), (home.match(/Checkpoints ticked[^\n]*\n?[^\n]*/)||[''])[0]);
 ok('28 the module row states the real maximum', /The biggest is 70 hours/.test(home), (home.match(/The biggest is[^.]*\./)||[''])[0]);
 ok('22 the flagship row names the modules', /M5, M6, M7/.test(home), (home.match(/later modules build on it[^.]*\./)||[''])[0].slice(0,80));
 
@@ -29,7 +29,7 @@ await p.getByRole('tab',{name:'Open now'}).click(); await p.waitForTimeout(250);
 const open=await p.$$eval('.mcard', els=>els.map(e=>e.textContent));
 ok('19 a trigger module is not also "Open now" on a fresh install', open.length===1 && /The Contract Page/.test(open[0]), open.map(t=>t.slice(0,30)).join(' | '));
 await p.getByRole('tab',{name:'The ladder'}).click(); await p.waitForTimeout(250);
-ok('20 the hard gate states its size', /thirteen modules and 465 of the 1,364 module hours/.test(await LP.text(p)));
+ok('20 the hard gate states its size', /thirteen modules and 478 of the 1,386 module hours/.test(await LP.text(p)));
 
 await LP.go(p,'/plan');
 const set=async(r,h)=>{await p.fill('#lpRunway',String(r));await p.fill('#lpHours',String(h));await p.waitForTimeout(200);return LP.text(p);};
@@ -41,9 +41,9 @@ const zero=await p.locator('.lp-why').first().textContent();
 ok('29 zero says why it was refused', /not a plan/.test(zero), zero.slice(0,80));
 const spc=await set(6,10);
 ok('16 the ruled-out advice is suppressed', !/Raise the hours toward 18, or take the Spine\./.test(spc));
-await set(25,17);
+await set(27,16);
 const tight=await p.locator('.lp-verdict').textContent();
-ok('18 a seven-minute gap is not "TIGHT"', !/TIGHT/.test(tight), tight.trim());
+ok('18 a three-minute gap is not "TIGHT"', !/TIGHT/.test(tight), tight.trim());
 
 await LP.go(p,'/module/M3?step=build');
 ok('W28 the gate panel points at the stand-in rule', /No referee available for this one\?/.test(await LP.text(p)));

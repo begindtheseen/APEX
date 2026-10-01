@@ -71,10 +71,31 @@ async function typeCommands(p, text) {
   }
 }
 
+/** Marks these course exams passed, as if she had passed them, so every course opens. */
+async function passGates(p, ids) {
+  await p.evaluate((ids) => new Promise((done, fail) => {
+    const q = indexedDB.open('launchpad');
+    q.onerror = () => fail(q.error);
+    q.onsuccess = () => {
+      const tx = q.result.transaction('state', 'readwrite');
+      const os = tx.objectStore('state');
+      const g = os.get('learner');
+      g.onsuccess = () => {
+        const st = g.result;
+        const at = new Date().toISOString();
+        for (const id of ids) st.learn[id] = at;
+        os.put(st, 'learner');
+      };
+      tx.oncomplete = () => { q.result.close(); done(); };
+      tx.onerror = () => fail(tx.error);
+    };
+  }), ids);
+}
+
 (async () => {
   const src = path.join(ENV.REPO, 'launchpad-app', 'src', 'learn');
   const { parseTrack } = await import(pathToFileURL(path.join(src, 'parse.ts')).href);
-  const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp'];
+  const langs = ['bash', 'git', 'html', 'javascript', 'typescript', 'python', 'sql', 'cpp', 'cs'];
   const LEVELS = ['basics', 'intermediate', 'advanced', 'expert', 'projects'];
   const files = fs.readdirSync(path.join(src, 'tracks')).filter((f) => f.endsWith('.txt'));
   const key = (f) => { const [l, v = 'basics'] = f.replace(/\.txt$/, '').split('.'); return [langs.indexOf(l), LEVELS.indexOf(v)]; };
@@ -97,12 +118,12 @@ async function typeCommands(p, text) {
   await LP.open(p, '/learn');
 
   const goals = await p.$$eval('.rm-goals [role=tab]', (e) => e.map((c) => c.textContent.trim()));
-  ok('Learn to code opens on roadmaps: a pill per goal', goals.length >= 5 && goals[0] === 'AI Product Engineer' && goals.includes('Software Engineer'), goals.join(', '));
+  ok('Learn to code opens on roadmaps: a pill per goal, the internship phase first', goals.length >= 5 && goals[0] === 'Phase 1 · Internship-ready' && goals.includes('Backend & AI Infrastructure'), goals.join(', '));
   const steps = await p.$$eval('.rm-step', (e) => e.map((t) => (t.querySelector('.rm-step__label') || {}).textContent || (t.querySelector('.rm-tile--end') ? 'CERTIFICATE' : '')));
   ok('the goal shows its courses in order, ending at a certificate',
-    steps.join(' / ') === 'Linux and the command line / Git and version control / JavaScript, the language of the web / TypeScript: types that catch bugs / HTML and CSS: building pages / SQL fundamentals / Python, a first language / CERTIFICATE', steps.join(' / '));
+    steps.length === 10 && steps[0] === 'Python, a first language' && steps[2] === 'Linux and the command line' && steps[8].startsWith('Data Structures and Algorithms I:') && steps[9] === 'CERTIFICATE', steps.join(' / '));
   const badges = await p.$$eval('.rm-tile__n', (e) => e.map((t) => t.textContent.trim()));
-  ok('each course tile carries its step number', badges.join(',') === '1,2,3,4,5,6,7', badges.join(','));
+  ok('each course tile carries its step number', badges.join(',') === '1,2,3,4,5,6,7,8,9', badges.join(','));
   const links = await p.$$eval('.rm-link', (e) => e.map((t) => t.dataset.dir));
   ok('the dotted path snakes: along a row, around the end, and back', links.includes('right') && links.includes('turn-right') && links.includes('left'), links.join(','));
   await p.click('.rm-goals [role=tab]:has-text("Data & ML")');
@@ -136,13 +157,21 @@ async function typeCommands(p, text) {
   // and last lesson of each course do (the Node checker, src/learn/verify.test.ts,
   // runs every lesson of every course through the same runtimes).
   const only = process.env.LEARN_ONLY ? process.env.LEARN_ONLY.split(',') : null;
+  // Written from outside the app: it saves its own record as it closes, over anything written under it.
+  await p.goto(ENV.BASE + '/index.html');
+  await passGates(p, tracks.flatMap((t) => t.lessons.filter((l) => l.gate).map((l) => l.id)));
+  await LP.open(p, '/learn');
   for (const track of tracks) {
     if (only && !only.includes(track.id) && !only.includes(track.lang)) continue;
     const bad = [];
     const t0 = Date.now();
-    const sample = track.level === 'basics' || process.env.LEARN_ALL ? track.lessons : [track.lessons[0], track.lessons[track.lessons.length - 1]];
+    // A course exam is unseen problems, not a lesson: the Node checker solves those.
+    const lessons = track.lessons.filter((l) => !l.gate);
+    const sample = track.level === 'basics' || process.env.LEARN_ALL ? lessons : [lessons[0], lessons[lessons.length - 1]];
     for (const lesson of sample) {
       await LP.go(p, '/learn/' + lesson.id);
+      const ready = await p.waitForSelector(track.lang === 'bash' || track.lang === 'git' ? '#termInput' : WORK + ' .cm-content', { timeout: 30000 }).then(() => true, () => false);
+      if (!ready) { bad.push(lesson.id + ': no workspace → ' + (await p.$eval('.route', (e) => e.innerText.slice(0, 160)).catch(() => '')).replace(/\n/g, ' ')); continue; }
       if (track.lang === 'bash' || track.lang === 'git') {
         await p.waitForSelector('#termInput');
         const s = await check(p);
@@ -170,7 +199,7 @@ async function typeCommands(p, text) {
   ok('and every step lights up, through to the certificate', only ? true : end === 'true' && lit, end);
   await LP.go(p, '/learn/javascript');
   const outline = await p.$$eval('.lm-outline li', (e) => e.map((li) => li.dataset.done));
-  ok('a course page lists its lessons with what was passed', outline.length === 12 && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
+  ok('a course page lists its lessons with what was passed', outline.length === tracks.find((t) => t.id === 'javascript').lessons.length && (only ? true : outline.every((d) => d === 'true')), outline.join(','));
   await LP.go(p, '/playground?lang=cpp');
   const callout = await p.$eval('.pgx-learn', (e) => e.textContent).catch(() => '');
   ok('the playground offers Learn to code for its language', /C\+\+/.test(callout), callout.slice(0, 120));
@@ -181,9 +210,9 @@ async function typeCommands(p, text) {
   await LP.go(p, '/learn/js-03');
   await p.waitForSelector('.lm-teach .embed');
   await p.click('.lm-teach .ide__run .ide-run');
-  await p.waitForFunction(() => /0\.30000000000000004/.test((document.querySelector('.lm-teach .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
+  await p.waitForFunction(() => /16\n4/.test((document.querySelector('.lm-teach .ide-console') || {}).innerText || ''), null, { timeout: 30000 }).catch(() => {});
   const example = await p.$eval('.lm-teach .ide-console', (e) => e.innerText).catch(() => '');
-  ok('an example in the lesson text runs in place and shows each value', /^3\n2\n9\n0\.30000000000000004\n0\.3/.test(example.trim()), example.replace(/\n/g, ' | '));
+  ok('an example in the lesson text runs in place and shows each value', /^10\n6\n16\n4$/.test(example.trim()), example.replace(/\n/g, ' | '));
 
   // Every module lesson carries the playground in its module's languages.
   await LP.go(p, '/module/M3?lesson=m3-the-module');
