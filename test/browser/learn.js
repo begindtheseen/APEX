@@ -83,7 +83,7 @@ async function typeCommands(p, text) {
   }
 }
 
-/** Marks these course exams passed, as if she had passed them, so every course opens; and keeps the voice quiet. */
+/** Marks these course exams passed, as if she had passed them, so every course opens. */
 async function passGates(p, ids) {
   await p.evaluate((ids) => new Promise((done, fail) => {
     const q = indexedDB.open('launchpad');
@@ -96,10 +96,6 @@ async function passGates(p, ids) {
         const st = g.result;
         const at = new Date().toISOString();
         for (const id of ids) st.learn[id] = at;
-        // The spoken hint after a failed run is the voice suite's to test, not this one's:
-        // on CI's Chromium 153, speaking dsacpp-01's hint crashed the browser (a native
-        // fault, mid-audio), which hid whether the lessons themselves grade correctly.
-        st.settings = Object.assign({}, st.settings, { spokenHints: false });
         os.put(st, 'learner');
       };
       tx.oncomplete = () => { q.result.close(); done(); };
