@@ -4,7 +4,7 @@
 // Zero experience to professional creator, strategist, account manager, and
 // agency operator. Durable principles are taught as mechanisms; volatile UI,
 // feature, eligibility, and policy details are marked [VERIFY LIVE]. Research
-// notes and first-party sources live in REDLINE_RESEARCH.md.
+// notes and first-party sources live in docs/REDLINE_RESEARCH.md.
 // ES5 only: this file is consumed directly by the shared dark-realm engine.
 
 (function () {
